@@ -1,0 +1,56 @@
+{
+  "schema": 1,
+  "generatedAt": "2026-11-10T12:15:34.470Z",
+  "package": "statechart-kit",
+  "phase": "P0 (lift-and-shift snapshot)",
+  "donor": {
+    "name": "scxml-creator",
+    "path": "/home/changzhen/projects/services/scxml-creator",
+    "head": "edd8558",
+    "headDate": "2026-11-09",
+    "coreCommit": "6b5cfb6",
+    "coreCommitDate": "2026-11-01",
+    "engineCommit": "cb00cfa",
+    "engineCommitDate": "2026-10-30",
+    "clean": true
+  },
+  "hashes": {
+    "src/core/model.ts": "a6041ae60ede36297a0fd2e50320d9dc6c64fc063ff058388efe242e228c664d",
+    "src/core/serializer.ts": "e05484aa7d03b6fd665b67cad67175add677edc05ab8b1e135989ea919c02708",
+    "src/core/action-parse.ts": "cebb7cf3d02597d36b239a97e2bd3110c63f3da771cd1e700050b5e5a786532f",
+    "src/core/naming.ts": "c839786612051aa6fe8386b785bdd1a3f87dde3f937ebe985e3e73098efea09f",
+    "src/core/scxml-import.ts": "bc162fca40f3c8fd944f5a8cdc9c3cecc7702865000b81027c33047f35554a92",
+    "src/core/examples.ts": "72705f834ba6419259d3cb94141830375aa079d2c871bfd85778e8256ac3dddb",
+    "src/core/log.ts": "fb751cabcdd1d6fe7e07d0c9edeccab9dada61f1006c4564516629984b547fa7",
+    "src/engine/session-runner.ts": "7039be42669c7d302777af733276b237a3b3c9c082578f63a2cd62b03ff2b797",
+    "test/verify-import.ts": "80ca2ee940d1eab657601ebd2acbaaf1d1bd5d468634a1ab73da1a2efaf0cf43",
+    "test/smoke-engine.ts": "62fb993142107b4579902aecfb8835c1c9b658fff33a60164147ecc3c3c4ebc4",
+    "test/verify-timers.ts": "bb9f57ffb46415179ec600d1722d9e0381efb9b7a180501b9694d6a42f5f4ec4"
+  },
+  "excluded": [
+    {
+      "file": "src/core/validator.ts",
+      "reason": "静态依赖 @tinyactors/scxmljs/trusted；P1 拆成「结构校验进 core」「引擎校验进 engine」"
+    },
+    {
+      "file": "src/core/events.ts",
+      "reason": "含 MQTT/时钟/路由等宿主概念；P1 拆成「本地事件目录进 core」「外部来源留宿主」"
+    },
+    {
+      "file": "src/core/audit.ts",
+      "reason": "服务端审计（跨机孤儿引用），属宿主能力"
+    },
+    {
+      "file": "src/core/storage.ts",
+      "reason": "localStorage / 文件导入导出，属浏览器宿主能力"
+    },
+    {
+      "file": "src/stores/*.ts",
+      "reason": "Pinia 应用状态；P3 随编辑器一并迁移"
+    },
+    {
+      "file": "src/components/* src/panels/* src/viewhost/*",
+      "reason": "Vue 编辑器 UI；P3 迁移"
+    }
+  ]
+}
