@@ -194,6 +194,8 @@ const policy: NamingPolicy = {
 
 ## 开发
 
+> Agent/自动化工具请先读 [`AGENTS.md`](AGENTS.md)（项目状态、架构不变量、测试与 P4 迁移清单）。
+
 ```sh
 npm install
 npm run typecheck     # tsc --noEmit
