@@ -1,6 +1,6 @@
 # statechart-kit
 
-状态图（statechart）的建模与运行工具集：文档模型、SCXML 序列化与导入、命名策略、事件目录、结构校验、会话驱动。
+状态图（statechart）的建模与运行工具集：文档模型、SCXML 序列化与导入、命名策略、事件目录、结构校验、会话驱动、可嵌入 Vue 编辑器。
 
 > **边界声明**：本包**生成并驱动** SCXML，但**不解释** SCXML。
 > 解释器与渲染器是 [`@tinyactors/scxmljs`](https://www.npmjs.com/package/@tinyactors/scxmljs)，本包是它上面的一层。
@@ -23,9 +23,10 @@
 | 命名策略 `NamingPolicy`（可注入） | 服务端时钟、事件路由 |
 | 本地事件目录 / 激活树 | 外部事件来源抓取与展示文案 |
 | 会话运行与回放控制 | REST 接口 / 持久化 |
-| 编辑器 UI（P3 起） | Node-RED 节点与事件总线 |
+| Vue 编辑器（`statechart-kit/vue`） | Node-RED 节点与事件总线 |
+| 命名/校验/编辑能力注入（`EditorAdapter`） | 服务端部署、草稿锁、MQTT/路由来源抓取 |
 
-## 状态：P2 —— 引擎选项与生命周期加固
+## 状态：P3 —— 可嵌入 Vue 编辑器
 
 P0 是 `scxml-creator` 的逐字快照；P1 在保持行为的前提下完成四件事（`0.2.0`）：
 
@@ -56,6 +57,16 @@ P2（`0.3.0`）把 engine 补齐为可独立消费的运行时：
 - **结构化变量写入**：`assignVariable` / `assignValue` 返回 `{ ok, code, params }`。
 - **严格序列化**：`serializeChecked(doc)` 在结构 error 时抛 `DocumentStructureError`。
 - 详细梳理与隐患清单见 [`docs/architecture-review-p2.md`](docs/architecture-review-p2.md)。
+
+P3（`0.4.0`）新增可嵌入编辑器 `statechart-kit/vue`：
+
+- **`mountEditor(el, options)`**：命令式挂载；也导出 `createEditor()` + `<EditorHost>` 供 Vue 应用内使用。
+- **`EditorAdapter`**：持久化、文件导入导出、外部事件来源、部署/退出全部由宿主注入；
+  编辑器本身不读 localStorage、不发 HTTP。
+- **`features`**：toolbar / structure / canvas / properties / variables / simulation / simBar /
+  validation / importExport / examples / undoRedo / deploy / exit 可按场景裁剪。
+- **样式随包**：`statechart-kit/vue/style.css`（显式 import，避免 CSS 注入时序）。
+- 迁移边界与 P4 清单见 [`docs/editor-p3.md`](docs/editor-p3.md)。
 
 ## 安装与使用
 
@@ -103,6 +114,31 @@ if (!result.ok) {
 | `statechart-kit` | 文档模型、序列化、导入、命名策略、事件目录、结构校验、日志类型 | 无 |
 | `statechart-kit/engine` | `SessionRunner`、`loadEngine`/`preloadEngine`/`createEngineSession`、`validateScxml`/`validateDocument` | `@tinyactors/scxmljs`（按 mode 动态加载） |
 | `statechart-kit/policies/server` | 服务端命名策略预设 `SERVER_POLICY`（不属于 core） | 无 |
+| `statechart-kit/vue` | `mountEditor` / `EditorHost` / `createEditor` / 编辑器组件 | `vue`（optional peer）、`@tinyactors/scxmljs/view` |
+
+### Vue 编辑器
+
+```ts
+import { mountEditor } from 'statechart-kit/vue'
+import 'statechart-kit/vue/style.css'
+
+const mounted = mountEditor('#editor', {
+  adapter: {
+    load: () => fetchDraft(),
+    save: (doc) => putDraft(doc),
+    importProject: () => openFilePicker(),
+    externalEvents: () => service.extEventSources,
+    deploy: (doc) => service.deployDraft(doc),
+    exit: () => router.back(),
+  },
+  features: { deploy: true, exit: true },
+})
+await mounted.ready
+```
+
+编辑器状态通过 `mounted.editor` 暴露（`doc` / `select` / `run` / `validate` / `undo` 等）。
+样式必须显式导入 `statechart-kit/vue/style.css`；`vue` 是 optional peer，只用 core/engine
+的宿主不需要安装 Vue。编辑器依赖 DOM 与 `<scxml-view>` 自定义元素，仅浏览器运行；SSR 环境请动态 import。
 
 ### 引擎选择与选项
 
@@ -161,8 +197,8 @@ const policy: NamingPolicy = {
 ```sh
 npm install
 npm run typecheck     # tsc --noEmit
-npm test              # 7 个纯逻辑验证套件（P0 三个 + P1 三个 + P2 引擎）
-npm run build         # tsup → dist（ESM + d.ts）
+npm test              # 8 个纯逻辑验证套件（P0 三个 + P1 三个 + P2 引擎 + P3 编辑器）
+npm run build         # tsup（core/engine/policies）+ Vite（Vue）+ vue-tsc d.ts
 npm run verify:all    # 类型 + 测试 + 构建 + 基线 + 打包冒烟
 ```
 
@@ -172,6 +208,8 @@ npm run verify:all    # 类型 + 测试 + 构建 + 基线 + 打包冒烟
 | `npm run test:events` | 事件事实、三方向目录、激活树 |
 | `npm run test:validation` | 结构校验、引擎校验、分层拦截、严格序列化、core 无引擎依赖守卫 |
 | `npm run test:engine` | 懒加载器、两种数据模型、data 预置、生命周期竞态、监听器隔离、timeout/microsteps、变量 code |
+| `npm run test:editor` | adapter 注入、文档 CRUD/撤销、命名校验、校验/运行/停止、确认/保存 |
+| `npm run check:vue` | happy-dom 里真实挂载构建产物 `dist/vue.js` |
 | `npm run freeze:baseline` | 重新冻结受保护文件哈希；仅在有意变更后执行 |
 | `npm run check:baseline` | 校验本仓与基线一致；加 `-- --donor` 只对 `mirrored` 文件逐字节比对 donor |
 | `npm run check:pack` | 打包后在临时目录按 exports map 真实导入一次，验证发布物可用 |
@@ -180,12 +218,13 @@ npm run verify:all    # 类型 + 测试 + 构建 + 基线 + 打包冒烟
 
 - 语义化版本；`0.x` 期间 minor 可含破坏性变更，破坏性变更必须写进 `CHANGELOG.md`。
 - 消费方（`scxml-creator`、`node-red-contrib-scxmljs`）应在同一时间 pin 同一版本，避免快照漂移。
-- 每个阶段的完成点打 tag：`v0.1.0` = P0 快照基线，`v0.2.0` = P1 策略/校验/消息 code，`v0.3.0` = P2 引擎选项。
+- 每个阶段的完成点打 tag：`v0.1.0` = P0 快照基线，`v0.2.0` = P1 策略/校验/消息 code，`v0.3.0` = P2 引擎选项，`v0.4.0` = P3 Vue 编辑器。
 
 ## 路线图
 
-见 [`docs/roadmap.md`](docs/roadmap.md)。P3 进入 Vue 编辑器抽离（`EditorHost` / `features` /
-`mountEditor`）；P2 的架构梳理见 [`docs/architecture-review-p2.md`](docs/architecture-review-p2.md)。
+见 [`docs/roadmap.md`](docs/roadmap.md)。P4 将把 `scxml-creator` 切换到本包并删除本地副本；
+编辑器迁移边界见 [`docs/editor-p3.md`](docs/editor-p3.md)，P2 架构梳理见
+[`docs/architecture-review-p2.md`](docs/architecture-review-p2.md)。
 
 ## License
 

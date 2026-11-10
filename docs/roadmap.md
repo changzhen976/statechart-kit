@@ -10,7 +10,7 @@
 | P0 | 仓骨架、构建链（ESM + d.ts）、逐字快照、基线冻结、打包冒烟、CI | 0.5–1 人日 | ✅ 完成（v0.1.0） |
 | P1 | 命名策略 `NamingPolicy` 注入；校验分层；core 文案 code 化；`events.ts` 拆分 | 3–4 人日 | ✅ 完成（v0.2.0） |
 | P2 | `engine` 补齐 `scriptTimeoutMs` / `maxMicrosteps` / `data` 预置与 trusted/sandboxed 选择；合并懒加载器 | 1.5–2 人日 | ✅ 完成（v0.3.0） |
-| P3 | Vue 编辑器抽离：`EditorHost`、`features`、`mountEditor`、样式随包 | 6–8 人日 | 待开始 |
+| P3 | Vue 编辑器抽离：`EditorHost`、`features`、`mountEditor`、样式随包 | 6–8 人日 | ✅ 完成（v0.4.0） |
 | P4 | `scxml-creator` 切换到本包，删除本地副本 | 2–3 人日 | 待开始 |
 | P5 | `node-red-contrib-scxmljs` 切换到本包，删除 vendor 与 17 条构建期替换 | 3–4 人日 | 待开始 |
 | P6 | 发布与治理：版本策略、CHANGELOG、发布流水线 | 1.5–2 人日 | 待开始 |
@@ -72,6 +72,29 @@
 
 **验收**：新增 `verify-engine` 38 条断言；`npm test` 7 个套件全绿；
 `validateDocument` 对含自定义 JS 的示例在 Node 下也能通过；`check:pack` 验证动态加载可解析。
+
+## P3 的产出与边界（v0.4.0）
+
+1. **新入口 `statechart-kit/vue`**
+   - `mountEditor(el, options)` / `createEditor(options)` / `EditorHost`；
+   - `EditorAdapter`：持久化、文件导入导出、外部事件、部署/退出由宿主注入；
+   - `features` 能力开关；`labels` 文案覆盖；`vue` 为 optional peer。
+2. **编辑器实现**（`src/vue/`）
+   - 不依赖 Pinia：`reactive` store + provide/inject；
+   - Toolbar / StructurePanel / ChartCanvas / PropertyPanel / VariablesPanel / SimPanel /
+     SimBar / ConfirmDialog / ValidationDialog；
+   - 复用 core/engine：文档模型、序列化、命名策略、`validateDocument`、`SessionRunner`；
+   - 样式集中为 `src/vue/styles.css` → `dist/vue/style.css`（显式 import）。
+3. **构建链**
+   - `tsup` 继续负责 core/engine/policies；
+   - `vite build` 编译 SFC → `dist/vue.js`；`vue-tsc` 生成 `dist/vue-types/**`；
+   - `check:vue` 在 happy-dom 中真实挂载构建产物；`check:pack` 断言 Vue 资源/类型。
+4. **边界（留给 P4）**
+   - 画布点击选中/缩放平移/Explorer、结构化动作编辑器、服务端绑定/草稿锁/冲突横幅；
+   - 详见 [`docs/editor-p3.md`](editor-p3.md) §6。
+
+**验收**：`verify-editor` 25 条断言；`npm test` 8 个套件；`npm run typecheck`（tsc + vue-tsc）；
+`check:vue` 挂载/卸载通过；`check:pack` 覆盖第四入口。
 
 ## 消费方同步
 

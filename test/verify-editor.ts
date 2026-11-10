@@ -1,0 +1,161 @@
+/**
+ * P3 编辑器 store 验证（不依赖 SFC/浏览器）：
+ *   A. adapter 注入：初始文档、外部事件、保存
+ *   B. 文档 CRUD + 撤销/重做
+ *   C. 命名校验（策略注入）+ 变量校验
+ *   D. 校验/运行/停止（happy-dom DOMParser）
+ *   E. 确认对话框 + destroy 清理
+ *
+ * 运行：npm run test:editor
+ */
+import { Window } from 'happy-dom'
+import type { DOMParserLike } from '@tinyactors/scxmljs/trusted'
+import { emptyDoc, type ProjectDoc } from '../src/core/model'
+import { createEditor, type CreateEditorOptions } from '../src/vue/editor-store'
+import type { EditorAdapter } from '../src/vue/types'
+
+let pass = 0
+let fail = 0
+function assert(cond: unknown, msg: string): void {
+  if (cond) {
+    pass++
+    console.log('  OK', msg)
+  } else {
+    fail++
+    console.error('  FAIL:', msg)
+  }
+}
+
+const domParser = new (new Window().DOMParser)() as unknown as DOMParserLike
+
+function demoDoc(): ProjectDoc {
+  return emptyDoc('editor-test')
+}
+
+function makeEditor(overrides: Partial<CreateEditorOptions> = {}, adapter: Partial<EditorAdapter> = {}) {
+  const saved: ProjectDoc[] = []
+  const base: EditorAdapter = {
+    load: () => null,
+    save: (doc) => {
+      saved.push(JSON.parse(JSON.stringify(doc)) as ProjectDoc)
+    },
+    externalEvents: () => [{ value: 'ext.tick', tag: 'clock' }],
+    ...adapter,
+  }
+  const editor = createEditor({
+    initialDoc: demoDoc(),
+    adapter: base,
+    autoLoad: false,
+    domParser,
+    ...overrides,
+  } as CreateEditorOptions)
+  return { editor, saved, adapter: base }
+}
+
+async function wait(ms = 30): Promise<void> {
+  await new Promise((r) => setTimeout(r, ms))
+}
+
+console.log('── A) adapter / 初始化 ──')
+{
+  const { editor } = makeEditor()
+  await editor.ready
+  assert(editor.doc.formatVersion === 1 && editor.doc.name === 'editor-test', '初始文档注入')
+  assert(editor.adapter.externalEvents !== undefined, 'adapter 外部事件能力保留')
+  assert(editor.features.structure && !editor.features.deploy, 'features 默认/覆盖')
+  await editor.destroy()
+}
+
+console.log('── B) CRUD + 撤销/重做 ──')
+{
+  const { editor } = makeEditor()
+  await editor.ready
+  editor.addState('atomic')
+  const a = editor.doc.states[0]!
+  editor.addState('atomic')
+  const b = editor.doc.states[1]!
+  assert(editor.doc.states.length === 2 && editor.selection.kind === 'state', '新增两个状态并选中最后一个')
+
+  const err = editor.addTransition(a.uid, b.uid, { event: 'go' })
+  assert(err === null && editor.doc.transitions.length === 1 && editor.doc.transitions[0]!.event === 'go', '新增事件转移')
+
+  const delayErr = editor.addTransition(b.uid, a.uid, { delayMs: 3000, delayUnit: 's' })
+  const delayed = editor.doc.transitions[1]!
+  assert(delayErr === null && delayed.event === `delay3s_${b.id}_to_${a.id}` && delayed.delayMs === 3000, '内部延迟转移自动命名')
+
+  editor.undo()
+  assert(editor.doc.transitions.length === 1, '撤销删除延迟转移')
+  editor.redo()
+  assert(editor.doc.transitions.length === 2, '重做恢复延迟转移')
+
+  editor.setDocMeta({ name: 'renamed' })
+  assert(editor.doc.name === 'renamed' && editor.dirty, '文档元数据 + dirty')
+  await editor.destroy()
+}
+
+console.log('── C) 命名/变量校验 ──')
+{
+  const { editor } = makeEditor()
+  await editor.ready
+  assert(editor.validateEventName('t_tick') !== null, 'SERVER_POLICY 拦截 t_ 事件')
+  assert(editor.validateEventName('ge_ok') === null, 'ge_ 事件合法')
+  editor.addVariable()
+  const v = editor.doc.datamodel[0]!
+  assert(editor.checkVarId(0, 'g_old') !== null, 'g_ 变量名被拦截')
+  assert(editor.checkVarId(0, 'gv_count') === null, 'gv_ 变量名合法')
+  assert(editor.updateVariable(0, { id: 'g_old' }) !== null, 'updateVariable 拦截废弃前缀')
+  assert(editor.updateVariable(0, { id: 'gv_count' }) === null && v.id === 'gv_count', 'updateVariable 改名成功')
+  await editor.destroy()
+}
+
+console.log('── D) 校验 / 运行 / 停止 ──')
+{
+  const { editor } = makeEditor()
+  await editor.ready
+  editor.addState('atomic')
+  const a = editor.doc.states[0]!
+  editor.addState('final')
+  const b = editor.doc.states[1]!
+  editor.addTransition(a.uid, b.uid, { event: 'go' })
+  assert(await editor.validate(), '合法文档校验通过')
+  assert(!editor.validationDialog, '成功不弹窗')
+
+  const ran = await editor.run()
+  assert(ran && editor.sim.running, '仿真启动')
+  await wait(50)
+  assert(editor.activeLabels.length === 1, '初始激活状态可见')
+  editor.sendEvent('go')
+  await editor.runner.settled()
+  assert(editor.sim.variables !== null, 'snapshot 可用')
+  await editor.stopSim()
+  assert(!editor.sim.running, '停止后 running=false')
+  await editor.destroy()
+}
+
+console.log('── E) 确认 / 删除 / 保存 ──')
+{
+  const { editor, saved } = makeEditor()
+  await editor.ready
+  editor.addState('atomic')
+  const uid = editor.doc.states[0]!.uid
+  const pending = editor.deleteState(uid)
+  assert(editor.confirmRequest !== null, '删除先弹确认')
+  editor.respondConfirm(true)
+  const removed = await pending
+  assert(removed && editor.doc.states.length === 0, '确认后删除状态')
+  await editor.saveNow()
+  assert(saved.length > 0, 'adapter.save 收到文档')
+  await editor.destroy()
+}
+
+console.log('── F) 外部事件进入候选 ──')
+{
+  const { editor } = makeEditor()
+  await editor.ready
+  const opts = editor.eventOptions()
+  assert(opts.some((o) => o.value === 'ext.tick' && o.group === 'in'), 'adapter 外部事件进入 in 组')
+  await editor.destroy()
+}
+
+console.log(`\n结果：${pass} 通过 / ${fail} 失败`)
+process.exit(fail ? 1 : 0)

@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.vue.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "outDir": "dist/vue-types",
+    "rootDir": "src"
+  }
+}

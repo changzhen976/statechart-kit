@@ -72,6 +72,9 @@ try {
     'dist/engine.d.ts',
     'dist/policies/server.js',
     'dist/policies/server.d.ts',
+    'dist/vue.js',
+    'dist/vue/style.css',
+    'dist/vue-types/vue/index.d.ts',
   ]) {
     if (!existsSync(join(pkgDir, rel))) throw new Error(`发布包缺少 ${rel}`)
   }

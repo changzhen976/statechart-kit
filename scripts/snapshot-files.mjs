@@ -39,6 +39,31 @@ export const ENGINE_FILES = [
 /** 宿主策略预设（不在 core 入口） */
 export const POLICY_FILES = ['src/policies/server.ts']
 
+/** P3 Vue 编辑器（SFC + store + 样式；构建由 Vite 负责） */
+export const VUE_FILES = [
+  'src/vue/index.ts',
+  'src/vue/types.ts',
+  'src/vue/features.ts',
+  'src/vue/labels.ts',
+  'src/vue/format.ts',
+  'src/vue/events.ts',
+  'src/vue/browser-adapter.ts',
+  'src/vue/editor-store.ts',
+  'src/vue/use-editor.ts',
+  'src/vue/shims-vue.d.ts',
+  'src/vue/EditorHost.vue',
+  'src/vue/Toolbar.vue',
+  'src/vue/StructurePanel.vue',
+  'src/vue/ChartCanvas.vue',
+  'src/vue/PropertyPanel.vue',
+  'src/vue/VariablesPanel.vue',
+  'src/vue/SimPanel.vue',
+  'src/vue/SimBar.vue',
+  'src/vue/ValidationDialog.vue',
+  'src/vue/ConfirmDialog.vue',
+  'src/vue/styles.css',
+]
+
 /** 验证脚本 */
 export const TEST_FILES = [
   'test/verify-import.ts',
@@ -48,9 +73,16 @@ export const TEST_FILES = [
   'test/verify-events.ts',
   'test/verify-validation.ts',
   'test/verify-engine.ts',
+  'test/verify-editor.ts',
 ]
 
-export const KIT_FILES = [...CORE_FILES, ...ENGINE_FILES, ...POLICY_FILES, ...TEST_FILES]
+export const KIT_FILES = [
+  ...CORE_FILES,
+  ...ENGINE_FILES,
+  ...POLICY_FILES,
+  ...VUE_FILES,
+  ...TEST_FILES,
+]
 
 /** 兼容旧脚本命名（P0 时即此清单） */
 export const SNAPSHOT_FILES = KIT_FILES
@@ -112,6 +144,8 @@ export const DONOR_DIVERGED = [
   { file: 'src/core/serialize-checked.ts', reason: 'P2 新增：严格序列化 + DocumentStructureError' },
   { file: 'src/engine/engine-loader.ts', reason: 'P2 新增：统一引擎懒加载器' },
   { file: 'test/verify-engine.ts', reason: 'P2 新增：引擎选项/生命周期测试' },
+  { file: 'src/vue/**', reason: 'P3 新增：可嵌入 Vue 编辑器（EditorHost/features/mountEditor/样式）' },
+  { file: 'test/verify-editor.ts', reason: 'P3 新增：编辑器 store 测试' },
 ]
 
 /**
@@ -125,6 +159,10 @@ export const DONOR_EXCLUDED = [
   {
     file: 'src/core/events.ts',
     reason: 'P1 已拆分：本地事件目录/激活树 → src/core/event-catalog.ts、active-tree.ts；时钟/路由/MQTT 来源与展示文案留宿主',
+  },
+  {
+    file: 'src/stores/project.ts',
+    reason: 'P3 已在 statechart-kit/vue 重写为 adapter 驱动的 editor-store；donor 文件留到 P4 对照删除',
   },
   {
     file: 'src/core/audit.ts',

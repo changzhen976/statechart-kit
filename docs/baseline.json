@@ -1,8 +1,8 @@
 {
   "schema": 2,
-  "generatedAt": "2026-11-10T12:46:15.830Z",
+  "generatedAt": "2026-11-10T13:09:44.482Z",
   "package": "statechart-kit",
-  "phase": "P2 (engine options, unified lazy loader, lifecycle hardening)",
+  "phase": "P3 (embedded Vue editor: EditorHost, features, mountEditor, styles)",
   "donor": {
     "name": "scxml-creator",
     "path": "/home/changzhen/projects/services/scxml-creator",
@@ -35,13 +35,35 @@
     "src/engine/validator.ts": "83e946666e356519ad87c8d4b38c34f1c3a8db8fa6f8ecf2840216944cf3bbf5",
     "src/engine/engine-loader.ts": "fdd77d765cf437550d5f8a4a934bbc274d791188f394d44d906e4215032dc96d",
     "src/policies/server.ts": "0ae017de19d4e5d61238bfe0da29f98852ba86146636a98bc48d034a383937a3",
+    "src/vue/index.ts": "366a69a43b04f4c9676afd24c6e5d3a6f418b118bba77728e3637fc6bd8f8a84",
+    "src/vue/types.ts": "e8e4eb95eddb5aae4a5b03fda29f699bdb2f45eef926f88739aab7dd1baa2d51",
+    "src/vue/features.ts": "acfafdcf79788aa72a3ff2f5d230bec6c09b8e76c5f0a5b070f1937a9b9e9e56",
+    "src/vue/labels.ts": "e771221ccc495a4a7b91b1770056b6b0b13e84dfcd20f44c3b7e0ab347c86833",
+    "src/vue/format.ts": "e8fd5f33214cc85f6e77e432877caac4e825eb3692c4247a6e8d3761b9232aab",
+    "src/vue/events.ts": "923c9ea6c11d5e22713b02b691eede1ec12278de3784dbb365025374a4690c96",
+    "src/vue/browser-adapter.ts": "0eb02f35f1394ecc107c7fbdf94c20886d48e12fc5a00ee2274c3a85182074c7",
+    "src/vue/editor-store.ts": "d0009b8947ba756b1e1f823b431e6830c75b8ea0a62dd2ae70ee238739b20319",
+    "src/vue/use-editor.ts": "5c4e1a312fd464323f8a11d70e377ecf333df7f0b2199f79bc32c38340f8beb1",
+    "src/vue/shims-vue.d.ts": "aa5ca4dfba3d7281e62ac0efdbb46b0d671d41ab64c8a2c6cd5e66bbe82fc3a8",
+    "src/vue/EditorHost.vue": "20f1f2385a565ae43a6ae45b9fca47cf028e7b0ebc44ff180af0379acce45a24",
+    "src/vue/Toolbar.vue": "492733a76a3e02edc817de4aca2b599391e2e43962155e61b3008dd3e90f852a",
+    "src/vue/StructurePanel.vue": "0b4b15bc70f7ff09f657ceadd3b0da4baf24b73714124c6a97fa6a019d7a5125",
+    "src/vue/ChartCanvas.vue": "a2dd277294532a1c511b9d98154270f8f355df5e6491498b3ee7ce13650a9e5d",
+    "src/vue/PropertyPanel.vue": "3d18699b86c6ac95dfec47c537939f3e85be3967d7d015a186a8eb5e2c951ae3",
+    "src/vue/VariablesPanel.vue": "fa52034a5625843ccb2d005546abb1ac0ae13ac63ea4bc6b4f438e06c5ec7c38",
+    "src/vue/SimPanel.vue": "efc5aa73d2f8d863abd757290e2815601db830b3376a7e517aaa0cbba88e5c2a",
+    "src/vue/SimBar.vue": "60c23e8d9a9b53bb86149207fa3c6eef60860b4700211e78810c0afb6079f539",
+    "src/vue/ValidationDialog.vue": "0652a6495c874dcf9046bc606355e85b883e1d51a44b086857756f2be87c81d6",
+    "src/vue/ConfirmDialog.vue": "df1d3596d3a918e545ba80d77b17f3577a3c024dea90ac0f00dc7c10bb3c4499",
+    "src/vue/styles.css": "5e2ee16ab00adee0d4e520357259b9d171658ba52a4452d6beb02b6acf00fd54",
     "test/verify-import.ts": "cd16f8e6b98e485fbabb55632a53c611a6e7efa8ebd574be6ab2cac12f332eb4",
     "test/smoke-engine.ts": "62fb993142107b4579902aecfb8835c1c9b658fff33a60164147ecc3c3c4ebc4",
     "test/verify-timers.ts": "bb9f57ffb46415179ec600d1722d9e0381efb9b7a180501b9694d6a42f5f4ec4",
     "test/verify-naming.ts": "d911691c188b20cffead88f0de3442eda658c8119228b5dd842036b69f18caf9",
     "test/verify-events.ts": "8eb4ecbedbc1451f4cecf76c8b373cc4a9dc11b48dc600074dafa6d646be5daf",
     "test/verify-validation.ts": "844ac3978da9588b70d4a9db03ebe090a319e448a6acbaef495d9ba909d44e97",
-    "test/verify-engine.ts": "d40e610b39c545b9e9b5e0a96ebb06214f3fab1903460b3481c7ff961db5e152"
+    "test/verify-engine.ts": "d40e610b39c545b9e9b5e0a96ebb06214f3fab1903460b3481c7ff961db5e152",
+    "test/verify-editor.ts": "a51e168f68e9c399dc1f6acf4be4ccd9237b85c132ed775a92555a71d9c0394d"
   },
   "mirrored": [
     {
@@ -153,6 +175,14 @@
     {
       "file": "test/verify-engine.ts",
       "reason": "P2 新增：引擎选项/生命周期测试"
+    },
+    {
+      "file": "src/vue/**",
+      "reason": "P3 新增：可嵌入 Vue 编辑器（EditorHost/features/mountEditor/样式）"
+    },
+    {
+      "file": "test/verify-editor.ts",
+      "reason": "P3 新增：编辑器 store 测试"
     }
   ],
   "excluded": [
@@ -163,6 +193,10 @@
     {
       "file": "src/core/events.ts",
       "reason": "P1 已拆分：本地事件目录/激活树 → src/core/event-catalog.ts、active-tree.ts；时钟/路由/MQTT 来源与展示文案留宿主"
+    },
+    {
+      "file": "src/stores/project.ts",
+      "reason": "P3 已在 statechart-kit/vue 重写为 adapter 驱动的 editor-store；donor 文件留到 P4 对照删除"
     },
     {
       "file": "src/core/audit.ts",

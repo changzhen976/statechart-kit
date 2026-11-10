@@ -34,6 +34,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Vue editor smoke
+        run: npm run check:vue
+
       - name: Baseline drift check
         run: npm run check:baseline
 

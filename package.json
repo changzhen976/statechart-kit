@@ -1,10 +1,13 @@
 {
   "name": "statechart-kit",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Statechart authoring model, editor and session runner. Produces and drives SCXML; it does not interpret SCXML.",
   "license": "MIT",
   "type": "module",
-  "sideEffects": false,
+  "sideEffects": [
+    "./dist/vue.js",
+    "**/*.css"
+  ],
   "keywords": [
     "statechart",
     "state chart",
@@ -27,7 +30,12 @@
       "types": "./dist/policies/server.d.ts",
       "import": "./dist/policies/server.js"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./vue": {
+      "types": "./dist/vue-types/vue/index.d.ts",
+      "import": "./dist/vue.js"
+    },
+    "./vue/style.css": "./dist/vue/style.css"
   },
   "files": [
     "dist",
@@ -39,9 +47,9 @@
     "node": ">=20"
   },
   "scripts": {
-    "build": "tsup",
-    "typecheck": "tsc --noEmit",
-    "test": "npm run test:import && npm run test:smoke && npm run test:timers && npm run test:naming && npm run test:events && npm run test:validation && npm run test:engine",
+    "build": "npm run build:core && npm run build:vue",
+    "typecheck": "tsc --noEmit && vue-tsc --noEmit -p tsconfig.vue.json",
+    "test": "npm run test:import && npm run test:smoke && npm run test:timers && npm run test:naming && npm run test:events && npm run test:validation && npm run test:engine && npm run test:editor",
     "test:import": "tsx test/verify-import.ts",
     "test:smoke": "tsx test/smoke-engine.ts",
     "test:timers": "tsx test/verify-timers.ts",
@@ -52,17 +60,33 @@
     "freeze:baseline": "node scripts/freeze-baseline.mjs",
     "check:baseline": "node scripts/check-baseline.mjs",
     "check:pack": "node scripts/check-pack.mjs",
-    "verify:all": "npm run typecheck && npm test && npm run build && npm run check:baseline && npm run check:pack",
-    "prepack": "npm run build"
+    "verify:all": "npm run typecheck && npm test && npm run build && npm run check:baseline && npm run check:vue && npm run check:pack",
+    "prepack": "npm run build",
+    "build:core": "tsup",
+    "build:vue": "vite build && vue-tsc -p tsconfig.vue-dts.json && node scripts/copy-vue-assets.mjs",
+    "check:vue": "node scripts/check-vue.mjs",
+    "test:editor": "tsx test/verify-editor.ts"
   },
   "dependencies": {
     "@tinyactors/scxmljs": "0.2.0-dev.0"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
+    "@vitejs/plugin-vue": "^6.0.10",
     "happy-dom": "^21.0.4",
     "tsup": "^8.5.0",
     "tsx": "^4.23.15",
-    "typescript": "^5.9.0"
+    "typescript": "^5.9.0",
+    "vite": "^7.3.8",
+    "vue": "^3.5.45",
+    "vue-tsc": "^3.3.14"
+  },
+  "peerDependencies": {
+    "vue": "^3.5.13"
+  },
+  "peerDependenciesMeta": {
+    "vue": {
+      "optional": true
+    }
   }
 }

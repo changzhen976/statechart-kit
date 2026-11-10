@@ -4,9 +4,39 @@
 
 ## [Unreleased]
 
-### Planned (P3)
+### Planned (P4)
 
-- Vue 编辑器抽离：`EditorHost`、`features`、`mountEditor`、样式随包
+- `scxml-creator` 切换到 `statechart-kit`，删除本地 core/engine/editor 副本
+
+## [0.4.0] - 2026-11-10
+
+P3：可嵌入 Vue 编辑器。新增 `statechart-kit/vue` 入口；core/engine 行为不变。
+
+### Added
+
+- `statechart-kit/vue`：`mountEditor` / `createEditor` / `EditorHost` / `EditorAdapter` /
+  `EditorFeatures` / `createBrowserAdapter` / 诊断 code 中文格式化
+- 编辑器组件：Toolbar、StructurePanel、ChartCanvas（官方 `<scxml-view>`）、PropertyPanel、
+  VariablesPanel、SimPanel、SimBar、ConfirmDialog、ValidationDialog
+- `EditorAdapter`：持久化、导入导出、外部事件、部署/退出、只读、脏状态/日志回调
+- `features` 开关与 `labels` 文案覆盖；`vue` 作为 optional peerDependency
+- `src/vue/styles.css` 随包发布为 `statechart-kit/vue/style.css`
+- Vite 构建 SFC + `vue-tsc` 生成 `dist/vue-types/**`；`check:vue` happy-dom 挂载冒烟
+- `test/verify-editor.ts`：25 条断言
+- `docs/editor-p3.md`：入口、adapter 契约、构建、P4 迁移边界
+
+### Changed
+
+- `sideEffects` 改为 `["./dist/vue.js", "*.css"]`
+- `npm run build` 拆为 `build:core`（tsup）+ `build:vue`（Vite + vue-tsc + 样式复制）
+- `npm run typecheck` 追加 `vue-tsc`
+- `verify:all` 追加 `check:vue`；CI 增加 Vue smoke 步骤
+
+### Notes
+
+- 编辑器不读 localStorage、不发 HTTP；默认浏览器适配器可被宿主整体替换。
+- P3 的画布只做 source/session 同步；点击选中、缩放平移、Explorer 与结构化动作编辑器
+  留在 P4（见 `docs/editor-p3.md` §6）。
 
 ## [0.3.0] - 2026-11-10
 
