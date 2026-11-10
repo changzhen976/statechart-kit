@@ -1,0 +1,60 @@
+{
+  "name": "statechart-kit",
+  "version": "0.1.0",
+  "description": "Statechart authoring model, editor and session runner. Produces and drives SCXML; it does not interpret SCXML.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "keywords": [
+    "statechart",
+    "state chart",
+    "state machine",
+    "scxml",
+    "harel",
+    "fsm",
+    "editor"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./engine": {
+      "types": "./dist/engine.d.ts",
+      "import": "./dist/engine.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run test:import && npm run test:smoke && npm run test:timers",
+    "test:import": "tsx test/verify-import.ts",
+    "test:smoke": "tsx test/smoke-engine.ts",
+    "test:timers": "tsx test/verify-timers.ts",
+    "freeze:baseline": "node scripts/freeze-baseline.mjs",
+    "check:baseline": "node scripts/check-baseline.mjs",
+    "check:pack": "node scripts/check-pack.mjs",
+    "verify:all": "npm run typecheck && npm test && npm run build && npm run check:baseline && npm run check:pack",
+    "prepack": "npm run build"
+  },
+  "dependencies": {
+    "@tinyactors/scxmljs": "0.2.0-dev.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "happy-dom": "^21.0.4",
+    "tsup": "^8.5.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.0"
+  }
+}
