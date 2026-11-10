@@ -11,7 +11,7 @@
 | P1 | 命名策略 `NamingPolicy` 注入；校验分层；core 文案 code 化；`events.ts` 拆分 | 3–4 人日 | ✅ 完成（v0.2.0） |
 | P2 | `engine` 补齐 `scriptTimeoutMs` / `maxMicrosteps` / `data` 预置与 trusted/sandboxed 选择；合并懒加载器 | 1.5–2 人日 | ✅ 完成（v0.3.0） |
 | P3 | Vue 编辑器抽离：`EditorHost`、`features`、`mountEditor`、样式随包 | 6–8 人日 | ✅ 完成（v0.4.0） |
-| P4 | `scxml-creator` 切换到本包，删除本地副本 | 2–3 人日 | 🟡 core/engine 已切；UI 待切 |
+| P4 | `scxml-creator` 切换到本包，删除本地副本 | 2–3 人日 | ✅ 完成（core/engine + 编辑器） |
 | P5 | `node-red-contrib-scxmljs` 切换（**宿主仓库任务**：删除 vendor 与 17 条构建期替换） | 3–4 人日 | 待开始（不在 kit 发布范围） |
 | P6 | 发布与治理：版本策略、CHANGELOG、发布流水线 | 1.5–2 人日 | 待开始 |
 
@@ -96,7 +96,7 @@
 **验收**：`verify-editor` 含模块契约断言；`npm test` 8 个套件；`npm run typecheck`（tsc + vue-tsc）；
 `check:vue` 挂载/卸载 + 模块标签/命令渲染通过；`check:pack` 覆盖四个入口。
 
-## P4 迁移进度（进行中）
+## P4 迁移进度（已完成）
 
 - ✅ `scxml-creator` 删除本地 `src/core`、`src/engine`，改为 `statechart-kit` /
   `statechart-kit/engine`；宿主保留 `src/{events,storage,audit}.ts` 与
@@ -107,10 +107,10 @@
   编辑器默认策略改 `BASE_POLICY`；kit 诊断不再内置 MQTT 专属文案。
 - ✅ **EditorModule 契约**：标签页/工具栏/事件来源/额外校验/清理生命周期；上层功能以模块
   注入核心编辑器（见 [`docs/editor-modules.md`](editor-modules.md)）。
-- ⏳ 编辑器 UI 尚未切到 `statechart-kit/vue`：P3 嵌入编辑器缺少画布点击/缩放/Explorer/
-  结构化动作/服务绑定；先用 `EditorModule` 把 creator 的全局变量/路由/MQTT/部署做成模块，
-  再切 donor UI 并删除 `components/panels/viewhost/stores/project.ts`。
+- ✅ 编辑器 UI 已切到 `statechart-kit/vue`；新增画布点击/缩放、结构化动作、校验定位；
+  creator `src/editor-modules/service.ts` 接 service store，本地 `components/panels/viewhost/stores/project.ts` 已删除。
 - ⏳ `scxml-creator` 的 `statechart-kit` 依赖当前是 `file:../statechart-kit`；发布后改固定版本。
+- ⏳ Explorer 调试视图、侧栏拖拽/折叠等增强未在 kit 编辑器中复刻，可按需作为模块/后续补回。
 
 ## 消费方同步
 

@@ -172,6 +172,8 @@
 .sce-count { font: 11px var(--scxml-font-mono); color: var(--scxml-fg-subtle); }
 .sce-filter { width: 100%; }
 .sce-btn-row { display: flex; flex-wrap: wrap; gap: 4px; }
+.sce-delay-list { display: flex; flex-direction: column; gap: 2px; }
+.delay-row .link { border: none !important; background: transparent !important; color: var(--scxml-waiting); text-align: left; padding: 2px 4px !important; }
 
 .sce-tree { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1px; }
 .sce-tree-row {
@@ -350,6 +352,7 @@
 .sce-dialog-btns { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 .sce-issues { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
 .sce-issues li { font-size: 12px; line-height: 1.5; }
+.sce-issues .mini { font-size: 11px; padding: 1px 7px; margin-left: 6px; }
 .sce-issue-kind { font: 10px var(--scxml-font-mono); color: var(--scxml-fg-subtle); margin-right: 6px; }
 .sce-source { margin-top: 10px; }
 .sce-source pre {

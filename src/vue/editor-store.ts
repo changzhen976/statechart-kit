@@ -28,7 +28,8 @@ import {
 import { NCNAME_RE } from '../core/validate-structure'
 import { serializeToScxml } from '../core/serializer'
 import { checkEventName, checkVarName } from '../core/naming'
-import { validateDocument, type ValidationIssue } from '../engine/validator'
+import { scanScriptActions } from '../core/action-parse'
+import { scriptHitsToIssues, validateDocument, type ValidationIssue } from '../engine/validator'
 import { SessionRunner, type SimLogEntry, type VariableWriteResult } from '../engine/session-runner'
 import { DEFAULT_LABELS, type EditorLabels } from './labels'
 import { resolveFeatures, type EditorFeatures } from './features'
@@ -86,6 +87,8 @@ export interface EditorState {
   deploying: boolean
   confirm: EditorConfirmRequest | null
   revision: number
+  /** 校验弹窗「定位」：滚动并 flash 对应动作行 */
+  actionFocus: { uid: string; slot: 'entry' | 'exit' | 'transition'; index: number; nonce: number } | null
   /** 模块贡献（P4）；组件用 markRaw 避免被 Vue 代理 */
   moduleTabs: EditorTabContribution[]
   moduleToolbar: EditorToolbarContribution[]
@@ -185,6 +188,8 @@ export interface EditorStore {
   get canDeploy(): boolean
   get moduleTabs(): readonly EditorTabContribution[]
   get moduleToolbar(): readonly EditorToolbarContribution[]
+  focusFor(uid: string, slot: 'entry' | 'exit' | 'transition'): number | null
+  locateIssue(issue: ValidationIssue): void
 
   eventOptions(): EditorEventOption[]
   stateName(uid: string): string
@@ -270,6 +275,7 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     deploying: false,
     confirm: null,
     revision: 0,
+    actionFocus: null,
     moduleTabs: [],
     moduleToolbar: [],
     moduleEventSources: [],
@@ -282,6 +288,7 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
   let saveTimer: ReturnType<typeof setTimeout> | null = null
   let saveChain: Promise<void> = Promise.resolve()
   let offRunner: (() => void) | null = null
+  let actionFocusTimer: ReturnType<typeof setTimeout> | null = null
   let destroyed = false
   const moduleDisposers: (() => void)[] = []
 
@@ -977,7 +984,14 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
       const ok = result.ok && !moduleIssues.some((i) => i.severity === 'error')
       state.validation = { ok, issues }
       if (ok) {
-        pushLog('lifecycle', labels.validationPassed)
+        const hits = scanScriptActions(state.doc)
+        if (hits.length) {
+          const scriptIssues = scriptHitsToIssues(hits)
+          pushLog('lifecycle', `${labels.validationPassed}；检测到 ${hits.length} 处自定义 JS`)
+          openValidationDialog('草稿包含自定义 JS', scriptIssues)
+        } else {
+          pushLog('lifecycle', labels.validationPassed)
+        }
       } else {
         pushLog('error', `${labels.validationFailed}（${issues.length} 项）`)
         openValidationDialog(labels.validationFailed, issues, result.source)
@@ -987,6 +1001,45 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
       pushLog('error', `${labels.validationFailed}：${errorMessage(err)}`)
       return false
     }
+  }
+
+  /** 定位校验问题：选中状态/转移，必要时聚焦动作行 */
+  function locateIssue(issue: ValidationIssue): void {
+    if (issue.transitionId) {
+      const t = state.doc.transitions.find((x) => x.id === issue.transitionId)
+      if (t) {
+        select('transition', t.id)
+        return
+      }
+    }
+    if (issue.event) {
+      const t = state.doc.transitions.find((x) => x.event === issue.event)
+      if (t) {
+        select('transition', t.id)
+        return
+      }
+    }
+    if (!issue.stateId) return
+    const s = state.doc.states.find((x) => x.id === issue.stateId)
+    if (!s) return
+    select('state', s.uid)
+    if (issue.slot && issue.actionIndex !== undefined) {
+      state.actionFocus = {
+        uid: s.uid,
+        slot: issue.slot,
+        index: issue.actionIndex,
+        nonce: (state.actionFocus?.nonce ?? 0) + 1,
+      }
+      if (actionFocusTimer) clearTimeout(actionFocusTimer)
+      actionFocusTimer = setTimeout(() => {
+        state.actionFocus = null
+      }, 2500)
+    }
+  }
+
+  function focusFor(uid: string, slot: 'entry' | 'exit' | 'transition'): number | null {
+    const f = state.actionFocus
+    return f && f.uid === uid && f.slot === slot ? f.index : null
   }
 
   function openValidationDialog(title: string, issues: ValidationIssue[], source?: string): void {
@@ -1161,6 +1214,8 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
       return state.moduleToolbar
     },
 
+    focusFor,
+    locateIssue,
     eventOptions(): EditorEventOption[] {
       return buildEditorEventOptions(state.doc, policy, state.externalEvents)
     },
@@ -1243,6 +1298,7 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
         }
       }
       if (saveTimer) clearTimeout(saveTimer)
+      if (actionFocusTimer) clearTimeout(actionFocusTimer)
       offRunner?.()
       offRunner = null
       await runner.stop()

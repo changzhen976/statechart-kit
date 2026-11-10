@@ -8,6 +8,8 @@ import { descendantsOf } from '../core/model'
 import type { StateKind, StateNode } from '../core/model'
 import { isAutoDelayEvent } from '../core/naming'
 import { useEditor } from './use-editor'
+import ActionListEditor from './ActionListEditor.vue'
+import { parseActionLine } from '../core/action-parse'
 
 const editor = useEditor()
 const st = computed(() => editor.selectedState)
@@ -21,11 +23,14 @@ const initial = ref('')
 const historyType = ref<'shallow' | 'deep'>('shallow')
 const entry = ref('')
 const exit = ref('')
+const entryArr = ref<string[]>([])
+const exitArr = ref<string[]>([])
 const idErr = ref('')
 
 const event = ref('')
 const cond = ref('')
 const actions = ref('')
+const actionsArr = ref<string[]>([])
 const delayOn = ref(false)
 const delayMs = ref(5000)
 const delayUnit = ref<'s' | 'ms'>('s')
@@ -48,6 +53,8 @@ watch(
     historyType.value = s.historyType ?? 'shallow'
     entry.value = s.entryActions.join('\n')
     exit.value = s.exitActions.join('\n')
+    entryArr.value = [...s.entryActions]
+    exitArr.value = [...s.exitActions]
   },
   { immediate: true },
 )
@@ -60,9 +67,10 @@ watch(
     event.value = t.event
     cond.value = t.cond
     actions.value = t.actions.join('\n')
+    actionsArr.value = [...t.actions]
     delayOn.value = t.delayMs !== undefined
-    delayMs.value = t.delayMs ?? 5000
     delayUnit.value = t.delayUnit ?? 's'
+    delayMs.value = delayUnit.value === 's' ? (t.delayMs ?? 5000) / 1000 : (t.delayMs ?? 5000)
   },
   { immediate: true },
 )
@@ -85,6 +93,24 @@ const parentOptions = computed(() => {
 const initialKids = computed(() =>
   st.value ? editor.doc.states.filter((s) => s.parent === st.value!.uid && s.kind !== 'history') : [],
 )
+const actionEventOptions = computed(() => editor.eventOptions())
+const variableOptions = computed(() => editor.doc.datamodel.map((d) => d.id))
+const sendIdOptions = computed(() => {
+  const ids = new Set<string>()
+  const scan = (list: string[]): void => {
+    for (const line of list) {
+      const a = parseActionLine(line)
+      if (a.type === 'send' && a.id) ids.add(a.id)
+    }
+  }
+  for (const s of editor.doc.states) {
+    scan(s.entryActions)
+    scan(s.exitActions)
+  }
+  for (const t of editor.doc.transitions) scan(t.actions)
+  return [...ids]
+})
+
 const eventNames = computed(() =>
   [...new Set(editor.eventOptions().map((e) => e.value))].sort((a, b) => a.localeCompare(b)),
 )
@@ -122,6 +148,14 @@ function commitEntry(): void {
 function commitExit(): void {
   if (st.value) editor.updateState(st.value.uid, { exitActions: lines(exit.value) })
 }
+function onEntryUpdate(v: string[]): void {
+  entryArr.value = v
+  if (st.value) editor.updateState(st.value.uid, { entryActions: v })
+}
+function onExitUpdate(v: string[]): void {
+  exitArr.value = v
+  if (st.value) editor.updateState(st.value.uid, { exitActions: v })
+}
 
 function commitEvent(): void {
   if (!tr.value) return
@@ -142,11 +176,27 @@ function commitCond(): void {
 function commitActions(): void {
   if (tr.value) editor.updateTransition(tr.value.id, { actions: lines(actions.value) })
 }
+function onActionsUpdate(v: string[]): void {
+  actionsArr.value = v
+  if (tr.value) editor.updateTransition(tr.value.id, { actions: v })
+}
+function commitDelayInput(e: Event): void {
+  delayMs.value = Number((e.target as HTMLInputElement).value) || 1
+  commitDelay()
+}
+function onDelayUnitChange(e: Event): void {
+  const next = (e.target as HTMLSelectElement).value as 's' | 'ms'
+  const ms = delayUnit.value === 's' ? delayMs.value * 1000 : delayMs.value
+  delayUnit.value = next
+  delayMs.value = next === 's' ? ms / 1000 : ms
+  commitDelay()
+}
 function commitDelay(): void {
   if (!tr.value) return
   if (delayOn.value) {
+    const raw = Number(delayMs.value) || 1
     editor.updateTransition(tr.value.id, {
-      delayMs: Math.max(10, Number(delayMs.value) || 10),
+      delayMs: Math.max(10, Math.round(delayUnit.value === 's' ? raw * 1000 : raw)),
       delayUnit: delayUnit.value,
     })
   } else {
@@ -213,11 +263,43 @@ function setRootInitial(e: Event): void {
 
       <div class="sce-field">
         <label>{{ editor.labels.entryActions }}</label>
-        <textarea v-model="entry" :disabled="editor.locked" :placeholder="editor.labels.actionsHint" @change="commitEntry" />
+        <ActionListEditor
+          v-if="editor.features.structuredActions"
+          :model-value="entryArr"
+          :disabled="editor.locked"
+          :variable-options="variableOptions"
+          :send-id-options="sendIdOptions"
+          :event-options="actionEventOptions"
+          :focus-index="editor.focusFor(st.uid, 'entry')"
+          @update:model-value="onEntryUpdate"
+        />
+        <textarea
+          v-else
+          v-model="entry"
+          :disabled="editor.locked"
+          :placeholder="editor.labels.actionsHint"
+          @change="commitEntry"
+        />
       </div>
       <div class="sce-field">
         <label>{{ editor.labels.exitActions }}</label>
-        <textarea v-model="exit" :disabled="editor.locked" :placeholder="editor.labels.actionsHint" @change="commitExit" />
+        <ActionListEditor
+          v-if="editor.features.structuredActions"
+          :model-value="exitArr"
+          :disabled="editor.locked"
+          :variable-options="variableOptions"
+          :send-id-options="sendIdOptions"
+          :event-options="actionEventOptions"
+          :focus-index="editor.focusFor(st.uid, 'exit')"
+          @update:model-value="onExitUpdate"
+        />
+        <textarea
+          v-else
+          v-model="exit"
+          :disabled="editor.locked"
+          :placeholder="editor.labels.actionsHint"
+          @change="commitExit"
+        />
       </div>
     </template>
 
@@ -241,14 +323,14 @@ function setRootInitial(e: Event): void {
         <label>{{ editor.labels.cond }}</label>
         <input v-model="cond" :disabled="editor.locked" @change="commitCond" />
       </div>
-      <div class="sce-field">
+      <div class="sce-field row">
         <label>
           <input v-model="delayOn" type="checkbox" :disabled="editor.locked" @change="commitDelay" />
           {{ editor.labels.delay }}
         </label>
-        <div v-if="delayOn" class="sce-inline">
-          <input v-model.number="delayMs" class="sce-num" type="number" min="10" step="10" :disabled="editor.locked" @change="commitDelay" />
-          <select v-model="delayUnit" :disabled="editor.locked" @change="commitDelay">
+        <div v-if="delayOn" class="sce-inline row">
+          <input v-model.number="delayMs" class="sce-num num" type="number" min="10" step="10" :disabled="editor.locked" @change="commitDelayInput" />
+          <select :value="delayUnit" class="unit" :disabled="editor.locked" @change="onDelayUnitChange">
             <option value="s">{{ editor.labels.sequence }}</option>
             <option value="ms">{{ editor.labels.milliseconds }}</option>
           </select>
@@ -256,7 +338,23 @@ function setRootInitial(e: Event): void {
       </div>
       <div class="sce-field">
         <label>{{ editor.labels.entryActions }}</label>
-        <textarea v-model="actions" :disabled="editor.locked" :placeholder="editor.labels.actionsHint" @change="commitActions" />
+        <ActionListEditor
+          v-if="editor.features.structuredActions"
+          :model-value="actionsArr"
+          :disabled="editor.locked"
+          :variable-options="variableOptions"
+          :send-id-options="sendIdOptions"
+          :event-options="actionEventOptions"
+          :focus-index="tr ? editor.focusFor(tr.source, 'transition') : null"
+          @update:model-value="onActionsUpdate"
+        />
+        <textarea
+          v-else
+          v-model="actions"
+          :disabled="editor.locked"
+          :placeholder="editor.labels.actionsHint"
+          @change="commitActions"
+        />
       </div>
     </template>
 

@@ -13,6 +13,8 @@ export interface EditorFeatures {
   canvas: boolean
   /** 右栏属性面板 */
   properties: boolean
+  /** 结构化动作编辑器（false = textarea 降级） */
+  structuredActions: boolean
   /** 右栏变量面板 */
   variables: boolean
   /** 右栏仿真面板 */
@@ -38,6 +40,7 @@ export const DEFAULT_FEATURES: EditorFeatures = {
   structure: true,
   canvas: true,
   properties: true,
+  structuredActions: true,
   variables: true,
   simulation: true,
   simBar: true,

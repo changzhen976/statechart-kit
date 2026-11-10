@@ -67,7 +67,7 @@ async function runModule(c: EditorToolbarContribution): Promise<void> {
     <div class="sce-brand">
       <span class="sce-brand-name">{{ editor.labels.appTitle }}</span>
       <input
-        class="sce-project-name"
+        class="sce-project-name proj-name"
         :value="editor.doc.name"
         :title="editor.labels.projectName"
         @change="onNameChange"
@@ -76,8 +76,8 @@ async function runModule(c: EditorToolbarContribution): Promise<void> {
     </div>
 
     <div v-if="editor.features.undoRedo" class="sce-group">
-      <button :disabled="!editor.canUndo" @click="editor.undo()">{{ editor.labels.undo }}</button>
-      <button :disabled="!editor.canRedo" @click="editor.redo()">{{ editor.labels.redo }}</button>
+      <button title="撤销（Ctrl+Z）" :disabled="!editor.canUndo" @click="editor.undo()">{{ editor.labels.undo }}</button>
+      <button title="重做（Ctrl+Shift+Z / Ctrl+Y）" :disabled="!editor.canRedo" @click="editor.redo()">{{ editor.labels.redo }}</button>
     </div>
 
     <div v-if="editor.features.importExport" class="sce-group">
@@ -94,7 +94,7 @@ async function runModule(c: EditorToolbarContribution): Promise<void> {
     </div>
 
     <div v-if="editor.features.validation || editor.features.simulation" class="sce-group">
-      <button v-if="editor.features.validation" @click="editor.validate()">{{ editor.labels.validate }}</button>
+      <button v-if="editor.features.validation" title="用 scxmljs 引擎干跑校验（parse + compile）" @click="editor.validate()">{{ editor.labels.validate }}</button>
       <button
         v-if="editor.features.simulation && !editor.sim.running"
         class="sce-primary"

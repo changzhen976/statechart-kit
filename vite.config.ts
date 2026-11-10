@@ -26,6 +26,8 @@ export default defineConfig({
       entry: resolve('src/vue/index.ts'),
       formats: ['es'],
       fileName: () => 'vue.js',
+      // SFC scoped CSS + global styles.css 合并为一个可显式 import 的文件
+      cssFileName: 'vue/style',
     },
     rollupOptions: {
       external: [

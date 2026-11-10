@@ -71,6 +71,12 @@ const rows = computed<Row[]>(() => {
   return out
 })
 
+const delayed = computed(() => editor.doc.transitions.filter((t) => t.delayMs !== undefined))
+function delayLabel(t: TransitionEdge): string {
+  const ms = t.delayMs ?? 0
+  return t.delayUnit === 's' && ms % 1000 === 0 ? `${ms / 1000}s` : `${ms}ms`
+}
+
 const groups = computed<{ source: StateNode; items: TransitionEdge[] }[]>(() => {
   const out: { source: StateNode; items: TransitionEdge[] }[] = []
   for (const s of editor.doc.states) {
@@ -111,10 +117,10 @@ function add(): void {
     addError.value = '请选择源状态和目标状态'
     return
   }
+  const raw = Number(delayVal.value) || 10
+  const delayMs = Math.max(10, delayUnit.value === 's' ? Math.round(raw * 1000) : Math.round(raw))
   const err = editor.addTransition(source.value, target.value, {
-    ...(delayOn.value
-      ? { delayMs: Math.max(10, Number(delayVal.value) || 10), delayUnit: delayUnit.value }
-      : { event: newEvent.value }),
+    ...(delayOn.value ? { delayMs, delayUnit: delayUnit.value } : { event: newEvent.value }),
   })
   if (err) {
     addError.value = err
@@ -134,11 +140,11 @@ function add(): void {
     <input v-model="filter" class="sce-filter" :placeholder="editor.labels.filter" />
 
     <div class="sce-btn-row">
-      <button :disabled="editor.locked" @click="editor.addState('atomic')">{{ editor.labels.addState }}</button>
-      <button :disabled="editor.locked" @click="editor.addState('compound')">{{ editor.labels.addCompound }}</button>
-      <button :disabled="editor.locked" @click="editor.addState('parallel')">{{ editor.labels.addParallel }}</button>
-      <button :disabled="editor.locked" @click="editor.addState('final')">{{ editor.labels.addFinal }}</button>
-      <button :disabled="editor.locked" @click="editor.addState('history')">{{ editor.labels.addHistory }}</button>
+      <button title="添加原子状态" :disabled="editor.locked" @click="editor.addState('atomic')">{{ editor.labels.addState }}</button>
+      <button title="添加组合状态" :disabled="editor.locked" @click="editor.addState('compound')">{{ editor.labels.addCompound }}</button>
+      <button title="添加并行状态" :disabled="editor.locked" @click="editor.addState('parallel')">{{ editor.labels.addParallel }}</button>
+      <button title="添加终态" :disabled="editor.locked" @click="editor.addState('final')">{{ editor.labels.addFinal }}</button>
+      <button title="添加历史伪态" :disabled="editor.locked" @click="editor.addState('history')">{{ editor.labels.addHistory }}</button>
     </div>
 
     <div v-if="!rows.length" class="sce-empty">{{ editor.labels.noStates }}</div>
@@ -146,8 +152,9 @@ function add(): void {
       <li
         v-for="row in rows"
         :key="row.state.uid"
-        class="sce-tree-row"
-        :class="{ on: editor.selection.kind === 'state' && editor.selection.id === row.state.uid }"
+        class="sce-tree-row row state"
+        :class="{ on: editor.selection.kind === 'state' && editor.selection.id === row.state.uid, selected: editor.selection.kind === 'state' && editor.selection.id === row.state.uid }"
+        :data-suid="row.state.uid"
         :style="{ paddingLeft: 8 + row.depth * 14 + 'px' }"
         @click="selectState(row.state.uid)"
       >
@@ -196,8 +203,8 @@ function add(): void {
           {{ editor.labels.delay }}
         </label>
         <template v-if="delayOn">
-          <input v-model.number="delayVal" class="sce-num" type="number" min="10" step="10" :disabled="editor.locked" />
-          <select v-model="delayUnit" :disabled="editor.locked">
+          <input v-model.number="delayVal" class="sce-num num" type="number" min="10" step="10" :disabled="editor.locked" />
+          <select v-model="delayUnit" class="unit" :disabled="editor.locked">
             <option value="s">{{ editor.labels.sequence }}</option>
             <option value="ms">{{ editor.labels.milliseconds }}</option>
           </select>
@@ -207,6 +214,15 @@ function add(): void {
       <p v-if="addError" class="sce-error">{{ addError }}</p>
     </div>
 
+    <div v-if="delayed.length" class="sce-delay-list">
+      <div v-for="t in delayed" :key="'delay-' + t.id" class="delay-row">
+        <button
+          class="link"
+          :title="`内部延迟转移 → ${editor.stateName(t.target)}`"
+          @click="selectTransition(t.id)"
+        >⏱ {{ delayLabel(t) }}</button>
+      </div>
+    </div>
     <div v-if="!groups.length" class="sce-empty">{{ editor.labels.noTransitions }}</div>
     <div v-for="g in groups" :key="g.source.uid" class="sce-transition-group">
       <div class="sce-group-title">{{ g.source.label || g.source.id }}</div>

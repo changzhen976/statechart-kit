@@ -10,7 +10,6 @@
  * - 一个编辑器只有一份 `NamingPolicy`（宿主组合），模块不要各自设置策略；
  * - 模块的 setup 抛错会被隔离并记录，不会阻断编辑器。
  */
-import type { Component } from 'vue'
 import type { ExternalEventSource } from '../core/event-catalog'
 import type { ProjectDoc } from '../core/model'
 import type { NamingPolicy } from '../core/naming-policy'
@@ -21,7 +20,7 @@ export interface EditorTabContribution {
   /** 全局唯一；不能与内置 props/vars/sim 冲突 */
   id: string
   title: string
-  component: Component
+  component: object
   /** 升序；缺省 100（内置页在前） */
   order?: number
   /** 动态可见性（缺省可见） */

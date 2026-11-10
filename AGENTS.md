@@ -21,12 +21,12 @@
 
 | 项 | 值 |
 | --- | --- |
-| 版本 | `0.5.0`（P4 边界收敛/模块契约，tag `v0.5.0`） |
+| 版本 | `0.6.0`（P4 完成：编辑器核心 + creator 接入） |
 | 分支 | `main` |
 | 远程 | `ssh://git@debian-dev:2222/changzhen.liu/statechart-kit.git` |
 | P3 提交 | `0257756 feat(p3): add embeddable Vue editor with adapter-driven host boundary` |
 | 已完成阶段 | P0 快照、P1 策略/校验、P2 引擎选项、P3 Vue 编辑器、P4 scope cleanup + EditorModule |
-| 阶段 | P4：core/engine 已切；编辑器模块契约已落；编辑器 UI 切换进行中 |
+| 阶段 | P4 完成：core/engine 已切；creator 编辑器已切到 `statechart-kit/vue`，本地 UI 副本已删除 |
 
 阶段路线图与估时见 `docs/roadmap.md`；P3 迁移边界见 `docs/editor-p3.md`；
 P2 架构梳理/隐患清单见 `docs/architecture-review-p2.md`；诊断 code 契约见
@@ -184,8 +184,7 @@ validateDocument(doc, { policy, domParser })
 `src/{events,storage,audit}.ts`；`test:all` 与 9 个浏览器检查全绿；kit 新增
 `diagnostics/zh`、`EditorModule` 契约，并把 `SERVER_POLICY` 迁回宿主。
 
-**待完成**：编辑器 UI 切换（见下）；宿主用 `EditorModule` 接全局变量/路由/MQTT/部署；
-file: 依赖改固定版本。
+**待完成**：file: 依赖改固定版本；Explorer 调试视图/侧栏拖拽等增强可按需作为模块补回。
 
 1. core：把 donor `src/core/{model,serializer,action-parse,naming,scxml-import,storage,validator,events}.ts`
    替换为 `statechart-kit` 导入；`naming` 调用改策略优先签名，`events` 用

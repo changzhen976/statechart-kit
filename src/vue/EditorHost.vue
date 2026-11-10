@@ -6,8 +6,9 @@
  * 所有子组件通过 `useEditor()` 注入，宿主可单独使用 `mountEditor()` 或自行
  * `createApp(EditorHost, { editor })`。
  */
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, provide, ref } from 'vue'
 import type { EditorStore } from './editor-store'
+import { EDITOR_KEY } from './use-editor'
 import Toolbar from './Toolbar.vue'
 import StructurePanel from './StructurePanel.vue'
 import ChartCanvas from './ChartCanvas.vue'
@@ -20,6 +21,8 @@ import ValidationDialog from './ValidationDialog.vue'
 
 const props = defineProps<{ editor: EditorStore }>()
 const editor = props.editor
+// 宿主直接使用 <EditorHost :editor> 时也要让模块组件能 inject
+provide(EDITOR_KEY, editor)
 
 type Tab = string
 const moduleTabs = computed(() =>

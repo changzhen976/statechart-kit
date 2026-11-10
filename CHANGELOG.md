@@ -2,6 +2,23 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.6.0] - 2026-11-10
+
+P4 收尾：kit 编辑器补齐状态机编辑核心，creator 完成整体接入。
+
+### Added
+
+- 画布交互：点击选中状态/转移、缩放/平移/适应窗口、方向切换、契约失效探针
+- 结构化动作编辑器（send/cancel/assign/log/script；textarea 可降级）
+- 校验弹窗「定位」：选中状态/转移并 flash 动作行；含 script 提示弹窗
+- `EditorModule` 的创建者示例：creator `service` 模块（服务绑定/外部事件）
+
+### Changed
+
+- creator 删除本地 `components/panels/viewhost/stores/project.ts`；编辑器改用
+  `statechart-kit/vue`，service store 通过 `src/editor` 单例读写同一份文档
+- kit Vue 构建将 SFC scoped CSS 与全局样式合并为 `dist/vue/style.css`
+
 ## [0.5.0] - 2026-11-10
 
 P4 边界收敛：kit 只保留核心建模/编辑能力与 `BASE_POLICY`；上层功能模块化。
