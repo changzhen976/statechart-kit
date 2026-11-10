@@ -21,7 +21,7 @@
 
 | 项 | 值 |
 | --- | --- |
-| 版本 | `0.5.0`（P4 边界收敛/模块契约；tag 待打） |
+| 版本 | `0.5.0`（P4 边界收敛/模块契约，tag `v0.5.0`） |
 | 分支 | `main` |
 | 远程 | `ssh://git@debian-dev:2222/changzhen.liu/statechart-kit.git` |
 | P3 提交 | `0257756 feat(p3): add embeddable Vue editor with adapter-driven host boundary` |
