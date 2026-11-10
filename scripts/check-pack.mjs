@@ -65,7 +65,14 @@ try {
   process.stdout.write(out)
 
   const pkgDir = join(appModules, 'statechart-kit')
-  for (const rel of ['dist/index.js', 'dist/index.d.ts', 'dist/engine.js', 'dist/engine.d.ts']) {
+  for (const rel of [
+    'dist/index.js',
+    'dist/index.d.ts',
+    'dist/engine.js',
+    'dist/engine.d.ts',
+    'dist/policies/server.js',
+    'dist/policies/server.d.ts',
+  ]) {
     if (!existsSync(join(pkgDir, rel))) throw new Error(`发布包缺少 ${rel}`)
   }
   const published = JSON.parse(await readFile(join(pkgDir, 'package.json'), 'utf8'))

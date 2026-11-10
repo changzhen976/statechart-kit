@@ -59,7 +59,8 @@ export const LOG_DATA_MAX = 2048
 
 export function truncateText(text: string, max = LOG_TEXT_MAX): string {
   if (text.length <= max) return text
-  return `${text.slice(0, max)}…（已截断，原长 ${text.length}）`
+  // 只做安全截断，不带本地化文案（截断提示由宿主决定是否展示）
+  return `${text.slice(0, max)}…`
 }
 
 /** data 超限时降级为可读摘要，避免单行 JSONL 过大 */

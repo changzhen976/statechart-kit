@@ -4,12 +4,48 @@
 
 ## [Unreleased]
 
-### Planned (P1)
+### Planned (P2)
 
-- 命名规则外置为 `NamingPolicy`：服务端语义（`gv_`/`ge_`/`t_`/`mqe_`/`mqv_`/`sys.`）不再写进 core
-- 校验分层：`validateStructure`（core，零依赖）与 `validateAgainstEngine`（engine）
-- core 文案改为 `{ code, params }`，由宿主本地化
-- `events.ts` 拆分为「本地事件目录（core）」与「外部来源（宿主）」
+- `SessionRunner` 补齐 `scriptTimeoutMs` / `maxMicrosteps`
+- `data` 预置与 trusted/sandboxed 入口选择
+- 合并懒加载器
+
+## [0.2.0] - 2026-11-10
+
+P1：命名策略注入、校验分层、诊断 code 化、事件模块拆分。**包含破坏性 API 变更**
+（`0.x` 期间 minor 允许），行为以 P0 三个验证套件为准，不改变 SCXML 序列化/运行语义。
+
+### Added
+
+- `NamingPolicy` / `NamingNamespace` / `BASE_POLICY`（core）与 `SERVER_POLICY`
+  （新入口 `statechart-kit/policies/server`，保持 donor 的 `gv_`/`ge_`/`t_`/`mqe_`/`mqv_`/`sys.`/`g_` 语义）
+- `src/core/migrate.ts`：策略驱动的 v1→v2 文档迁移骨架
+- `src/core/event-catalog.ts`：文档事件事实（发出/监听/发出位置/监听边）、三方向目录、广播标记
+- `src/core/active-tree.ts`：激活状态层级树、展平、结构化摘要
+- `src/core/validate-structure.ts`：零依赖结构校验（id、父子、环、history/final/atomic、initial、转移、delayMs）
+- `src/engine/validator.ts`：`validateScxml`、`validateAgainstEngine`、`validateDocument`、`scriptHitsToIssues`
+- 测试：`verify-naming`（58）、`verify-events`（21）、`verify-validation`（22）
+
+### Changed
+
+- **BREAKING**：`checkEventName` / `checkVarName` / `checkDocNaming` 改为策略优先签名
+  （`checkEventName(policy, name, ctx?)`），返回值由 `{ level, message }` 改为 `{ level, code, params }`
+- **BREAKING**：`migrateDoc` / `migrateEventName` / `migrateVarName` / `migrateExpr` /
+  `migrateActionLine` 改为策略优先签名；服务端迁移规则移入 `SERVER_POLICY`
+- **BREAKING**：`scxmlToDoc` 的 `warnings` 由 `string[]` 改为 `ImportWarning[]`；
+  解析错误改为 `ScxmlImportError { code, params }`
+- **BREAKING**：`buildDirectionCatalog` 三方向字段改为语义名 `in`/`out`/`lone`，
+  广播以 `row.broadcast` 表示；`buildDocEventOptions`/`buildObservedCatalog` 等宿主展示函数
+  不在 core，随 P4 迁回宿主
+- **BREAKING**：`activeSummary` 返回 `{ labels, count, truncated }`（不再拼展示文案）
+- **BREAKING**：`ACTION_KINDS.label` 改为消息 code（`action.send` 等）
+- `log.truncateText` 截断不再附带中文字符串
+- 结构校验进入 core 后，`validator.ts` 的引擎部分移到 `statechart-kit/engine`
+
+### Documentation
+
+- README/路线图补充 P1 产出、策略注入示例、校验分层与入口依赖
+- `docs/baseline.json` schema 2：区分 `mirrored`（仍与 donor 同字节）与 `diverged`（P1 有意改写）
 
 ## [0.1.0] - 2026-11-10
 

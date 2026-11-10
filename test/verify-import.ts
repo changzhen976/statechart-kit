@@ -5,7 +5,7 @@
 import { Window } from 'happy-dom'
 import { EXAMPLES } from '../src/core/examples'
 import { serializeToScxml } from '../src/core/serializer'
-import { scxmlToDoc } from '../src/core/scxml-import'
+import { scxmlToDoc, type ImportWarning } from '../src/core/scxml-import'
 
 let pass = 0
 let fail = 0
@@ -26,7 +26,7 @@ for (const ex of EXAMPLES) {
   const doc1 = ex.make()
   const xml1 = serializeToScxml(doc1)
   let doc2
-  let warnings: string[] = []
+  let warnings: ImportWarning[] = []
   try {
     const r = scxmlToDoc(xml1, domParser)
     doc2 = r.doc

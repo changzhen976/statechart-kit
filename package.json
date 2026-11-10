@@ -1,6 +1,6 @@
 {
   "name": "statechart-kit",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Statechart authoring model, editor and session runner. Produces and drives SCXML; it does not interpret SCXML.",
   "license": "MIT",
   "type": "module",
@@ -23,6 +23,10 @@
       "types": "./dist/engine.d.ts",
       "import": "./dist/engine.js"
     },
+    "./policies/server": {
+      "types": "./dist/policies/server.d.ts",
+      "import": "./dist/policies/server.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [
@@ -37,10 +41,13 @@
   "scripts": {
     "build": "tsup",
     "typecheck": "tsc --noEmit",
-    "test": "npm run test:import && npm run test:smoke && npm run test:timers",
+    "test": "npm run test:import && npm run test:smoke && npm run test:timers && npm run test:naming && npm run test:events && npm run test:validation",
     "test:import": "tsx test/verify-import.ts",
     "test:smoke": "tsx test/smoke-engine.ts",
     "test:timers": "tsx test/verify-timers.ts",
+    "test:naming": "tsx test/verify-naming.ts",
+    "test:events": "tsx test/verify-events.ts",
+    "test:validation": "tsx test/verify-validation.ts",
     "freeze:baseline": "node scripts/freeze-baseline.mjs",
     "check:baseline": "node scripts/check-baseline.mjs",
     "check:pack": "node scripts/check-pack.mjs",

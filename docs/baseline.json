@@ -1,8 +1,8 @@
 {
-  "schema": 1,
-  "generatedAt": "2026-11-10T12:15:34.470Z",
+  "schema": 2,
+  "generatedAt": "2026-11-10T12:34:11.482Z",
   "package": "statechart-kit",
-  "phase": "P0 (lift-and-shift snapshot)",
+  "phase": "P1 (policy injection, layered validation, message codes)",
   "donor": {
     "name": "scxml-creator",
     "path": "/home/changzhen/projects/services/scxml-creator",
@@ -15,26 +15,134 @@
     "clean": true
   },
   "hashes": {
+    "src/core/index.ts": "15d36bef93bd87dd1356855ba63a9f1022e039a55a81c8e87566a9c076b9e40b",
     "src/core/model.ts": "a6041ae60ede36297a0fd2e50320d9dc6c64fc063ff058388efe242e228c664d",
     "src/core/serializer.ts": "e05484aa7d03b6fd665b67cad67175add677edc05ab8b1e135989ea919c02708",
-    "src/core/action-parse.ts": "cebb7cf3d02597d36b239a97e2bd3110c63f3da771cd1e700050b5e5a786532f",
-    "src/core/naming.ts": "c839786612051aa6fe8386b785bdd1a3f87dde3f937ebe985e3e73098efea09f",
-    "src/core/scxml-import.ts": "bc162fca40f3c8fd944f5a8cdc9c3cecc7702865000b81027c33047f35554a92",
+    "src/core/action-parse.ts": "1e17f872fbc3f4dd162d7ca71050343119e5cddec3819c33b1e6a7c0b6f7d512",
+    "src/core/naming-policy.ts": "6f3e79b3276b76af4aacb65189eed5725f2669606456ec8c71e208479d7cdc72",
+    "src/core/naming.ts": "2b208bcfa2e8725fbb1962808b98d3f3d00e03ae882cd778ffdf17b61d6a71e8",
+    "src/core/migrate.ts": "1b9babcdab8bc1bf5dcfa215af2206691f0335ef9bf877802066936da53e4c5a",
+    "src/core/scxml-import.ts": "c73c21890d049e77366216c7a08ae9d828b6dc3506833f65a6aee0d19da44c61",
     "src/core/examples.ts": "72705f834ba6419259d3cb94141830375aa079d2c871bfd85778e8256ac3dddb",
-    "src/core/log.ts": "fb751cabcdd1d6fe7e07d0c9edeccab9dada61f1006c4564516629984b547fa7",
+    "src/core/log.ts": "28e6d494c8eda6c21f0d4596994e54eb7fb69b28e3e445fbba75ca8d463d4a9c",
+    "src/core/event-catalog.ts": "7223566699f8a0cb2a61a0961c1e2cea85162f7da1e31c47d2b20c774419d7b7",
+    "src/core/active-tree.ts": "5954ed2011b6bbe95d7bf66eeb1623a3a659a54e4467248754d42a69431350ec",
+    "src/core/validate-structure.ts": "dc4a6d0dc32d3c7949bae3e0f725ba5097b3bd74a810b597eb096d02edd75de9",
+    "src/engine/index.ts": "29347f9d2dd4879c7dbdf1e41c3e0977fc2a54a1393c9ded7e2cebf60a97bf12",
     "src/engine/session-runner.ts": "7039be42669c7d302777af733276b237a3b3c9c082578f63a2cd62b03ff2b797",
-    "test/verify-import.ts": "80ca2ee940d1eab657601ebd2acbaaf1d1bd5d468634a1ab73da1a2efaf0cf43",
+    "src/engine/validator.ts": "801a39b099205b528bf17652987548020182f47c4061f3ee09eb02b924500fe6",
+    "src/policies/server.ts": "0ae017de19d4e5d61238bfe0da29f98852ba86146636a98bc48d034a383937a3",
+    "test/verify-import.ts": "cd16f8e6b98e485fbabb55632a53c611a6e7efa8ebd574be6ab2cac12f332eb4",
     "test/smoke-engine.ts": "62fb993142107b4579902aecfb8835c1c9b658fff33a60164147ecc3c3c4ebc4",
-    "test/verify-timers.ts": "bb9f57ffb46415179ec600d1722d9e0381efb9b7a180501b9694d6a42f5f4ec4"
+    "test/verify-timers.ts": "bb9f57ffb46415179ec600d1722d9e0381efb9b7a180501b9694d6a42f5f4ec4",
+    "test/verify-naming.ts": "d911691c188b20cffead88f0de3442eda658c8119228b5dd842036b69f18caf9",
+    "test/verify-events.ts": "8eb4ecbedbc1451f4cecf76c8b373cc4a9dc11b48dc600074dafa6d646be5daf",
+    "test/verify-validation.ts": "cbf02a53d231cb16f98d25291406df242d9fbf8d25ee3b88ed452f795d8a6a40"
   },
+  "mirrored": [
+    {
+      "file": "src/core/model.ts",
+      "donor": "src/core/model.ts"
+    },
+    {
+      "file": "src/core/serializer.ts",
+      "donor": "src/core/serializer.ts"
+    },
+    {
+      "file": "src/core/examples.ts",
+      "donor": "src/core/examples.ts"
+    },
+    {
+      "file": "src/engine/session-runner.ts",
+      "donor": "src/engine/session-runner.ts"
+    },
+    {
+      "file": "test/smoke-engine.ts",
+      "donor": "scripts/smoke-engine.ts"
+    },
+    {
+      "file": "test/verify-timers.ts",
+      "donor": "scripts/verify-timers.ts"
+    }
+  ],
+  "diverged": [
+    {
+      "file": "src/core/index.ts",
+      "reason": "P1 导出面：新增命名策略/迁移/事件目录/激活树/结构校验"
+    },
+    {
+      "file": "src/core/action-parse.ts",
+      "reason": "动作类型 label 改为消息 code（由宿主本地化）"
+    },
+    {
+      "file": "src/core/naming.ts",
+      "reason": "重写为 NamingPolicy 驱动；服务端前缀与迁移逻辑移到 policies/server"
+    },
+    {
+      "file": "src/core/scxml-import.ts",
+      "reason": "导入 warnings/errors 改为 { code, params }"
+    },
+    {
+      "file": "src/core/log.ts",
+      "reason": "截断提示不再内置中文字符串"
+    },
+    {
+      "file": "src/engine/index.ts",
+      "reason": "新增引擎层校验导出"
+    },
+    {
+      "file": "test/verify-import.ts",
+      "reason": "warnings 类型改为 ImportWarning[]（行为断言不变）"
+    },
+    {
+      "file": "src/core/naming-policy.ts",
+      "reason": "P1 新增：命名策略类型 + BASE_POLICY"
+    },
+    {
+      "file": "src/core/migrate.ts",
+      "reason": "P1 新增：策略驱动的迁移骨架"
+    },
+    {
+      "file": "src/core/event-catalog.ts",
+      "reason": "P1 新增：本地事件目录（从 donor events.ts 拆出）"
+    },
+    {
+      "file": "src/core/active-tree.ts",
+      "reason": "P1 新增：激活状态层级树（从 donor events.ts 拆出）"
+    },
+    {
+      "file": "src/core/validate-structure.ts",
+      "reason": "P1 新增：零依赖结构校验"
+    },
+    {
+      "file": "src/engine/validator.ts",
+      "reason": "P1 新增：引擎层校验 + validateDocument 分层"
+    },
+    {
+      "file": "src/policies/server.ts",
+      "reason": "P1 新增：服务端命名策略预设（保持 donor 语义）"
+    },
+    {
+      "file": "test/verify-naming.ts",
+      "reason": "P1 新增：命名策略测试"
+    },
+    {
+      "file": "test/verify-events.ts",
+      "reason": "P1 新增：事件目录/激活树测试"
+    },
+    {
+      "file": "test/verify-validation.ts",
+      "reason": "P1 新增：校验分层测试"
+    }
+  ],
   "excluded": [
     {
       "file": "src/core/validator.ts",
-      "reason": "静态依赖 @tinyactors/scxmljs/trusted；P1 拆成「结构校验进 core」「引擎校验进 engine」"
+      "reason": "P1 已拆分：结构校验 → src/core/validate-structure.ts，引擎校验 → src/engine/validator.ts；donor 文件本身不再直接搬运"
     },
     {
       "file": "src/core/events.ts",
-      "reason": "含 MQTT/时钟/路由等宿主概念；P1 拆成「本地事件目录进 core」「外部来源留宿主」"
+      "reason": "P1 已拆分：本地事件目录/激活树 → src/core/event-catalog.ts、active-tree.ts；时钟/路由/MQTT 来源与展示文案留宿主"
     },
     {
       "file": "src/core/audit.ts",

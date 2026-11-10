@@ -77,23 +77,24 @@ export function actionToLine(a: ActionStruct): string {
   }
 }
 
-/** 动作类型清单（编辑器"添加动作"用；send 分立即/延时两个快捷入口） */
+/** 动作类型清单（编辑器"添加动作"用；send 分立即/延时两个快捷入口）。
+ *  `label` 是**消息 code**，由宿主本地化（P1 起 core 不再带界面文案）。 */
 export const ACTION_KINDS: {
   type: ActionStruct['type']
   label: string
   /** 快捷添加时的初始结构；缺省用 ActionListEditor 的 defaults */
   template?: ActionStruct
 }[] = [
-  { type: 'send', label: '发送事件', template: { type: 'send', event: '事件名' } },
+  { type: 'send', label: 'action.send', template: { type: 'send', event: 'event' } },
   {
     type: 'send',
-    label: '延时发送',
-    template: { type: 'send', event: '事件名', delay: '1s', id: '定时器' },
+    label: 'action.send-delayed',
+    template: { type: 'send', event: 'event', delay: '1s', id: 'timer' },
   },
-  { type: 'cancel', label: '撤销事件' },
-  { type: 'assign', label: '赋值' },
-  { type: 'log', label: '日志' },
-  { type: 'script', label: '自定义 JS' },
+  { type: 'cancel', label: 'action.cancel' },
+  { type: 'assign', label: 'action.assign' },
+  { type: 'log', label: 'action.log' },
+  { type: 'script', label: 'action.script' },
 ]
 
 import type { ProjectDoc } from './model'
@@ -147,7 +148,7 @@ export function scanScriptActions(doc: ProjectDoc): ScriptActionHit[] {
   }
   for (const t of doc.transitions) {
     const src = doc.states.find((x) => x.uid === t.source)
-    if (src) scan(src, 'transition', t.actions, t.event || '(无事件)')
+    if (src) scan(src, 'transition', t.actions, t.event || '')
   }
   return hits
 }
