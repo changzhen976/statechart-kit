@@ -13,7 +13,7 @@
  *
  * 标签（label）默认取 SCXML id——标准 SCXML 不含显示名，导入后在编辑器改名即可。
  */
-import type { ProjectDoc, StateNode, TransitionEdge, StateKind } from './model'
+import type { MetaAttrs, ProjectDoc, StateNode, TransitionEdge, StateKind } from './model'
 import { emptyDoc, newTransitionId, newUid, normalizeDoc, uniqueStateId } from './model'
 import { isAutoDelayEvent } from './naming'
 import { actionToLine, type ActionStruct } from './action-parse'
@@ -313,13 +313,57 @@ export function scxmlToDoc(xml: string, domParser?: DOMParser): ScxmlImportResul
   const doc = emptyDoc(root.getAttribute('name') || 'imported')
   const ctx: Ctx = { doc, warnings: [], idToUid: new Map(), pendingTransitions: [], rawByUid: new Map() }
 
+  // 宿主自定义元数据（kit 不解释语义；损坏时忽略并 warning）
+  const readAttrs = (el: Element, attr: string, where: string): MetaAttrs | undefined => {
+    const raw = el.getAttribute(attr)
+    if (!raw) return undefined
+    try {
+      const parsed = JSON.parse(raw) as unknown
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('not object')
+      const out: MetaAttrs = {}
+      for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
+        if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') out[k] = v
+      }
+      return Object.keys(out).length ? out : undefined
+    } catch {
+      warn(ctx, 'import.attrs-invalid', { where, attr })
+      return undefined
+    }
+  }
+  const readEventAttrs = (): Record<string, MetaAttrs> | undefined => {
+    const raw = root.getAttribute('data-kit-event-attrs')
+    if (!raw) return undefined
+    try {
+      const parsed = JSON.parse(raw) as unknown
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('not object')
+      const out: Record<string, MetaAttrs> = {}
+      for (const [event, value] of Object.entries(parsed as Record<string, unknown>)) {
+        if (!value || typeof value !== 'object' || Array.isArray(value)) continue
+        const attrs: MetaAttrs = {}
+        for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+          if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') attrs[k] = v
+        }
+        if (Object.keys(attrs).length) out[event] = attrs
+      }
+      return Object.keys(out).length ? out : undefined
+    } catch {
+      warn(ctx, 'import.attrs-invalid', { where: '根节点', attr: 'data-kit-event-attrs' })
+      return undefined
+    }
+  }
+  const rootEventAttrs = readEventAttrs()
+  if (rootEventAttrs) ctx.doc.eventAttrs = rootEventAttrs
+
   // datamodel：<datamodel><data id expr/></datamodel>
   for (const dm of Array.from(root.children)) {
     if (dm.tagName.toLowerCase() === 'datamodel') {
       for (const d of Array.from(dm.children)) {
         if (d.tagName.toLowerCase() === 'data') {
           const id = d.getAttribute('id')
-          if (id) ctx.doc.datamodel.push({ id, expr: d.getAttribute('expr') ?? '' })
+          if (id) {
+            const attrs = readAttrs(d, 'data-kit-attrs', `变量 ${id}`)
+            ctx.doc.datamodel.push({ id, expr: d.getAttribute('expr') ?? '', ...(attrs ? { attrs } : {}) })
+          }
         }
       }
     }

@@ -21,7 +21,7 @@
 
 | 项 | 值 |
 | --- | --- |
-| 版本 | `0.6.0`（P4 完成：编辑器核心 + creator 接入） |
+| 版本 | `0.7.0`（P4.1：通用变量/事件属性 + creator 接入） |
 | 分支 | `main` |
 | 远程 | `ssh://git@debian-dev:2222/changzhen.liu/statechart-kit.git` |
 | P3 提交 | `0257756 feat(p3): add embeddable Vue editor with adapter-driven host boundary` |

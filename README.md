@@ -247,7 +247,8 @@ npm run verify:all    # 类型 + 测试 + 构建 + 基线 + 打包冒烟
 
 - 语义化版本；`0.x` 期间 minor 可含破坏性变更，破坏性变更必须写进 `CHANGELOG.md`。
 - 消费方（`scxml-creator`、`node-red-contrib-scxmljs`）应在同一时间 pin 同一版本，避免快照漂移。
-- 每个阶段的完成点打 tag：`v0.1.0` = P0 快照基线，`v0.2.0` = P1 策略/校验/消息 code，`v0.3.0` = P2 引擎选项，`v0.4.0` = P3 Vue 编辑器，`v0.5.0` = P4 边界收敛 + EditorModule，`v0.6.0` = P4 编辑器核心 + creator 接入。
+- 每个阶段的完成点打 tag：`v0.1.0` = P0 快照基线，`v0.2.0` = P1 策略/校验/消息 code，`v0.3.0` = P2 引擎选项，`v0.4.0` = P3 Vue 编辑器，`v0.5.0` = P4 边界收敛 + EditorModule，`v0.6.0` = P4 编辑器核心 + creator 接入，
+`v0.7.0` = P4.1 通用变量/事件属性（attrs/eventAttrs + 字段注册）。
 
 ## 路线图
 

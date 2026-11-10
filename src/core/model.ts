@@ -26,10 +26,16 @@ export function newUid(prefix = 's'): string {
   return `${prefix}${uidSeq++}`
 }
 
+/** 宿主可持久化的标量元数据（kit 不解释 key 的语义） */
+export type MetaValue = string | number | boolean
+export type MetaAttrs = Record<string, MetaValue>
+
 /** <data id="x" expr="0"/> —— 数据模型变量 */
 export interface DataVar {
   id: string
   expr: string
+  /** 宿主自定义变量属性（如 global/scope）；由 EditorModule 的 variableFields 编辑 */
+  attrs?: MetaAttrs
 }
 
 /** 状态节点 */
@@ -105,6 +111,8 @@ export interface ProjectDoc {
   datamodel: DataVar[]
   states: StateNode[]
   transitions: TransitionEdge[]
+  /** 宿主自定义事件属性（如 broadcast）；key 为事件名 */
+  eventAttrs?: Record<string, MetaAttrs>
   /** 布局（画布绝对坐标），键为状态 uid */
   layout: Record<string, { x: number; y: number; w?: number; h?: number }>
 }
@@ -177,6 +185,7 @@ export function emptyDoc(name = 'untitled'): ProjectDoc {
     datamodel: [],
     states: [],
     transitions: [],
+    eventAttrs: {},
     layout: {},
   }
 }
@@ -200,6 +209,10 @@ export function normalizeDoc(doc: ProjectDoc): ProjectDoc {
     seen.add(s.uid)
     s.entryActions ??= []
     s.exitActions ??= []
+  }
+  doc.eventAttrs ??= {}
+  for (const d of doc.datamodel) {
+    if (d.attrs && typeof d.attrs !== 'object') delete d.attrs
   }
   for (const t of doc.transitions) {
     t.actions ??= []

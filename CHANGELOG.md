@@ -2,6 +2,23 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.7.0] - 2026-11-10
+
+P4.1：宿主可扩展的变量/事件属性，替代全局前缀约定。
+
+### Added
+
+- `DataVar.attrs?: Record<string, string|number|boolean>`，kit 只持久化、不解释语义
+- `ProjectDoc.eventAttrs?: Record<string, attrs>`，按事件名保存宿主属性
+- `EditorModuleContext.variableFields/eventFields` 字段注册；变量页/事件区按字段渲染
+- SCXML 导入导出用 `data-kit-attrs` / `data-kit-event-attrs` 保留属性
+- editor store 新增 `setVariableAttr` / `setEventAttr`、字段 getter 与清理
+
+### Compatibility
+
+- `gv_`/`ge_` 前缀不再作为 kit 语义；creator 在宿主迁移层把它们降级为显式属性
+- 新增 `test:attrs` 覆盖属性 roundtrip、字段注册、属性写入
+
 ## [0.6.0] - 2026-11-10
 
 P4 收尾：kit 编辑器补齐状态机编辑核心，creator 完成整体接入。

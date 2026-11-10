@@ -36,6 +36,10 @@ export type {
 } from './types'
 export type { EditorEventOption, EditorEventGroup } from './events'
 export type {
+  EditorAttributeField,
+  EditorAttributeFieldRegistry,
+  EditorFieldOption,
+  EditorFieldType,
   EditorEventSourceProvider,
   EditorEventSourceRegistry,
   EditorModule,

@@ -20,6 +20,7 @@ import {
   uidMap,
   uniqueStateId,
   type DataVar,
+  type MetaValue,
   type ProjectDoc,
   type StateKind,
   type StateNode,
@@ -38,6 +39,7 @@ import { formatNamingIssue, formatValidationIssue, formatVariableResult } from '
 import { createBrowserAdapter } from './browser-adapter'
 import type { EditorAdapter } from './types'
 import type {
+  EditorAttributeField,
   EditorEventSourceProvider,
   EditorModule,
   EditorModuleContext,
@@ -94,6 +96,8 @@ export interface EditorState {
   moduleToolbar: EditorToolbarContribution[]
   moduleEventSources: EditorEventSourceProvider[]
   moduleValidators: EditorValidator[]
+  moduleVariableFields: EditorAttributeField[]
+  moduleEventFields: EditorAttributeField[]
 }
 
 export interface CreateEditorOptions {
@@ -188,6 +192,8 @@ export interface EditorStore {
   get canDeploy(): boolean
   get moduleTabs(): readonly EditorTabContribution[]
   get moduleToolbar(): readonly EditorToolbarContribution[]
+  get variableFields(): readonly EditorAttributeField[]
+  get eventFields(): readonly EditorAttributeField[]
   focusFor(uid: string, slot: 'entry' | 'exit' | 'transition'): number | null
   locateIssue(issue: ValidationIssue): void
 
@@ -222,6 +228,8 @@ export interface EditorStore {
   removeTransition(id: string): void
   addVariable(): void
   updateVariable(index: number, patch: Partial<DataVar>): string | null
+  setVariableAttr(index: number, key: string, value: MetaValue | undefined): void
+  setEventAttr(event: string, key: string, value: MetaValue | undefined): void
   removeVariable(index: number): void
   setDocMeta(patch: { name?: string; initial?: string | null }): void
   select(kind: SelectionKind, id: string | null): void
@@ -280,6 +288,8 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     moduleToolbar: [],
     moduleEventSources: [],
     moduleValidators: [],
+    moduleVariableFields: [],
+    moduleEventFields: [],
   })
 
   let pendingUndo: { doc: ProjectDoc; tag: string } | null = null
@@ -493,6 +503,48 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
         },
         clear() {
           state.moduleValidators.splice(0, state.moduleValidators.length)
+        },
+      },
+      variableFields: {
+        add(field) {
+          if (state.moduleVariableFields.some((f) => f.id === field.id)) {
+            throw new Error(`变量字段 id 重复：${field.id}`)
+          }
+          state.moduleVariableFields.push({ ...field })
+          state.moduleVariableFields.sort(
+            (a, b) => (a.order ?? 100) - (b.order ?? 100) || a.label.localeCompare(b.label),
+          )
+          const remove = (): void => {
+            const i = state.moduleVariableFields.findIndex((f) => f.id === field.id)
+            if (i >= 0) state.moduleVariableFields.splice(i, 1)
+          }
+          localDisposers.push(remove)
+          return remove
+        },
+        remove(id) {
+          const i = state.moduleVariableFields.findIndex((f) => f.id === id)
+          if (i >= 0) state.moduleVariableFields.splice(i, 1)
+        },
+      },
+      eventFields: {
+        add(field) {
+          if (state.moduleEventFields.some((f) => f.id === field.id)) {
+            throw new Error(`事件字段 id 重复：${field.id}`)
+          }
+          state.moduleEventFields.push({ ...field })
+          state.moduleEventFields.sort(
+            (a, b) => (a.order ?? 100) - (b.order ?? 100) || a.label.localeCompare(b.label),
+          )
+          const remove = (): void => {
+            const i = state.moduleEventFields.findIndex((f) => f.id === field.id)
+            if (i >= 0) state.moduleEventFields.splice(i, 1)
+          }
+          localDisposers.push(remove)
+          return remove
+        },
+        remove(id) {
+          const i = state.moduleEventFields.findIndex((f) => f.id === id)
+          if (i >= 0) state.moduleEventFields.splice(i, 1)
         },
       },
       onDispose(fn) {
@@ -891,6 +943,33 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     return null
   }
 
+  function setVariableAttr(index: number, key: string, value: MetaValue | undefined): void {
+    if (readOnly() || state.sim.running) return
+    const current = state.doc.datamodel[index]
+    if (!current) return
+    captureUndo(`setVariableAttr:${index}:${key}`)
+    const attrs = { ...(current.attrs ?? {}) }
+    if (value === undefined || value === '') delete attrs[key]
+    else attrs[key] = value
+    current.attrs = Object.keys(attrs).length ? attrs : undefined
+    touch()
+  }
+
+  function setEventAttr(event: string, key: string, value: MetaValue | undefined): void {
+    if (readOnly() || state.sim.running) return
+    const name = event.trim()
+    if (!name) return
+    captureUndo(`setEventAttr:${name}:${key}`)
+    const map = { ...(state.doc.eventAttrs ?? {}) }
+    const attrs = { ...(map[name] ?? {}) }
+    if (value === undefined || value === '') delete attrs[key]
+    else attrs[key] = value
+    if (Object.keys(attrs).length) map[name] = attrs
+    else delete map[name]
+    state.doc.eventAttrs = map
+    touch()
+  }
+
   function removeVariable(index: number): void {
     if (readOnly() || state.sim.running) return
     captureUndo('removeVariable')
@@ -1216,6 +1295,12 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
 
     focusFor,
     locateIssue,
+    get variableFields(): readonly EditorAttributeField[] {
+      return state.moduleVariableFields
+    },
+    get eventFields(): readonly EditorAttributeField[] {
+      return state.moduleEventFields
+    },
     eventOptions(): EditorEventOption[] {
       return buildEditorEventOptions(state.doc, policy, state.externalEvents)
     },
@@ -1261,6 +1346,8 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     removeTransition,
     addVariable,
     updateVariable,
+    setVariableAttr,
+    setEventAttr,
     removeVariable,
     setDocMeta,
     select,

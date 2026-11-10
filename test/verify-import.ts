@@ -4,6 +4,7 @@
  */
 import { Window } from 'happy-dom'
 import { EXAMPLES } from '../src/core/examples'
+import { emptyDoc } from '../src/core/model'
 import { serializeToScxml } from '../src/core/serializer'
 import { scxmlToDoc, type ImportWarning } from '../src/core/scxml-import'
 
@@ -20,6 +21,30 @@ function assert(cond: unknown, msg: string): void {
 }
 
 const domParser = new (new Window().DOMParser)() as unknown as DOMParser
+
+console.log('── 通用变量/事件属性 roundtrip ──')
+{
+  const doc = emptyDoc('attrs')
+  doc.datamodel = [{ id: 'temp', expr: '0', attrs: { global: true, scope: 'shared' } }]
+  doc.eventAttrs = { ping: { broadcast: true, route: 'flow' } }
+  doc.states = [
+    {
+      uid: 's1',
+      id: 'a',
+      label: 'a',
+      kind: 'atomic',
+      parent: null,
+      initial: null,
+      entryActions: [],
+      exitActions: [],
+    },
+  ]
+  doc.initial = 's1'
+  const xml = serializeToScxml(doc)
+  const back = scxmlToDoc(xml, domParser).doc
+  assert(back.datamodel[0]?.attrs?.global === true && back.datamodel[0]?.attrs?.scope === 'shared', 'DataVar.attrs 经 SCXML roundtrip 保留')
+  assert(back.eventAttrs?.ping?.broadcast === true && back.eventAttrs?.ping?.route === 'flow', 'eventAttrs 经 SCXML roundtrip 保留')
+}
 
 console.log('── SCXML 导入 roundtrip（serialize → import → serialize） ──')
 for (const ex of EXAMPLES) {

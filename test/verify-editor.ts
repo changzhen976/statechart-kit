@@ -185,6 +185,20 @@ console.log('── G) 编辑器模块契约 ──')
       ctx.validators.add(() => [
         { code: 'host.global-undeclared', params: { name: 'gv_x' }, stateId: 'idle' },
       ])
+      ctx.variableFields.add({
+        id: 'host.variable.global',
+        key: 'global',
+        label: '全局',
+        type: 'boolean',
+        defaultValue: false,
+      })
+      ctx.eventFields.add({
+        id: 'host.event.broadcast',
+        key: 'broadcast',
+        label: '广播',
+        type: 'boolean',
+        defaultValue: false,
+      })
       ctx.onDispose(() => {
         disposed = true
       })
@@ -195,12 +209,21 @@ console.log('── G) 编辑器模块契约 ──')
   assert(editor.moduleTabs.map((t) => t.id).join(',') === 'globals', '模块贡献右侧标签页')
   assert(editor.moduleToolbar.map((t) => t.id).join(',') === 'deploy', '模块贡献工具栏命令')
   assert(editor.eventOptions().some((o) => o.value === 'route.in' && o.group === 'in'), '模块贡献外部事件来源')
+  assert(editor.variableFields.map((f) => f.key).join(',') === 'global', '模块贡献变量字段')
+  assert(editor.eventFields.map((f) => f.key).join(',') === 'broadcast', '模块贡献事件字段')
+  editor.addVariable()
+  editor.setVariableAttr(0, 'global', true)
+  assert(editor.doc.datamodel[0]?.attrs?.global === true, '变量属性写入 DataVar.attrs')
+  editor.setEventAttr('route.in', 'broadcast', true)
+  assert(editor.doc.eventAttrs?.['route.in']?.broadcast === true, '事件属性写入 ProjectDoc.eventAttrs')
+  editor.setEventAttr('route.in', 'broadcast', undefined)
+  assert(!editor.doc.eventAttrs?.['route.in'], '空事件属性清理')
   const ok = await editor.validate()
   assert(!ok && editor.validation?.issues.some((i) => i.code === 'host.global-undeclared' && i.kind === 'module'), '模块校验问题进入统一 validation')
   await editor.moduleToolbar[0]!.run(editor)
   assert(runCount === 1, '模块命令可执行')
   await editor.destroy()
-  assert(disposed && editor.moduleTabs.length === 0, 'destroy 执行模块清理并移除贡献')
+  assert(disposed && editor.moduleTabs.length === 0 && editor.variableFields.length === 0 && editor.eventFields.length === 0, 'destroy 执行模块清理并移除贡献')
 
   // setup 抛错隔离
   const bad: EditorModule = {

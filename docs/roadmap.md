@@ -12,6 +12,7 @@
 | P2 | `engine` 补齐 `scriptTimeoutMs` / `maxMicrosteps` / `data` 预置与 trusted/sandboxed 选择；合并懒加载器 | 1.5–2 人日 | ✅ 完成（v0.3.0） |
 | P3 | Vue 编辑器抽离：`EditorHost`、`features`、`mountEditor`、样式随包 | 6–8 人日 | ✅ 完成（v0.4.0） |
 | P4 | `scxml-creator` 切换到本包，删除本地副本 | 2–3 人日 | ✅ 完成（core/engine + 编辑器） |
+| P4.1 | 变量/事件显式属性（全局/广播）替代前缀约定 | 2–3 人日 | ✅ 完成（kit 通用 attrs + 字段注册） |
 | P5 | `node-red-contrib-scxmljs` 切换（**宿主仓库任务**：删除 vendor 与 17 条构建期替换） | 3–4 人日 | 待开始（不在 kit 发布范围） |
 | P6 | 发布与治理：版本策略、CHANGELOG、发布流水线 | 1.5–2 人日 | 待开始 |
 

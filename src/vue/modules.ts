@@ -11,7 +11,7 @@
  * - 模块的 setup 抛错会被隔离并记录，不会阻断编辑器。
  */
 import type { ExternalEventSource } from '../core/event-catalog'
-import type { ProjectDoc } from '../core/model'
+import type { MetaValue, ProjectDoc } from '../core/model'
 import type { NamingPolicy } from '../core/naming-policy'
 import type { EditorStore } from './editor-store'
 
@@ -37,6 +37,40 @@ export interface EditorToolbarContribution {
   /** 缺省可用；抛错按不可用处理 */
   disabled?: (editor: EditorStore) => boolean
   run: (editor: EditorStore) => void | Promise<void>
+}
+
+/** 变量/事件属性字段类型 */
+export type EditorFieldType = 'boolean' | 'select' | 'text' | 'number'
+
+export interface EditorFieldOption {
+  value: string
+  label: string
+}
+
+/**
+ * 通用属性字段（宿主注册）。
+ *
+ * kit 只负责渲染/写入 `DataVar.attrs` 或 `ProjectDoc.eventAttrs`，不解释 key 的语义：
+ * creator 注册 `global`/`broadcast`，Node-RED 可注册 `scope`/`route`。
+ */
+export interface EditorAttributeField {
+  /** 全局唯一（避免多个模块抢同一 key） */
+  id: string
+  /** 写入 attrs 的键 */
+  key: string
+  label: string
+  title?: string
+  type: EditorFieldType
+  /** type=select 时必填 */
+  options?: readonly EditorFieldOption[]
+  defaultValue?: MetaValue
+  /** 升序；缺省 100 */
+  order?: number
+}
+
+export interface EditorAttributeFieldRegistry {
+  add(field: EditorAttributeField): () => void
+  remove(id: string): void
 }
 
 /** 外部事件来源（时钟/路由/MQTT 入向）；与内置 adapter.externalEvents 合并 */
@@ -94,6 +128,10 @@ export interface EditorModuleContext {
   toolbar: EditorToolbarRegistry
   eventSources: EditorEventSourceRegistry
   validators: EditorValidatorRegistry
+  /** 变量行内的宿主属性字段（如“全局”） */
+  variableFields: EditorAttributeFieldRegistry
+  /** 事件属性字段（如“广播”） */
+  eventFields: EditorAttributeFieldRegistry
   /** 模块自定义清理；destroy 时按注册逆序执行 */
   onDispose(fn: () => void): void
 }

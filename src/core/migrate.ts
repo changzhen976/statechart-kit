@@ -70,7 +70,9 @@ export function migrateDoc(policy: NamingPolicy, input: ProjectDoc): MigrateResu
   doc.datamodel = doc.datamodel.map((d) => ({
     id: bump(d.id, migrateVarName(policy, d.id)),
     expr: bump(d.expr, migrateExpr(policy, d.expr)),
+    ...(d.attrs ? { attrs: structuredClone(d.attrs) } : {}),
   }))
+  doc.eventAttrs = structuredClone(doc.eventAttrs ?? {})
   for (const s of doc.states) {
     s.entryActions = s.entryActions.map((l) => bump(l, migrateActionLine(policy, l)))
     s.exitActions = s.exitActions.map((l) => bump(l, migrateActionLine(policy, l)))

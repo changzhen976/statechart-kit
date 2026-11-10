@@ -132,14 +132,23 @@ export function serializeToScxml(doc: ProjectDoc): string {
   const top = childrenOf(doc, null)
   const initial = doc.initial && top.some((s) => s.uid === doc.initial) ? doc.initial : top[0]?.uid
   const head = `<?xml version="1.0" encoding="UTF-8"?>\n`
+  const eventAttrs =
+    doc.eventAttrs && Object.keys(doc.eventAttrs).length
+      ? ` data-kit-event-attrs="${esc(JSON.stringify(doc.eventAttrs))}"`
+      : ''
   const open =
     `<scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" ` +
-    `datamodel="ecmascript" name="${esc(doc.name)}"${initial ? ` initial="${esc(idOf(initial))}"` : ''}`
+    `datamodel="ecmascript" name="${esc(doc.name)}"${initial ? ` initial="${esc(idOf(initial))}"` : ''}${eventAttrs}`
   const parts: string[] = []
 
   if (doc.datamodel.length) {
     const dataLines = doc.datamodel
-      .map((d) => `    <data id="${esc(d.id)}"${d.expr ? ` expr="${esc(d.expr)}"` : ''}/>`)
+      .map((d) => {
+        const attrs = d.attrs && Object.keys(d.attrs).length
+          ? ` data-kit-attrs="${esc(JSON.stringify(d.attrs))}"`
+          : ''
+        return `    <data id="${esc(d.id)}"${d.expr ? ` expr="${esc(d.expr)}"` : ''}${attrs}/>`
+      })
       .join('\n')
     parts.push(`  <datamodel>\n${dataLines}\n  </datamodel>`)
   }
