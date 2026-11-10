@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "generatedAt": "2026-11-10T13:09:44.482Z",
+  "generatedAt": "2026-11-10T13:27:08.027Z",
   "package": "statechart-kit",
   "phase": "P3 (embedded Vue editor: EditorHost, features, mountEditor, styles)",
   "donor": {
@@ -12,10 +12,10 @@
     "coreCommitDate": "2026-11-01",
     "engineCommit": "cb00cfa",
     "engineCommitDate": "2026-10-30",
-    "clean": true
+    "clean": false
   },
   "hashes": {
-    "src/core/index.ts": "346cfa9b161743a269408cef1888c030cfd89132bcdc1e58c411ffb692f1c439",
+    "src/core/index.ts": "946d7896eb7edfea8a1ef5b6377d5cc5764f08b566451bded352c505524fd1a2",
     "src/core/model.ts": "a6041ae60ede36297a0fd2e50320d9dc6c64fc063ff058388efe242e228c664d",
     "src/core/serializer.ts": "e05484aa7d03b6fd665b67cad67175add677edc05ab8b1e135989ea919c02708",
     "src/core/action-parse.ts": "1e17f872fbc3f4dd162d7ca71050343119e5cddec3819c33b1e6a7c0b6f7d512",
@@ -35,11 +35,12 @@
     "src/engine/validator.ts": "83e946666e356519ad87c8d4b38c34f1c3a8db8fa6f8ecf2840216944cf3bbf5",
     "src/engine/engine-loader.ts": "fdd77d765cf437550d5f8a4a934bbc274d791188f394d44d906e4215032dc96d",
     "src/policies/server.ts": "0ae017de19d4e5d61238bfe0da29f98852ba86146636a98bc48d034a383937a3",
+    "src/diagnostics/zh.ts": "e8fd5f33214cc85f6e77e432877caac4e825eb3692c4247a6e8d3761b9232aab",
     "src/vue/index.ts": "366a69a43b04f4c9676afd24c6e5d3a6f418b118bba77728e3637fc6bd8f8a84",
     "src/vue/types.ts": "e8e4eb95eddb5aae4a5b03fda29f699bdb2f45eef926f88739aab7dd1baa2d51",
     "src/vue/features.ts": "acfafdcf79788aa72a3ff2f5d230bec6c09b8e76c5f0a5b070f1937a9b9e9e56",
     "src/vue/labels.ts": "e771221ccc495a4a7b91b1770056b6b0b13e84dfcd20f44c3b7e0ab347c86833",
-    "src/vue/format.ts": "e8fd5f33214cc85f6e77e432877caac4e825eb3692c4247a6e8d3761b9232aab",
+    "src/vue/format.ts": "dbdae06d8eca5ea29a1c15baaf688518fbd96af0516a308dd531d45a934181c5",
     "src/vue/events.ts": "923c9ea6c11d5e22713b02b691eede1ec12278de3784dbb365025374a4690c96",
     "src/vue/browser-adapter.ts": "0eb02f35f1394ecc107c7fbdf94c20886d48e12fc5a00ee2274c3a85182074c7",
     "src/vue/editor-store.ts": "d0009b8947ba756b1e1f823b431e6830c75b8ea0a62dd2ae70ee238739b20319",
@@ -179,6 +180,10 @@
     {
       "file": "src/vue/**",
       "reason": "P3 新增：可嵌入 Vue 编辑器（EditorHost/features/mountEditor/样式）"
+    },
+    {
+      "file": "src/diagnostics/zh.ts",
+      "reason": "P4 新增：诊断 code 中文格式化（宿主共用）"
     },
     {
       "file": "test/verify-editor.ts",

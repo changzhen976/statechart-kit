@@ -22,6 +22,9 @@ const requiredCore = [
 const missing = requiredCore.filter((name) => typeof core[name] !== 'function')
 if (missing.length) throw new Error(`core 缺少导出：${missing.join(', ')}`)
 if (typeof core.BASE_POLICY !== 'object') throw new Error('core 缺少 BASE_POLICY 导出')
+if (!Array.isArray(core.EXAMPLES) || core.EXAMPLES.length === 0) {
+  throw new Error('core 缺少 EXAMPLES 示例导出')
+}
 if (typeof engine.SessionRunner !== 'function') throw new Error('engine 缺少 SessionRunner 导出')
 if (typeof engine.loadEngine !== 'function' || typeof engine.createEngineSession !== 'function') {
   throw new Error('engine 缺少懒加载器导出')

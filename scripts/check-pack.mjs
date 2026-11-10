@@ -72,6 +72,8 @@ try {
     'dist/engine.d.ts',
     'dist/policies/server.js',
     'dist/policies/server.d.ts',
+    'dist/diagnostics/zh.js',
+    'dist/diagnostics/zh.d.ts',
     'dist/vue.js',
     'dist/vue/style.css',
     'dist/vue-types/vue/index.d.ts',

@@ -13,6 +13,7 @@
  * - 诊断返回 `{ code, params }`，不返回中文文案，由宿主本地化。
  */
 export * from './model'
+export * from './examples'
 export * from './serializer'
 export * from './action-parse'
 export * from './naming-policy'

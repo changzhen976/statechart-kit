@@ -4,9 +4,16 @@
 
 ## [Unreleased]
 
+### Added (P4 host migration)
+
+- `statechart-kit/diagnostics/zh` 入口：诊断 `{code,params}` 的默认中文格式化，
+  Vue 编辑器与 `scxml-creator` 共用
+- `EXAMPLES` / 示例构造函数重新从 core 入口导出（P1 重构遗漏；P4 切换时发现）
+
 ### Planned (P4)
 
-- `scxml-creator` 切换到 `statechart-kit`，删除本地 core/engine/editor 副本
+- `scxml-creator` 切换到 `statechart-kit`：core/engine 已切；编辑器 UI 仍待接入
+- 发布后把 donor 的 `file:../statechart-kit` 改为固定版本
 
 ## [0.4.0] - 2026-11-10
 

@@ -26,7 +26,7 @@
 | 远程 | `ssh://git@debian-dev:2222/changzhen.liu/statechart-kit.git` |
 | P3 提交 | `0257756 feat(p3): add embeddable Vue editor with adapter-driven host boundary` |
 | 已完成阶段 | P0 快照基线、P1 策略/校验/code 化、P2 引擎选项/懒加载、P3 Vue 编辑器 |
-| 下一阶段 | **P4：`scxml-creator` 切换到本包，删除本地 core/engine/editor 副本** |
+| 下一阶段 | **P4：`scxml-creator` 切换**——core/engine 已切；编辑器 UI 待切 |
 
 阶段路线图与估时见 `docs/roadmap.md`；P3 迁移边界见 `docs/editor-p3.md`；
 P2 架构梳理/隐患清单见 `docs/architecture-review-p2.md`；诊断 code 契约见
@@ -77,6 +77,8 @@ src/engine/              依赖 @tinyactors/scxmljs；入口不静态 import 实
   session-runner.ts      SessionRunner：回放/事件桥/变量/生命周期
   validator.ts           validateScxml / validateAgainstEngine / validateDocument
   index.ts               导出上述
+
+src/diagnostics/zh.ts    诊断 code → 中文展示（宿主共用，P4 起 scxml-creator 使用）
 
 src/policies/server.ts   SERVER_POLICY：gv_/ge_/t_/mqe_/mqv_/sys./g_ 兼容预设
                           （不属于 core 入口；P4/P5 后可搬回宿主）
@@ -171,9 +173,16 @@ validateDocument(doc, { policy: SERVER_POLICY, domParser })
 
 不要提交：`node_modules/`、`dist/`、`.npm-cache/`、`.tmp/`、`*.tgz`、`.local`。
 
-## 9. P4 迁移清单（下一步）
+## 9. P4 迁移进度与清单
 
-目标：`scxml-creator` 改用本包并删除本地副本；先做 P4，不要提前动 P5。
+目标：`scxml-creator` 改用本包并删除本地副本。
+
+**已完成**：donor 删除本地 `src/core`、`src/engine`；改为 `statechart-kit` /
+`statechart-kit/engine`；新增 `src/compat/{naming,validator}.ts` 与宿主
+`src/{events,storage,audit}.ts`；`test:all` 与 9 个浏览器检查全绿；kit 新增
+`diagnostics/zh` 并补回 `EXAMPLES` 导出。
+
+**待完成**：编辑器 UI 切换（见下）；file: 依赖改固定版本。
 
 1. core：把 donor `src/core/{model,serializer,action-parse,naming,scxml-import,storage,validator,events}.ts`
    替换为 `statechart-kit` 导入；`naming` 调用改策略优先签名，`events` 用

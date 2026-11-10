@@ -1,6 +1,9 @@
 # 诊断消息 code（P1）
 
 core 与 engine 的诊断统一返回 `{ code, params }`，宿主按 `code` 查表本地化，不再对中文字符串做手术。
+
+`statechart-kit/diagnostics/zh` 提供默认中文格式化（`formatValidationIssue` 等），
+`statechart-kit/vue` 与 `scxml-creator` 共用；其他语言/宿主可自行替换。
 本文是 P1 的公开契约：新增 code 属于向后兼容；修改/删除 code 视为破坏性变更。
 
 约定：

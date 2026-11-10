@@ -68,6 +68,10 @@ P3（`0.4.0`）新增可嵌入编辑器 `statechart-kit/vue`：
 - **样式随包**：`statechart-kit/vue/style.css`（显式 import，避免 CSS 注入时序）。
 - 迁移边界与 P4 清单见 [`docs/editor-p3.md`](docs/editor-p3.md)。
 
+**P4（进行中）**：`scxml-creator` 已删除本地 `src/core` / `src/engine`，改用本包
+`statechart-kit` / `statechart-kit/engine`；兼容层与新目录见 donor 的 [`AGENTS.md`](../scxml-creator/AGENTS.md)。
+编辑器 UI 仍待切到 `statechart-kit/vue`（P3 版本缺少 donor 的画布高级交互/服务绑定）。
+
 ## 安装与使用
 
 ```sh
@@ -115,6 +119,7 @@ if (!result.ok) {
 | `statechart-kit/engine` | `SessionRunner`、`loadEngine`/`preloadEngine`/`createEngineSession`、`validateScxml`/`validateDocument` | `@tinyactors/scxmljs`（按 mode 动态加载） |
 | `statechart-kit/policies/server` | 服务端命名策略预设 `SERVER_POLICY`（不属于 core） | 无 |
 | `statechart-kit/vue` | `mountEditor` / `EditorHost` / `createEditor` / 编辑器组件 | `vue`（optional peer）、`@tinyactors/scxmljs/view` |
+| `statechart-kit/diagnostics/zh` | 诊断 `{code,params}` → 中文展示（宿主共用） | 无 |
 
 ### Vue 编辑器
 

@@ -39,6 +39,9 @@ export const ENGINE_FILES = [
 /** 宿主策略预设（不在 core 入口） */
 export const POLICY_FILES = ['src/policies/server.ts']
 
+/** 宿主诊断格式化（中文；P4 起 scxml-creator 复用） */
+export const DIAGNOSTICS_FILES = ['src/diagnostics/zh.ts']
+
 /** P3 Vue 编辑器（SFC + store + 样式；构建由 Vite 负责） */
 export const VUE_FILES = [
   'src/vue/index.ts',
@@ -80,6 +83,7 @@ export const KIT_FILES = [
   ...CORE_FILES,
   ...ENGINE_FILES,
   ...POLICY_FILES,
+  ...DIAGNOSTICS_FILES,
   ...VUE_FILES,
   ...TEST_FILES,
 ]
@@ -145,6 +149,7 @@ export const DONOR_DIVERGED = [
   { file: 'src/engine/engine-loader.ts', reason: 'P2 新增：统一引擎懒加载器' },
   { file: 'test/verify-engine.ts', reason: 'P2 新增：引擎选项/生命周期测试' },
   { file: 'src/vue/**', reason: 'P3 新增：可嵌入 Vue 编辑器（EditorHost/features/mountEditor/样式）' },
+  { file: 'src/diagnostics/zh.ts', reason: 'P4 新增：诊断 code 中文格式化（宿主共用）' },
   { file: 'test/verify-editor.ts', reason: 'P3 新增：编辑器 store 测试' },
 ]
 

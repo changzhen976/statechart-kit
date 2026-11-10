@@ -35,7 +35,11 @@
       "types": "./dist/vue-types/vue/index.d.ts",
       "import": "./dist/vue.js"
     },
-    "./vue/style.css": "./dist/vue/style.css"
+    "./vue/style.css": "./dist/vue/style.css",
+    "./diagnostics/zh": {
+      "types": "./dist/diagnostics/zh.d.ts",
+      "import": "./dist/diagnostics/zh.js"
+    }
   },
   "files": [
     "dist",

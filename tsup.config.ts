@@ -12,6 +12,7 @@ export default defineConfig({
     index: 'src/core/index.ts',
     engine: 'src/engine/index.ts',
     'policies/server': 'src/policies/server.ts',
+    'diagnostics/zh': 'src/diagnostics/zh.ts',
   },
   format: ['esm'],
   target: 'node20',

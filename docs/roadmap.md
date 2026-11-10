@@ -11,7 +11,7 @@
 | P1 | 命名策略 `NamingPolicy` 注入；校验分层；core 文案 code 化；`events.ts` 拆分 | 3–4 人日 | ✅ 完成（v0.2.0） |
 | P2 | `engine` 补齐 `scriptTimeoutMs` / `maxMicrosteps` / `data` 预置与 trusted/sandboxed 选择；合并懒加载器 | 1.5–2 人日 | ✅ 完成（v0.3.0） |
 | P3 | Vue 编辑器抽离：`EditorHost`、`features`、`mountEditor`、样式随包 | 6–8 人日 | ✅ 完成（v0.4.0） |
-| P4 | `scxml-creator` 切换到本包，删除本地副本 | 2–3 人日 | 待开始 |
+| P4 | `scxml-creator` 切换到本包，删除本地副本 | 2–3 人日 | 🟡 core/engine 已切；UI 待切 |
 | P5 | `node-red-contrib-scxmljs` 切换到本包，删除 vendor 与 17 条构建期替换 | 3–4 人日 | 待开始 |
 | P6 | 发布与治理：版本策略、CHANGELOG、发布流水线 | 1.5–2 人日 | 待开始 |
 
@@ -95,6 +95,18 @@
 
 **验收**：`verify-editor` 25 条断言；`npm test` 8 个套件；`npm run typecheck`（tsc + vue-tsc）；
 `check:vue` 挂载/卸载通过；`check:pack` 覆盖第四入口。
+
+## P4 迁移进度（进行中）
+
+- ✅ `scxml-creator` 删除本地 `src/core`、`src/engine`，改为 `statechart-kit` /
+  `statechart-kit/engine`；宿主保留 `src/{events,storage,audit}.ts` 与
+  `src/compat/{naming,validator}.ts`。
+- ✅ 兼容层处理旧签名/`message` 字段；donor 的 `test:all` 与 9 个浏览器检查全绿。
+- ✅ kit 新增 `diagnostics/zh` 供宿主复用诊断格式化；修复 core 漏导出 `EXAMPLES`。
+- ⏳ 编辑器 UI 尚未切到 `statechart-kit/vue`：P3 嵌入编辑器缺少画布点击/缩放/Explorer/
+  结构化动作/服务绑定；先补能力再用 `EditorAdapter` 接 service store，最后删除 donor
+  `components/panels/viewhost/stores/project.ts`。
+- ⏳ `scxml-creator` 的 `statechart-kit` 依赖当前是 `file:../statechart-kit`；发布后改固定版本。
 
 ## 消费方同步
 
