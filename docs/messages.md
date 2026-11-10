@@ -69,6 +69,7 @@ core 与 engine 的诊断统一返回 `{ code, params }`，宿主按 `code` 查�
 | `import.transition.multi-target` | `at`, `target`, `taken` | fork 多 target，取第一个 |
 | `import.transition.missing-target` | `at`, `target` | target 不存在，已跳过 |
 | `import.root-initial.missing-target` | `initial` | 根 initial 指向不存在状态 |
+| `import.no-dom-parser` | — | Node 环境未注入 DOMParser（异常） |
 | `import.parse-error` | `detail` | XML 解析失败（异常） |
 | `import.root-not-scxml` | `tag` | 根元素不是 `<scxml>`（异常） |
 
@@ -82,3 +83,19 @@ core 与 engine 的诊断统一返回 `{ code, params }`，宿主按 `code` 查�
 
 `validateDocument` 会把结构/命名问题转换为同一 `ValidationIssue`，`kind` 分别为
 `structure` / `naming`；`severity` 为 `error` 或 `warning`，只有 error 阻断。
+
+## 序列化（`DocumentStructureError`）
+
+| code | 附加字段 | 含义 |
+| --- | --- | --- |
+| `document.invalid-structure` | `issues: StructureIssue[]` | `serializeChecked()` 发现 error 级结构问题，拒绝生成可能被运行时误读的 SCXML |
+
+## 变量写入（`VariableWriteResult`，engine）
+
+| code | params | 含义 |
+| --- | --- | --- |
+| `variable.assign-expr` | `id`, `expr` | 表达式求值成功并写回 |
+| `variable.assign-value` | `id`, `value` | 直接写入成功 |
+| `variable.session-not-running` | `id` | 会话未启动/已停止 |
+| `variable.unknown` | `id` | 变量不在 datamodel 中 |
+| `variable.assign-failed` | `id`, `detail` | 引擎求值/写入失败；`detail` 为上游原文 |

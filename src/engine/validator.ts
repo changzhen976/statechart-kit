@@ -8,7 +8,6 @@
  * 诊断只返回 `{ code, params }`；引擎自身抛出的错误文本放在 `params.detail`，
  * 宿主按 code 本地化或原样展示 detail。
  */
-import { parseSCXML, compile } from '@tinyactors/scxmljs/trusted'
 import type { DOMParserLike } from '@tinyactors/scxmljs/trusted'
 import type { ProjectDoc } from '../core/model'
 import { serializeToScxml } from '../core/serializer'
@@ -19,6 +18,8 @@ import type { DocNamingIssue } from '../core/naming'
 import { checkDocNaming } from '../core/naming'
 import type { NamingPolicy } from '../core/naming-policy'
 import { BASE_POLICY } from '../core/naming-policy'
+import { neutralizeCdata } from '../core/cdata'
+import { loadEngine } from './engine-loader'
 
 export type ValidationIssueKind =
   | 'state'
@@ -77,7 +78,11 @@ export async function validateScxml(
   domParser?: DOMParserLike,
 ): Promise<ValidationResult> {
   try {
-    const parsed = parseSCXML(source, domParser)
+    // 与 SessionRunner 共用懒加载器：validate 不再静态 import 引擎入口
+    const { parseSCXML, compile } = await loadEngine('trusted')
+    // happy-dom 等 Node 解析器对 <script><![CDATA[…]]></script> 兼容性差；
+    // compile 只读文本、不执行脚本，先中和 CDATA 可让校验在 Node 下同样可靠。
+    const parsed = parseSCXML(neutralizeCdata(source), domParser)
     await compile(parsed)
     return { ok: true, issues: [] }
   } catch (err) {

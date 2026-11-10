@@ -1,8 +1,8 @@
 {
   "schema": 2,
-  "generatedAt": "2026-11-10T12:34:11.482Z",
+  "generatedAt": "2026-11-10T12:46:15.830Z",
   "package": "statechart-kit",
-  "phase": "P1 (policy injection, layered validation, message codes)",
+  "phase": "P2 (engine options, unified lazy loader, lifecycle hardening)",
   "donor": {
     "name": "scxml-creator",
     "path": "/home/changzhen/projects/services/scxml-creator",
@@ -15,29 +15,33 @@
     "clean": true
   },
   "hashes": {
-    "src/core/index.ts": "15d36bef93bd87dd1356855ba63a9f1022e039a55a81c8e87566a9c076b9e40b",
+    "src/core/index.ts": "346cfa9b161743a269408cef1888c030cfd89132bcdc1e58c411ffb692f1c439",
     "src/core/model.ts": "a6041ae60ede36297a0fd2e50320d9dc6c64fc063ff058388efe242e228c664d",
     "src/core/serializer.ts": "e05484aa7d03b6fd665b67cad67175add677edc05ab8b1e135989ea919c02708",
     "src/core/action-parse.ts": "1e17f872fbc3f4dd162d7ca71050343119e5cddec3819c33b1e6a7c0b6f7d512",
     "src/core/naming-policy.ts": "6f3e79b3276b76af4aacb65189eed5725f2669606456ec8c71e208479d7cdc72",
     "src/core/naming.ts": "2b208bcfa2e8725fbb1962808b98d3f3d00e03ae882cd778ffdf17b61d6a71e8",
     "src/core/migrate.ts": "1b9babcdab8bc1bf5dcfa215af2206691f0335ef9bf877802066936da53e4c5a",
-    "src/core/scxml-import.ts": "c73c21890d049e77366216c7a08ae9d828b6dc3506833f65a6aee0d19da44c61",
+    "src/core/scxml-import.ts": "708d97c400f70b4e3d471c511e6c3c26ebfb1e88b30617bb23f5a80f69c3d759",
     "src/core/examples.ts": "72705f834ba6419259d3cb94141830375aa079d2c871bfd85778e8256ac3dddb",
     "src/core/log.ts": "28e6d494c8eda6c21f0d4596994e54eb7fb69b28e3e445fbba75ca8d463d4a9c",
     "src/core/event-catalog.ts": "7223566699f8a0cb2a61a0961c1e2cea85162f7da1e31c47d2b20c774419d7b7",
     "src/core/active-tree.ts": "5954ed2011b6bbe95d7bf66eeb1623a3a659a54e4467248754d42a69431350ec",
     "src/core/validate-structure.ts": "dc4a6d0dc32d3c7949bae3e0f725ba5097b3bd74a810b597eb096d02edd75de9",
-    "src/engine/index.ts": "29347f9d2dd4879c7dbdf1e41c3e0977fc2a54a1393c9ded7e2cebf60a97bf12",
-    "src/engine/session-runner.ts": "7039be42669c7d302777af733276b237a3b3c9c082578f63a2cd62b03ff2b797",
-    "src/engine/validator.ts": "801a39b099205b528bf17652987548020182f47c4061f3ee09eb02b924500fe6",
+    "src/core/cdata.ts": "6712716be850bca088f14bee52c25ca41b21fb5bb6f5442166f761a4cd312bd0",
+    "src/core/serialize-checked.ts": "824309b6b523272a03779b6b0f40e972ef306d56c31725b33a7ad42b71b223da",
+    "src/engine/index.ts": "e93152d4b16f435717b7c916d705b81e86ca7bc0da8146cf60d3c422e2fcbfb5",
+    "src/engine/session-runner.ts": "3256d6956b049f26f93d8d788da090551fc8f4b3879fc3d064bd8f1ac0a4f1b6",
+    "src/engine/validator.ts": "83e946666e356519ad87c8d4b38c34f1c3a8db8fa6f8ecf2840216944cf3bbf5",
+    "src/engine/engine-loader.ts": "fdd77d765cf437550d5f8a4a934bbc274d791188f394d44d906e4215032dc96d",
     "src/policies/server.ts": "0ae017de19d4e5d61238bfe0da29f98852ba86146636a98bc48d034a383937a3",
     "test/verify-import.ts": "cd16f8e6b98e485fbabb55632a53c611a6e7efa8ebd574be6ab2cac12f332eb4",
     "test/smoke-engine.ts": "62fb993142107b4579902aecfb8835c1c9b658fff33a60164147ecc3c3c4ebc4",
     "test/verify-timers.ts": "bb9f57ffb46415179ec600d1722d9e0381efb9b7a180501b9694d6a42f5f4ec4",
     "test/verify-naming.ts": "d911691c188b20cffead88f0de3442eda658c8119228b5dd842036b69f18caf9",
     "test/verify-events.ts": "8eb4ecbedbc1451f4cecf76c8b373cc4a9dc11b48dc600074dafa6d646be5daf",
-    "test/verify-validation.ts": "cbf02a53d231cb16f98d25291406df242d9fbf8d25ee3b88ed452f795d8a6a40"
+    "test/verify-validation.ts": "844ac3978da9588b70d4a9db03ebe090a319e448a6acbaef495d9ba909d44e97",
+    "test/verify-engine.ts": "d40e610b39c545b9e9b5e0a96ebb06214f3fab1903460b3481c7ff961db5e152"
   },
   "mirrored": [
     {
@@ -53,10 +57,6 @@
       "donor": "src/core/examples.ts"
     },
     {
-      "file": "src/engine/session-runner.ts",
-      "donor": "src/engine/session-runner.ts"
-    },
-    {
       "file": "test/smoke-engine.ts",
       "donor": "scripts/smoke-engine.ts"
     },
@@ -68,7 +68,7 @@
   "diverged": [
     {
       "file": "src/core/index.ts",
-      "reason": "P1 导出面：新增命名策略/迁移/事件目录/激活树/结构校验"
+      "reason": "P1/P2 导出面：命名策略/迁移/事件目录/激活树/结构校验/严格序列化"
     },
     {
       "file": "src/core/action-parse.ts",
@@ -88,7 +88,11 @@
     },
     {
       "file": "src/engine/index.ts",
-      "reason": "新增引擎层校验导出"
+      "reason": "新增引擎层校验与懒加载器导出"
+    },
+    {
+      "file": "src/engine/session-runner.ts",
+      "reason": "P2：引擎选择/选项/data 预置、generation 生命周期、监听器隔离、结构化变量写入"
     },
     {
       "file": "test/verify-import.ts",
@@ -133,6 +137,22 @@
     {
       "file": "test/verify-validation.ts",
       "reason": "P1 新增：校验分层测试"
+    },
+    {
+      "file": "src/core/cdata.ts",
+      "reason": "P2 新增：CDATA 中和（导入/校验/建会话共用）"
+    },
+    {
+      "file": "src/core/serialize-checked.ts",
+      "reason": "P2 新增：严格序列化 + DocumentStructureError"
+    },
+    {
+      "file": "src/engine/engine-loader.ts",
+      "reason": "P2 新增：统一引擎懒加载器"
+    },
+    {
+      "file": "test/verify-engine.ts",
+      "reason": "P2 新增：引擎选项/生命周期测试"
     }
   ],
   "excluded": [

@@ -37,7 +37,7 @@ const baseline = {
   schema: 2,
   generatedAt: new Date().toISOString(),
   package: 'statechart-kit',
-  phase: 'P1 (policy injection, layered validation, message codes)',
+  phase: 'P2 (engine options, unified lazy loader, lifecycle hardening)',
   donor: {
     name: 'scxml-creator',
     path: donorRoot,

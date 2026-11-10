@@ -9,7 +9,7 @@
 | --- | --- | --- | --- |
 | P0 | 仓骨架、构建链（ESM + d.ts）、逐字快照、基线冻结、打包冒烟、CI | 0.5–1 人日 | ✅ 完成（v0.1.0） |
 | P1 | 命名策略 `NamingPolicy` 注入；校验分层；core 文案 code 化；`events.ts` 拆分 | 3–4 人日 | ✅ 完成（v0.2.0） |
-| P2 | `engine` 补齐 `scriptTimeoutMs` / `maxMicrosteps` / `data` 预置与 trusted/sandboxed 选择；合并懒加载器 | 1.5–2 人日 | 待开始 |
+| P2 | `engine` 补齐 `scriptTimeoutMs` / `maxMicrosteps` / `data` 预置与 trusted/sandboxed 选择；合并懒加载器 | 1.5–2 人日 | ✅ 完成（v0.3.0） |
 | P3 | Vue 编辑器抽离：`EditorHost`、`features`、`mountEditor`、样式随包 | 6–8 人日 | 待开始 |
 | P4 | `scxml-creator` 切换到本包，删除本地副本 | 2–3 人日 | 待开始 |
 | P5 | `node-red-contrib-scxmljs` 切换到本包，删除 vendor 与 17 条构建期替换 | 3–4 人日 | 待开始 |
@@ -51,6 +51,27 @@
 **验收**：P0 三个套件行为断言不变（`verify-import` 仅改为接收 `ImportWarning[]`）；
 新增 `verify-naming` / `verify-events` / `verify-validation` 共 101 条断言；
 `check:baseline` 只对 `mirrored` 文件继续要求与 donor 同字节；`check:pack` 覆盖三个入口。
+
+## P2 的产出与边界（v0.3.0）
+
+1. **统一懒加载器** `src/engine/engine-loader.ts`
+   - `loadEngine(mode)` / `preloadEngine(mode)` / `createEngineSession(source, opts)`；
+   - 按 `sandboxed` / `trusted` 缓存，失败可重试；validator 复用同一 trusted 模块；
+   - engine 入口不静态 import 任一实现，QuickJS/WASM 只在首次 sandboxed 会话加载。
+2. **选项与 data 预置**
+   - `scriptTimeoutMs` / `maxMicrosteps` / `memoryLimitBytes` 透传并在 loader 校验；
+   - `data` 在 `createSession` 前注入 `<data>`；`SessionRunner` 构造器与 `start()` 支持浅合并。
+3. **生命周期加固**
+   - `generation` 令牌解决并发 start / stop-during-start 的会话泄漏；
+   - 监听器逐个隔离 + `onListenerError`；初始 `active` 只派发一次；启动失败回 idle。
+4. **core 侧配套**
+   - `serializeChecked`（`DocumentStructureError`）替代“容忍序列化 + 事后才发现错误”；
+   - `scxmlToDoc` 无 DOMParser 时返回 `import.no-dom-parser`；
+   - CDATA 中和抽成 `cdata.ts`，导入/校验/建会话共用，Node 下含 script 的文档不再误判。
+5. **架构梳理**：隐患清单与剩余风险见 [`docs/architecture-review-p2.md`](architecture-review-p2.md)。
+
+**验收**：新增 `verify-engine` 38 条断言；`npm test` 7 个套件全绿；
+`validateDocument` 对含自定义 JS 的示例在 Node 下也能通过；`check:pack` 验证动态加载可解析。
 
 ## 消费方同步
 

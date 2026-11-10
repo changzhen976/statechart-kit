@@ -4,11 +4,48 @@
 
 ## [Unreleased]
 
-### Planned (P2)
+### Planned (P3)
 
-- `SessionRunner` 补齐 `scriptTimeoutMs` / `maxMicrosteps`
-- `data` 预置与 trusted/sandboxed 入口选择
-- 合并懒加载器
+- Vue 编辑器抽离：`EditorHost`、`features`、`mountEditor`、样式随包
+
+## [0.3.0] - 2026-11-10
+
+P2：引擎选项、统一懒加载器、会话生命周期加固与 core 配套。含破坏性 API 变更
+（`0.x` minor 允许）。
+
+### Added
+
+- `engine-loader`：`loadEngine` / `preloadEngine` / `createEngineSession`，按
+  `sandboxed`/`trusted` 懒加载并共享缓存；validator 复用同一 trusted 模块
+- `SessionRunnerOptions`：`engine`、`scriptTimeoutMs`、`maxMicrosteps`、
+  `memoryLimitBytes`、`data`、`onListenerError`
+- `SessionRunner.start(source, { data })`：启动前覆盖 `<data>` 初始值
+- `SessionRunner` 新 API：`status`、`settled()`、`engineMode`
+- `serializeChecked(doc)` + `DocumentStructureError`（结构 error 时拒绝序列化）
+- `neutralizeCdata`（core）：导入/校验/建会话共用，修复 happy-dom 的 script CDATA 兼容性
+- `import.no-dom-parser`：Node 未注入 DOMParser 时给出结构化错误
+- `docs/architecture-review-p2.md`：分层、15 项隐患与 6 项剩余风险
+- `test/verify-engine.ts`：38 条断言
+
+### Changed
+
+- **BREAKING**：`assignVariable` / `assignValue` 返回值由 `{ ok, message }` 改为
+  `{ ok, code, params }`（`variable.*`），文案由宿主本地化
+- **BREAKING**：`send()` 返回 `boolean`；`pause()` / `play()` 返回 `boolean`；
+  `step()` 返回执行任务数；`setSpeed()` 返回实际生效速度
+- **BREAKING**：`statechart-kit/engine` 不再静态 import 引擎实现；依赖动态 import 的
+  bundler/宿主需允许 `@tinyactors/scxmljs` 与 `@tinyactors/scxmljs/trusted` 的动态导入
+- `SessionRunner` 初始 `active` 只派发一次（原先引擎 macrostep + 手动调用各一次）
+- idle 时 `pause/play/step` 为 no-op；NaN/负数速度归零
+- `readVariables()` 标记为 deprecated，统一用 `snapshot()`
+
+### Fixed
+
+- 并发 `start` / 加载中 `stop` 导致的旧会话与监听器泄漏
+- 重写时遗漏 `addEventListener` 导致会话事件完全不派发
+- 启动失败可能残留 clock/监听器；栈内监听器抛错会阻断其他监听器
+- 含 `<script>` 的文档在 happy-dom 下校验/启动被误判为解析失败
+- Node 无全局 `DOMParser` 时抛 `ReferenceError`
 
 ## [0.2.0] - 2026-11-10
 

@@ -24,10 +24,17 @@ export const CORE_FILES = [
   'src/core/event-catalog.ts',
   'src/core/active-tree.ts',
   'src/core/validate-structure.ts',
+  'src/core/cdata.ts',
+  'src/core/serialize-checked.ts',
 ]
 
 /** engine 入口（依赖 @tinyactors/scxmljs） */
-export const ENGINE_FILES = ['src/engine/index.ts', 'src/engine/session-runner.ts', 'src/engine/validator.ts']
+export const ENGINE_FILES = [
+  'src/engine/index.ts',
+  'src/engine/session-runner.ts',
+  'src/engine/validator.ts',
+  'src/engine/engine-loader.ts',
+]
 
 /** 宿主策略预设（不在 core 入口） */
 export const POLICY_FILES = ['src/policies/server.ts']
@@ -40,6 +47,7 @@ export const TEST_FILES = [
   'test/verify-naming.ts',
   'test/verify-events.ts',
   'test/verify-validation.ts',
+  'test/verify-engine.ts',
 ]
 
 export const KIT_FILES = [...CORE_FILES, ...ENGINE_FILES, ...POLICY_FILES, ...TEST_FILES]
@@ -52,16 +60,15 @@ export const DONOR_MIRRORED = [
   { file: 'src/core/model.ts', donor: 'src/core/model.ts' },
   { file: 'src/core/serializer.ts', donor: 'src/core/serializer.ts' },
   { file: 'src/core/examples.ts', donor: 'src/core/examples.ts' },
-  { file: 'src/engine/session-runner.ts', donor: 'src/engine/session-runner.ts' },
   { file: 'test/smoke-engine.ts', donor: 'scripts/smoke-engine.ts' },
   { file: 'test/verify-timers.ts', donor: 'scripts/verify-timers.ts' },
 ]
 
-/** P1 有意改写的文件：保留在本仓，但不要求与 donor 同字节 */
+/** P1/P2 有意改写的文件：保留在本仓，但不要求与 donor 同字节 */
 export const DONOR_DIVERGED = [
   {
     file: 'src/core/index.ts',
-    reason: 'P1 导出面：新增命名策略/迁移/事件目录/激活树/结构校验',
+    reason: 'P1/P2 导出面：命名策略/迁移/事件目录/激活树/结构校验/严格序列化',
   },
   {
     file: 'src/core/action-parse.ts',
@@ -81,7 +88,11 @@ export const DONOR_DIVERGED = [
   },
   {
     file: 'src/engine/index.ts',
-    reason: '新增引擎层校验导出',
+    reason: '新增引擎层校验与懒加载器导出',
+  },
+  {
+    file: 'src/engine/session-runner.ts',
+    reason: 'P2：引擎选择/选项/data 预置、generation 生命周期、监听器隔离、结构化变量写入',
   },
   {
     file: 'test/verify-import.ts',
@@ -97,6 +108,10 @@ export const DONOR_DIVERGED = [
   { file: 'test/verify-naming.ts', reason: 'P1 新增：命名策略测试' },
   { file: 'test/verify-events.ts', reason: 'P1 新增：事件目录/激活树测试' },
   { file: 'test/verify-validation.ts', reason: 'P1 新增：校验分层测试' },
+  { file: 'src/core/cdata.ts', reason: 'P2 新增：CDATA 中和（导入/校验/建会话共用）' },
+  { file: 'src/core/serialize-checked.ts', reason: 'P2 新增：严格序列化 + DocumentStructureError' },
+  { file: 'src/engine/engine-loader.ts', reason: 'P2 新增：统一引擎懒加载器' },
+  { file: 'test/verify-engine.ts', reason: 'P2 新增：引擎选项/生命周期测试' },
 ]
 
 /**

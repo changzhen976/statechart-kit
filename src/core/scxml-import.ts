@@ -17,6 +17,7 @@ import type { ProjectDoc, StateNode, TransitionEdge, StateKind } from './model'
 import { emptyDoc, newTransitionId, newUid, normalizeDoc, uniqueStateId } from './model'
 import { isAutoDelayEvent } from './naming'
 import { actionToLine, type ActionStruct } from './action-parse'
+import { neutralizeCdata } from './cdata'
 
 /** 导入诊断的定位（语言无关）：状态 id + 可选动作槽位 */
 export interface ImportLocation {
@@ -287,24 +288,16 @@ function transitionFromEl(
 }
 
 /**
- * CDATA 中和：happy-dom 的 XML 解析器对 <script><![CDATA[...]]></script> 兼容性差
- * （SERVICE_PLAN 风险 #1）。把 CDATA 段替换为等价的 XML 转义文本——DOM textContent
- * 解码后与原内容完全一致，浏览器原生解析器同样适用。
- * 先合并 serializer 的 `]]]]><![CDATA[>` 拆分写法（code 含 ]]> 时），再整体转义。
- */
-function neutralizeCdata(xml: string): string {
-  const merged = xml.replace(/\]\]\]>\s*<!\[CDATA\[/g, '')
-  return merged.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, (_m, code: string) =>
-    code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'),
-  )
-}
-
-/**
  * SCXML 文本 → ProjectDoc。解析失败抛 Error（含 parsererror 摘要）。
  * domParser：Node 环境注入（happy-dom / linkedom）；浏览器省略（全局 DOMParser）。
  */
 export function scxmlToDoc(xml: string, domParser?: DOMParser): ScxmlImportResult {
-  const parser = domParser ?? new DOMParser()
+  // Node/Bun/Deno 没有全局 DOMParser：给结构化错误，而不是 ReferenceError
+  const parser =
+    domParser ?? (typeof DOMParser !== 'undefined' ? new DOMParser() : null)
+  if (!parser) {
+    throw new ScxmlImportError('import.no-dom-parser')
+  }
   const dom = parser.parseFromString(neutralizeCdata(xml), 'text/xml')
   const perr = dom.getElementsByTagName('parsererror')[0]
   if (perr) {

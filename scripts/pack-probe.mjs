@@ -23,6 +23,9 @@ const missing = requiredCore.filter((name) => typeof core[name] !== 'function')
 if (missing.length) throw new Error(`core 缺少导出：${missing.join(', ')}`)
 if (typeof core.BASE_POLICY !== 'object') throw new Error('core 缺少 BASE_POLICY 导出')
 if (typeof engine.SessionRunner !== 'function') throw new Error('engine 缺少 SessionRunner 导出')
+if (typeof engine.loadEngine !== 'function' || typeof engine.createEngineSession !== 'function') {
+  throw new Error('engine 缺少懒加载器导出')
+}
 if (typeof engine.validateDocument !== 'function') throw new Error('engine 缺少 validateDocument 导出')
 if (typeof policies.SERVER_POLICY !== 'object') throw new Error('policies/server 缺少 SERVER_POLICY 导出')
 
@@ -53,6 +56,12 @@ if (reserved?.code !== 'naming.prefix.not-for-event') {
 if (core.checkEventName(core.BASE_POLICY, 't_tick') !== null) {
   throw new Error('BASE_POLICY 不应认识服务端前缀')
 }
+
+// 动态 import 在真实解包目录里可解析（P2 懒加载器）
+await engine.loadEngine('trusted')
+await engine.loadEngine('sandboxed').then((mod) => {
+  if (typeof mod.createSession !== 'function') throw new Error('sandboxed 模块缺少 createSession')
+})
 
 console.log(
   `probe ok: core ${requiredCore.length} exports, engine SessionRunner/validateDocument, ` +

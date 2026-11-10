@@ -12,9 +12,12 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { Window } from 'happy-dom'
 import type { DOMParserLike } from '@tinyactors/scxmljs/trusted'
-import { trafficLightDoc } from '../src/core/examples'
+import { extremeDemoDoc, trafficLightDoc } from '../src/core/examples'
 import { emptyDoc, newUid, type ProjectDoc, type StateNode } from '../src/core/model'
 import { validateStructure } from '../src/core/validate-structure'
+import { DocumentStructureError, serializeChecked } from '../src/core/serialize-checked'
+import { ScxmlImportError, scxmlToDoc } from '../src/core/scxml-import'
+import { serializeToScxml } from '../src/core/serializer'
 import { scanScriptActions } from '../src/core/action-parse'
 import { SERVER_POLICY } from '../src/policies/server'
 import {
@@ -127,6 +130,10 @@ console.log('── B) engine 校验 ──')
 
   const full = await validateDocument(trafficLightDoc(), { domParser, policy: SERVER_POLICY })
   assert(full.ok && full.issues.length === 0, 'validateDocument：结构 + 命名 + 引擎全通过')
+
+  // happy-dom 对 script CDATA 兼容性差：校验前中和 CDATA，Node 下同样能通过 compile
+  const scripts = await validateDocument(extremeDemoDoc(), { domParser, policy: SERVER_POLICY })
+  assert(scripts.ok, `含自定义 JS 的文档在 Node 下也能通过引擎校验（${scripts.issues[0]?.code ?? 'ok'}）`)
 }
 
 console.log('── C) 分层与拦截 ──')
@@ -155,7 +162,41 @@ console.log('── C) 分层与拦截 ──')
   )
 }
 
-console.log('── D) 静态守卫：core 不依赖引擎 ──')
+console.log('── D) 严格序列化与解析器前置条件 ──')
+{
+  const okDoc = trafficLightDoc()
+  assert(serializeChecked(okDoc) === serializeToScxml(okDoc), 'serializeChecked 对合法文档与 serializeToScxml 一致')
+  const bad = twoStateDoc()
+  bad.transitions[0]!.target = 'nope'
+  let thrown: unknown = null
+  try {
+    serializeChecked(bad)
+  } catch (e) {
+    thrown = e
+  }
+  assert(
+    thrown instanceof DocumentStructureError &&
+      thrown.code === 'document.invalid-structure' &&
+      thrown.issues.some((i) => i.code === 'structure.transition.missing-target'),
+    'serializeChecked 对非法结构抛 DocumentStructureError（含 issues）',
+  )
+  if (typeof DOMParser === 'undefined') {
+    let parseErr: unknown = null
+    try {
+      scxmlToDoc('<scxml/>')
+    } catch (e) {
+      parseErr = e
+    }
+    assert(
+      parseErr instanceof ScxmlImportError && parseErr.code === 'import.no-dom-parser',
+      '缺少 DOMParser 时抛 ScxmlImportError（不是 ReferenceError）',
+    )
+  } else {
+    console.log('  SKIP 当前环境有全局 DOMParser，跳过无解析器用例')
+  }
+}
+
+console.log('── E) 静态守卫：core 不依赖引擎 ──')
 {
   const here = dirname(fileURLToPath(import.meta.url))
   const coreDir = resolve(here, '../src/core')
