@@ -26,7 +26,7 @@
 | Vue 编辑器（`statechart-kit/vue`） | Node-RED 节点与事件总线 |
 | 命名/校验/编辑能力注入（`EditorAdapter`） | 服务端部署、草稿锁、MQTT/路由来源抓取 |
 
-## 状态：P3 —— 可嵌入 Vue 编辑器
+## 状态：P4.1 —— 可嵌入 Vue 编辑器 + 通用宿主属性
 
 P0 是 `scxml-creator` 的逐字快照；P1 在保持行为的前提下完成四件事（`0.2.0`）：
 
@@ -255,6 +255,10 @@ npm run verify:all    # 类型 + 测试 + 构建 + 基线 + 打包冒烟
 见 [`docs/roadmap.md`](docs/roadmap.md)。P4 将把 `scxml-creator` 切换到本包并删除本地副本；
 编辑器迁移边界见 [`docs/editor-p3.md`](docs/editor-p3.md)，P2 架构梳理见
 [`docs/architecture-review-p2.md`](docs/architecture-review-p2.md)。
+
+## 发布
+
+NPM 发布前置、认证与发布后验证命令见 [`docs/releasing.md`](docs/releasing.md)。
 
 ## License
 

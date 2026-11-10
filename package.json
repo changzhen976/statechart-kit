@@ -65,7 +65,8 @@
     "build:core": "tsup",
     "build:vue": "vite build && vue-tsc -p tsconfig.vue-dts.json",
     "check:vue": "node scripts/check-vue.mjs",
-    "test:editor": "tsx test/verify-editor.ts"
+    "test:editor": "tsx test/verify-editor.ts",
+    "prepublishOnly": "npm run verify:all"
   },
   "dependencies": {
     "@tinyactors/scxmljs": "0.2.0-dev.0"
@@ -88,5 +89,8 @@
     "vue": {
       "optional": true
     }
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
