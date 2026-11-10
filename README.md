@@ -71,8 +71,8 @@ P3（`0.4.0`）新增可嵌入编辑器 `statechart-kit/vue`：
 **P4 已完成**：`scxml-creator` 已删除本地 `src/core`、`src/engine` 与旧编辑器
 `components/panels/viewhost/stores/project.ts`，改用本包 core/engine + `statechart-kit/vue`。
 宿主命名策略（含 MQTT）迁回 creator，kit 只保留 `BASE_POLICY`。
-编辑器具备画布点击/缩放平移、结构化动作、校验定位；全局变量/事件路由/MQTT/部署
-通过 `EditorModule` / `EditorAdapter` 注入，详见 [`docs/editor-modules.md`](docs/editor-modules.md)。
+编辑器具备画布点击/缩放平移、结构化动作、校验定位；变量/事件的全局/广播等宿主属性
+通过 `EditorModule.variableFields/eventFields` 注册，路由/MQTT/部署通过 `EditorModule` / `EditorAdapter` 注入，详见 [`docs/editor-modules.md`](docs/editor-modules.md)。
 
 ## 安装与使用
 

@@ -25,8 +25,8 @@
 | 分支 | `main` |
 | 远程 | `ssh://git@debian-dev:2222/changzhen.liu/statechart-kit.git` |
 | P3 提交 | `0257756 feat(p3): add embeddable Vue editor with adapter-driven host boundary` |
-| 已完成阶段 | P0 快照、P1 策略/校验、P2 引擎选项、P3 Vue 编辑器、P4 scope cleanup + EditorModule |
-| 阶段 | P4 完成：core/engine 已切；creator 编辑器已切到 `statechart-kit/vue`，本地 UI 副本已删除 |
+| 已完成阶段 | P0 快照、P1 策略/校验、P2 引擎选项、P3 Vue 编辑器、P4 scope cleanup + EditorModule、P4.1 通用变量/事件属性 |
+| 阶段 | P4.1 完成：core/engine/编辑器已切；变量/事件显式 attrs + 宿主字段注册 |
 
 阶段路线图与估时见 `docs/roadmap.md`；P3 迁移边界见 `docs/editor-p3.md`；
 P2 架构梳理/隐患清单见 `docs/architecture-review-p2.md`；诊断 code 契约见
