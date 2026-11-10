@@ -21,7 +21,7 @@ import {
 import { BASE_POLICY, type NamingPolicy } from '../src/core/naming-policy'
 import { migrateDoc, migrateEventName, migrateExpr, migrateVarName } from '../src/core/migrate'
 import { emptyDoc, newUid, type ProjectDoc, type StateNode } from '../src/core/model'
-import { SERVER_POLICY } from '../src/policies/server'
+import { SERVER_POLICY } from './fixtures/server-policy'
 
 let pass = 0
 let fail = 0
@@ -231,7 +231,7 @@ console.log('── G) 静态守卫：core 不硬编码服务端前缀 ──')
     }
   }
   assert(offenders.length === 0, `core 源码未硬编码服务端前缀（违规：${offenders.join(', ') || '无'}）`)
-  const serverSrc = readFileSync(resolve(here, '../src/policies/server.ts'), 'utf8')
+  const serverSrc = readFileSync(resolve(here, './fixtures/server-policy.ts'), 'utf8')
   assert(/gv_/.test(serverSrc) && /sys\./.test(serverSrc), 'SERVER_POLICY 确实持有服务端前缀（守卫非空跑）')
 }
 

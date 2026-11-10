@@ -48,11 +48,23 @@ const mounted = mountEditor(host, {
   },
   autoLoad: false,
   adapter: { load: () => null, save: () => {} },
+  modules: [
+    {
+      id: 'probe.module',
+      setup(ctx) {
+        ctx.tabs.add({ id: 'probe-tab', title: 'ProbeTab', component: { render: () => null } })
+        ctx.toolbar.add({ id: 'probe-cmd', label: 'ProbeCmd', run: () => {} })
+      },
+    },
+  ],
 })
 await mounted.ready
 if (!host.querySelector('.sce-root')) throw new Error('EditorHost 未渲染 .sce-root')
 if (!mounted.editor.doc || mounted.editor.doc.formatVersion !== 1) {
   throw new Error('editor.doc 未初始化')
+}
+if (!host.textContent.includes('ProbeTab') || !host.textContent.includes('ProbeCmd')) {
+  throw new Error('模块标签页/工具栏未渲染')
 }
 mounted.unmount()
 console.log('vue ok: dist/vue.js mounts EditorHost and unmounts')

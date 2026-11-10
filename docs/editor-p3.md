@@ -96,7 +96,7 @@ statechart-kit/vue
 | `examples` | 使用 core `EXAMPLES`；传 `[]` 禁用 |
 | `externalEvents()` | 事件下拉只含文档内事件 |
 | `runner` / `domParser` | 引擎默认 sandboxed；Node 需注入 domParser |
-| `policy` | 默认 `SERVER_POLICY`（保持 scxml-creator 语义） |
+| `policy` | 默认 `BASE_POLICY`；宿主应传入组合后的 `NamingPolicy`（P4 起服务端策略在宿主） |
 | `readOnly` | 可编辑 |
 | `deploy(doc)` / `exit(doc)` | 对应按钮不显示/无效 |
 | `onDirtyChange` / `onDocChange` / `onLog` | 不通知 |
@@ -114,7 +114,12 @@ statechart-kit/vue
 `vue` 是 **optional peerDependency**：只用 core/engine 的宿主不会被迫安装 Vue。
 编辑器依赖 DOM / 自定义元素，**仅浏览器运行**；SSR 请在客户端动态 import。
 
-## 6. 有意保留到 P4 的能力
+## 6. 上层功能模块
+
+P4 引入 [`EditorModule`](editor-modules.md)：全局变量/事件路由/MQTT/部署以模块注入，
+不进入 kit。编辑器本身保持宿主无关。
+
+## 7. 有意保留到 P4 的能力
 
 以下功能依赖 `scxml-creator` 的服务端 store / 官方 shadow DOM 细节，P3 不做“半套”复制：
 
@@ -127,7 +132,7 @@ statechart-kit/vue
 P4 的迁移顺序建议：先切 store/校验/仿真（已就绪），再把 `ChartViewHost` 的高级交互作为
 可选 `canvasEnhancer` 注入，最后搬服务绑定 UI。
 
-## 7. 验收
+## 8. 验收
 
 - `npm run typecheck`：tsc + vue-tsc
 - `npm test`：8 套件；`verify-editor` 25 条断言

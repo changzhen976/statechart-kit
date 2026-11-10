@@ -5,9 +5,8 @@
  * 所有宿主能力（持久化/导入导出/外部事件/部署/退出）走 `EditorAdapter`；
  * 文档模型、命名、校验、序列化、会话仍来自 kit core/engine。
  */
-import { reactive } from 'vue'
-import type { NamingPolicy } from '../core/naming-policy'
-import { SERVER_POLICY } from '../policies/server'
+import { markRaw, reactive } from 'vue'
+import { BASE_POLICY, type NamingPolicy } from '../core/naming-policy'
 import type { ExternalEventSource } from '../core/event-catalog'
 import {
   autoDelayEventName,
@@ -37,6 +36,15 @@ import { buildEditorEventOptions, type EditorEventOption } from './events'
 import { formatNamingIssue, formatValidationIssue, formatVariableResult } from './format'
 import { createBrowserAdapter } from './browser-adapter'
 import type { EditorAdapter } from './types'
+import type {
+  EditorEventSourceProvider,
+  EditorModule,
+  EditorModuleContext,
+  EditorModuleIssue,
+  EditorTabContribution,
+  EditorToolbarContribution,
+  EditorValidator,
+} from './modules'
 import type { DOMParserLike } from '@tinyactors/scxmljs/trusted'
 
 export type SelectionKind = 'state' | 'transition' | null
@@ -78,6 +86,11 @@ export interface EditorState {
   deploying: boolean
   confirm: EditorConfirmRequest | null
   revision: number
+  /** 模块贡献（P4）；组件用 markRaw 避免被 Vue 代理 */
+  moduleTabs: EditorTabContribution[]
+  moduleToolbar: EditorToolbarContribution[]
+  moduleEventSources: EditorEventSourceProvider[]
+  moduleValidators: EditorValidator[]
 }
 
 export interface CreateEditorOptions {
@@ -90,12 +103,15 @@ export interface CreateEditorOptions {
   domParser?: DOMParserLike
   /** false = 不从 adapter.load 读取（默认 true） */
   autoLoad?: boolean
+  /** 上层功能模块（全局变量/路由/MQTT/部署…），由宿主注入 */
+  modules?: EditorModule[]
 }
 
 const UNDO_LIMIT = 50
 const UNDO_COALESCE_MS = 800
 const LOG_LIMIT = 300
 const SAVE_DEBOUNCE_MS = 400
+const BUILTIN_TAB_IDS = new Set(['props', 'vars', 'sim'])
 
 /** ProjectDoc 是纯 JSON 数据；JSON 克隆同时避开 Vue reactive Proxy（structuredClone 不能克隆 Proxy） */
 function cloneDoc(doc: ProjectDoc): ProjectDoc {
@@ -104,6 +120,39 @@ function cloneDoc(doc: ProjectDoc): ProjectDoc {
 
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err)
+}
+
+/** 合并同 value 的外部事件来源：tag 去重排序、tip 换行合并 */
+function mergeExternalEventSources(items: ExternalEventSource[]): ExternalEventSource[] {
+  const map = new Map<string, { tags: Set<string>; tips: Set<string> }>()
+  for (const item of items) {
+    if (!item.value) continue
+    const cur = map.get(item.value) ?? { tags: new Set<string>(), tips: new Set<string>() }
+    if (item.tag) cur.tags.add(item.tag)
+    if (item.tip) cur.tips.add(item.tip)
+    map.set(item.value, cur)
+  }
+  return [...map]
+    .map(([value, { tags, tips }]) => ({
+      value,
+      ...(tags.size ? { tag: [...tags].sort().join(' · ') } : {}),
+      ...(tips.size ? { tip: [...tips].join('\n') } : {}),
+    }))
+    .sort((a, b) => a.value.localeCompare(b.value))
+}
+
+/** 模块 issue → kit ValidationIssue（kind=module，宿主可本地化 code） */
+function toValidationIssue(issue: EditorModuleIssue): ValidationIssue {
+  return {
+    code: issue.code,
+    params: issue.params ?? {},
+    severity: issue.severity ?? 'error',
+    kind: 'module',
+    ...(issue.stateId !== undefined ? { stateId: issue.stateId } : {}),
+    ...(issue.event !== undefined ? { event: issue.event } : {}),
+    ...(issue.transitionId !== undefined ? { transitionId: issue.transitionId } : {}),
+    ...(issue.actionIndex !== undefined ? { actionIndex: issue.actionIndex } : {}),
+  }
 }
 
 export interface EditorStore {
@@ -134,6 +183,8 @@ export interface EditorStore {
   get knownEvents(): string[]
   get activeLabels(): string[]
   get canDeploy(): boolean
+  get moduleTabs(): readonly EditorTabContribution[]
+  get moduleToolbar(): readonly EditorToolbarContribution[]
 
   eventOptions(): EditorEventOption[]
   stateName(uid: string): string
@@ -147,6 +198,7 @@ export interface EditorStore {
   saveProject(): Promise<void>
   exportScxml(): Promise<void>
   refreshExternalEvents(): Promise<void>
+  registerModule(module: EditorModule): void
 
   captureUndo(tag: string): void
   touch(): void
@@ -195,7 +247,7 @@ export interface EditorStore {
 
 export function createEditor(options: CreateEditorOptions = {}): EditorStore {
   const adapter = options.adapter ?? createBrowserAdapter({ policy: options.policy })
-  const policy = options.policy ?? adapter.policy ?? SERVER_POLICY
+  const policy = options.policy ?? adapter.policy ?? BASE_POLICY
   const labels: EditorLabels = { ...DEFAULT_LABELS, ...(options.labels ?? {}) }
   const features = resolveFeatures(options.features)
   const domParser = options.domParser ?? adapter.domParser
@@ -218,6 +270,10 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     deploying: false,
     confirm: null,
     revision: 0,
+    moduleTabs: [],
+    moduleToolbar: [],
+    moduleEventSources: [],
+    moduleValidators: [],
   })
 
   let pendingUndo: { doc: ProjectDoc; tag: string } | null = null
@@ -227,6 +283,7 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
   let saveChain: Promise<void> = Promise.resolve()
   let offRunner: (() => void) | null = null
   let destroyed = false
+  const moduleDisposers: (() => void)[] = []
 
   const readOnly = (): boolean =>
     typeof adapter.readOnly === 'function' ? adapter.readOnly() : adapter.readOnly === true
@@ -320,12 +377,131 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
   }
 
   async function refreshExternalEvents(): Promise<void> {
-    if (!adapter.externalEvents) return
-    try {
-      state.externalEvents = await adapter.externalEvents()
-    } catch (err) {
-      pushLog('system', `读取外部事件来源失败：${errorMessage(err)}`, 'warn')
+    const sources: ExternalEventSource[] = []
+    if (adapter.externalEvents) {
+      try {
+        sources.push(...(await adapter.externalEvents()))
+      } catch (err) {
+        pushLog('system', `读取外部事件来源失败：${errorMessage(err)}`, 'warn')
+      }
     }
+    for (const provider of [...state.moduleEventSources]) {
+      try {
+        sources.push(...(await provider.provide(editor)))
+      } catch (err) {
+        pushLog('system', `模块事件来源 ${provider.id} 读取失败：${errorMessage(err)}`, 'warn')
+      }
+    }
+    state.externalEvents = mergeExternalEventSources(sources)
+  }
+
+  /** 注册上层功能模块（setup 抛错隔离，不影响编辑器） */
+  function registerModule(module: EditorModule): void {
+    const localDisposers: (() => void)[] = []
+    const disposeAll = (): void => {
+      for (const fn of [...localDisposers].reverse()) {
+        try {
+          fn()
+        } catch {
+          /* 模块清理失败不影响编辑器 */
+        }
+      }
+      localDisposers.length = 0
+    }
+    const ctx: EditorModuleContext = {
+      editor,
+      tabs: {
+        add(contribution) {
+          if (BUILTIN_TAB_IDS.has(contribution.id)) {
+            throw new Error(`模块标签页 id 与内置页冲突：${contribution.id}`)
+          }
+          if (state.moduleTabs.some((t) => t.id === contribution.id)) {
+            throw new Error(`模块标签页 id 重复：${contribution.id}`)
+          }
+          state.moduleTabs.push({ ...contribution, component: markRaw(contribution.component) })
+          state.moduleTabs.sort(
+            (a, b) => (a.order ?? 100) - (b.order ?? 100) || a.title.localeCompare(b.title),
+          )
+          const remove = (): void => {
+            const i = state.moduleTabs.findIndex((t) => t.id === contribution.id)
+            if (i >= 0) state.moduleTabs.splice(i, 1)
+          }
+          localDisposers.push(remove)
+          return remove
+        },
+        remove(id) {
+          const i = state.moduleTabs.findIndex((t) => t.id === id)
+          if (i >= 0) state.moduleTabs.splice(i, 1)
+        },
+      },
+      toolbar: {
+        add(contribution) {
+          if (state.moduleToolbar.some((t) => t.id === contribution.id)) {
+            throw new Error(`模块工具栏 id 重复：${contribution.id}`)
+          }
+          state.moduleToolbar.push({ ...contribution })
+          state.moduleToolbar.sort(
+            (a, b) => (a.order ?? 100) - (b.order ?? 100) || a.label.localeCompare(b.label),
+          )
+          const remove = (): void => {
+            const i = state.moduleToolbar.findIndex((t) => t.id === contribution.id)
+            if (i >= 0) state.moduleToolbar.splice(i, 1)
+          }
+          localDisposers.push(remove)
+          return remove
+        },
+        remove(id) {
+          const i = state.moduleToolbar.findIndex((t) => t.id === id)
+          if (i >= 0) state.moduleToolbar.splice(i, 1)
+        },
+      },
+      eventSources: {
+        add(provider) {
+          if (state.moduleEventSources.some((p) => p.id === provider.id)) {
+            throw new Error(`模块事件来源 id 重复：${provider.id}`)
+          }
+          state.moduleEventSources.push(provider)
+          const remove = (): void => {
+            const i = state.moduleEventSources.findIndex((p) => p.id === provider.id)
+            if (i >= 0) state.moduleEventSources.splice(i, 1)
+          }
+          localDisposers.push(remove)
+          return remove
+        },
+        remove(id) {
+          const i = state.moduleEventSources.findIndex((p) => p.id === id)
+          if (i >= 0) state.moduleEventSources.splice(i, 1)
+        },
+        refresh: refreshExternalEvents,
+      },
+      validators: {
+        add(validator) {
+          state.moduleValidators.push(validator)
+          const remove = (): void => {
+            const i = state.moduleValidators.indexOf(validator)
+            if (i >= 0) state.moduleValidators.splice(i, 1)
+          }
+          localDisposers.push(remove)
+          return remove
+        },
+        clear() {
+          state.moduleValidators.splice(0, state.moduleValidators.length)
+        },
+      },
+      onDispose(fn) {
+        localDisposers.push(fn)
+      },
+    }
+
+    try {
+      const cleanup = module.setup(ctx)
+      if (cleanup) localDisposers.push(cleanup)
+    } catch (err) {
+      disposeAll()
+      pushLog('error', `模块「${module.id}」加载失败：${errorMessage(err)}`)
+      return
+    }
+    moduleDisposers.push(disposeAll)
   }
 
   function pruneSelection(): void {
@@ -787,14 +963,26 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
         policy,
         ...(domParser ? { domParser } : {}),
       })
-      state.validation = result
-      if (result.ok) {
+      // 上层模块的额外校验（全局变量是否声明、路由保留事件、MQTT 绑定…）
+      const moduleIssues: ValidationIssue[] = []
+      for (const validator of [...state.moduleValidators]) {
+        try {
+          const issues = await validator({ doc: state.doc, policy })
+          moduleIssues.push(...issues.map(toValidationIssue))
+        } catch (err) {
+          pushLog('system', `模块校验失败：${errorMessage(err)}`, 'warn')
+        }
+      }
+      const issues = [...result.issues, ...moduleIssues]
+      const ok = result.ok && !moduleIssues.some((i) => i.severity === 'error')
+      state.validation = { ok, issues }
+      if (ok) {
         pushLog('lifecycle', labels.validationPassed)
       } else {
-        pushLog('error', `${labels.validationFailed}（${result.issues.length} 项）`)
-        openValidationDialog(labels.validationFailed, result.issues, result.source)
+        pushLog('error', `${labels.validationFailed}（${issues.length} 项）`)
+        openValidationDialog(labels.validationFailed, issues, result.source)
       }
-      return result.ok
+      return ok
     } catch (err) {
       pushLog('error', `${labels.validationFailed}：${errorMessage(err)}`)
       return false
@@ -966,6 +1154,12 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     get canDeploy() {
       return adapter.canDeploy?.() ?? true
     },
+    get moduleTabs() {
+      return state.moduleTabs
+    },
+    get moduleToolbar() {
+      return state.moduleToolbar
+    },
 
     eventOptions(): EditorEventOption[] {
       return buildEditorEventOptions(state.doc, policy, state.externalEvents)
@@ -993,6 +1187,7 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     saveProject,
     exportScxml,
     refreshExternalEvents,
+    registerModule,
 
     captureUndo,
     touch,
@@ -1040,6 +1235,13 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     async destroy(): Promise<void> {
       if (destroyed) return
       destroyed = true
+      for (const dispose of moduleDisposers.splice(0).reverse()) {
+        try {
+          dispose()
+        } catch {
+          /* 模块清理失败不影响编辑器销毁 */
+        }
+      }
       if (saveTimer) clearTimeout(saveTimer)
       offRunner?.()
       offRunner = null
@@ -1081,6 +1283,7 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     }
   })
 
+  for (const module of options.modules ?? []) editor.registerModule(module)
   editor.ready = editor.init()
   return editor
 }

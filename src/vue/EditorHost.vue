@@ -21,16 +21,33 @@ import ValidationDialog from './ValidationDialog.vue'
 const props = defineProps<{ editor: EditorStore }>()
 const editor = props.editor
 
-type Tab = 'props' | 'vars' | 'sim'
+type Tab = string
+const moduleTabs = computed(() =>
+  editor.moduleTabs.filter((t) => {
+    if (!t.visible) return true
+    try {
+      return t.visible(editor)
+    } catch {
+      return true
+    }
+  }),
+)
 const initialTab: Tab = editor.features.properties
   ? 'props'
   : editor.features.variables
     ? 'vars'
-    : 'sim'
+    : editor.features.simulation
+      ? 'sim'
+      : (moduleTabs.value[0]?.id ?? 'props')
 const tab = ref<Tab>(initialTab)
+const activeModule = computed(() => moduleTabs.value.find((t) => t.id === tab.value) ?? null)
 
 const showRight = computed(
-  () => editor.features.properties || editor.features.variables || editor.features.simulation,
+  () =>
+    editor.features.properties ||
+    editor.features.variables ||
+    editor.features.simulation ||
+    moduleTabs.value.length > 0,
 )
 
 const root = ref<HTMLElement | null>(null)
@@ -93,11 +110,22 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
             :class="{ on: tab === 'sim' }"
             @click="tab = 'sim'"
           >{{ editor.labels.simulation }}</button>
+          <button
+            v-for="t in moduleTabs"
+            :key="t.id"
+            :class="{ on: tab === t.id, 'sce-tab-module': true }"
+            :title="t.title"
+            @click="tab = t.id"
+          >{{ t.title }}</button>
         </nav>
         <div class="sce-tab-body">
           <PropertyPanel v-if="editor.features.properties" v-show="tab === 'props'" />
           <VariablesPanel v-if="editor.features.variables" v-show="tab === 'vars'" />
           <SimPanel v-if="editor.features.simulation" v-show="tab === 'sim'" />
+          <component
+            :is="activeModule.component"
+            v-if="activeModule"
+          />
         </div>
       </aside>
     </div>

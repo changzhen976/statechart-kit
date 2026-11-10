@@ -1,5 +1,8 @@
 # P2 架构梳理与隐患处理
 
+> **P4 边界更新**：文中 `statechart-kit/policies/server` 已在 P4 迁回宿主
+> （`scxml-creator/src/policy/server.ts`）；kit 只保留 `BASE_POLICY`。其余结论仍是历史记录。
+
 - 日期：2026-11-10
 - 范围：`statechart-kit` 的 core / engine 边界、会话生命周期、引擎加载与 P2 选项
 - 结论：P2 的四项功能（`scriptTimeoutMs` / `maxMicrosteps` / `data` 预置 / trusted-sandboxed 选择）

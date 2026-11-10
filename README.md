@@ -31,8 +31,8 @@
 P0 是 `scxml-creator` 的逐字快照；P1 在保持行为的前提下完成四件事（`0.2.0`）：
 
 1. **命名策略外置**：core 不再硬编码 `gv_`/`ge_`/`t_`/`mqe_`/`mqv_`/`sys.`。
-   `NamingPolicy` 由宿主注入，core 只提供 `BASE_POLICY`；服务端兼容预设在
-   [`statechart-kit/policies/server`](src/policies/server.ts)。
+   `NamingPolicy` 由宿主注入，core 只提供 `BASE_POLICY`。P4 起服务端/MQTT 策略
+   迁回 `scxml-creator/src/policy/server.ts`，kit 不再提供 `./policies/server`。
 2. **校验分层**：`validateStructure(doc)`（core，零依赖）只查文档结构；
    `validateAgainstEngine(doc)` / `validateScxml(src)`（engine）跑 parse + compile；
    `validateDocument(doc)` 把结构 → 命名 → 引擎串起来。
@@ -68,9 +68,10 @@ P3（`0.4.0`）新增可嵌入编辑器 `statechart-kit/vue`：
 - **样式随包**：`statechart-kit/vue/style.css`（显式 import，避免 CSS 注入时序）。
 - 迁移边界与 P4 清单见 [`docs/editor-p3.md`](docs/editor-p3.md)。
 
-**P4（进行中）**：`scxml-creator` 已删除本地 `src/core` / `src/engine`，改用本包
-`statechart-kit` / `statechart-kit/engine`；兼容层与新目录见 donor 的 [`AGENTS.md`](../scxml-creator/AGENTS.md)。
-编辑器 UI 仍待切到 `statechart-kit/vue`（P3 版本缺少 donor 的画布高级交互/服务绑定）。
+**P4（进行中）**：core/engine 已从 `scxml-creator` 删除并切到本包；宿主命名策略
+（含 MQTT）迁回 `scxml-creator`，kit 只保留 `BASE_POLICY`。编辑器新增
+`EditorModule` 契约：全局变量、事件路由、MQTT、部署等以模块注入核心编辑器，
+不进入 kit。详见 [`docs/editor-modules.md`](docs/editor-modules.md)。
 
 ## 安装与使用
 
@@ -97,12 +98,21 @@ const issue = checkEventName(BASE_POLICY, 'anything')
 ```
 
 ```ts
-import { SERVER_POLICY } from 'statechart-kit/policies/server'
-import { validateDocument, SessionRunner } from 'statechart-kit/engine'
+import type { NamingPolicy } from 'statechart-kit'
+import { validateDocument } from 'statechart-kit/engine'
+
+// 宿主自己组合命名空间（服务端/MQTT 语义不在 kit）
+const policy: NamingPolicy = {
+  key: 'my-host',
+  namespaces: [
+    { key: 'globalVar', prefix: 'gv_', event: 'block', variable: 'allow' },
+    { key: 'globalEvent', prefix: 'ge_', event: 'allow', variable: 'block', broadcast: true },
+  ],
+}
 
 const result = await validateDocument(doc, {
-  policy: SERVER_POLICY,       // 服务端预设：gv_/ge_/t_/mqe_/mqv_/sys./g_
-  domParser,                   // Node 环境必须注入（happy-dom / linkedom）
+  policy,
+  domParser, // Node 环境必须注入（happy-dom / linkedom）
 })
 if (!result.ok) {
   for (const issue of result.issues) {
@@ -117,7 +127,6 @@ if (!result.ok) {
 | --- | --- | --- |
 | `statechart-kit` | 文档模型、序列化、导入、命名策略、事件目录、结构校验、日志类型 | 无 |
 | `statechart-kit/engine` | `SessionRunner`、`loadEngine`/`preloadEngine`/`createEngineSession`、`validateScxml`/`validateDocument` | `@tinyactors/scxmljs`（按 mode 动态加载） |
-| `statechart-kit/policies/server` | 服务端命名策略预设 `SERVER_POLICY`（不属于 core） | 无 |
 | `statechart-kit/vue` | `mountEditor` / `EditorHost` / `createEditor` / 编辑器组件 | `vue`（optional peer）、`@tinyactors/scxmljs/view` |
 | `statechart-kit/diagnostics/zh` | 诊断 `{code,params}` → 中文展示（宿主共用） | 无 |
 
@@ -144,6 +153,18 @@ await mounted.ready
 编辑器状态通过 `mounted.editor` 暴露（`doc` / `select` / `run` / `validate` / `undo` 等）。
 样式必须显式导入 `statechart-kit/vue/style.css`；`vue` 是 optional peer，只用 core/engine
 的宿主不需要安装 Vue。编辑器依赖 DOM 与 `<scxml-view>` 自定义元素，仅浏览器运行；SSR 环境请动态 import。
+
+上层能力用 `EditorModule` 注入，不写进 kit：
+
+```ts
+import { globalsModule } from './editor-modules/globals'
+import { mqttModule } from './editor-modules/mqtt'
+
+mountEditor('#editor', { adapter, policy, modules: [globalsModule, mqttModule] })
+```
+
+模块可以贡献右侧标签页、工具栏命令、外部事件来源、额外校验；详见
+[`docs/editor-modules.md`](docs/editor-modules.md)。
 
 ### 引擎选择与选项
 

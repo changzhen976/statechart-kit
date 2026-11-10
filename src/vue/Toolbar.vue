@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { EXAMPLES } from '../core/examples'
 import { useEditor } from './use-editor'
+import type { EditorToolbarContribution } from './modules'
 
 const editor = useEditor()
 const example = ref('')
@@ -42,6 +43,22 @@ function onExit(): void {
 }
 async function onDeploy(): Promise<void> {
   await editor.deploy()
+}
+
+function moduleDisabled(c: EditorToolbarContribution): boolean {
+  if (!c.disabled) return false
+  try {
+    return c.disabled(editor)
+  } catch {
+    return true
+  }
+}
+async function runModule(c: EditorToolbarContribution): Promise<void> {
+  try {
+    await c.run(editor)
+  } catch (err) {
+    editor.pushLog('error', `模块命令「${c.label}」失败：${err instanceof Error ? err.message : String(err)}`)
+  }
 }
 </script>
 
@@ -92,6 +109,17 @@ async function onDeploy(): Promise<void> {
 
     <div v-if="editor.features.importExport" class="sce-group">
       <button @click="editor.exportScxml()">{{ editor.labels.exportScxml }}</button>
+    </div>
+
+    <div v-if="editor.moduleToolbar.length" class="sce-group sce-module-actions">
+      <button
+        v-for="c in editor.moduleToolbar"
+        :key="c.id"
+        :class="{ 'sce-primary': c.tone === 'primary', 'sce-danger': c.tone === 'danger' }"
+        :title="c.title ?? c.label"
+        :disabled="moduleDisabled(c)"
+        @click="runModule(c)"
+      >{{ c.label }}</button>
     </div>
 
     <div class="sce-spacer" />

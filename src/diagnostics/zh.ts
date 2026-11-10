@@ -28,7 +28,6 @@ const NAMING: Record<string, string> = {
   'naming.prefix.not-for-event': '「{name}」的 {prefix} 是 {namespace} 命名空间，不能用作事件名',
   'naming.prefix.not-for-variable': '「{name}」的 {prefix} 是 {namespace} 命名空间，不能用作变量名',
   'naming.prefix.warn': '「{name}」使用 {prefix} 前缀：{hint}',
-  'naming.mqtt-var.requires-machine': '「mqv_」变量由 MQTT 写入，规则中必须绑定机器',
   'naming.send.reserved': '不能手动发送「{name}」：{prefix} 由宿主注入',
   'naming.assign.forbidden': '不能 assign 到「{name}」：{prefix} 为保留命名空间',
   'naming.transition.legacy': '转移事件「{name}」使用已废弃的 {prefix} 前缀',

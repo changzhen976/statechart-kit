@@ -41,7 +41,7 @@ export interface EditorAdapter {
   /** 会话选项（引擎/damParser/timeout/data）；domParser 也可单独提供 */
   runner?: SessionRunnerOptions
   domParser?: DOMParserLike
-  /** 命名策略；缺省 SERVER_POLICY（保持 scxml-creator 语义） */
+  /** 命名策略；缺省 BASE_POLICY（无前缀规则，宿主应传入自己的策略） */
   policy?: NamingPolicy
   /** 只读（服务端软锁/他人编辑） */
   readOnly?: boolean | (() => boolean)

@@ -1,14 +1,15 @@
 /**
- * 服务端命名策略预设（`statechart-kit/policies/server`）。
+ * 测试夹具：服务端命名策略（gv_/ge_/t_/mqe_/mqv_/sys./g_）。
+ *
+ * 真正的宿主策略在 scxml-creator/src/policy/server.ts；kit 只保留本夹具用于验证
+ * NamingPolicy 引擎行为，不作为发布 API。
  *
  * 这是 `scxml-creator` / `node-red-contrib-scxmljs` 现有命名约定的**兼容预设**：
  * `gv_` 全局变量、`ge_` 全局（广播）事件、`t_` 时钟事件、`mqe_`/`mqv_` MQTT
  * 边界事件/本地变量、`sys.` 系统事件、`g_` v1 遗留前缀。
  *
- * 它**不属于 core 入口**：core 只提供 `BASE_POLICY`。宿主可以整套替换，或在
- * `SERVER_POLICY` 基础上增删命名空间。P4/P5 切换后可把本文件搬回宿主。
  */
-import type { NamingNamespace, NamingPolicy } from '../core/naming-policy'
+import type { NamingNamespace, NamingPolicy } from '../../src/core/naming-policy'
 
 const P_GV = 'gv_'
 const P_GE = 'ge_'

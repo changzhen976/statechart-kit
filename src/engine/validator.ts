@@ -29,6 +29,7 @@ export type ValidationIssueKind =
   | 'generic'
   | 'structure'
   | 'naming'
+  | 'module'
 
 /** 单条校验问题（弹窗逐条展示 + 尽量定位到文档对象） */
 export interface ValidationIssue {

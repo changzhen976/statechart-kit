@@ -13,6 +13,9 @@ import type { DOMParserLike } from '@tinyactors/scxmljs/trusted'
 import { emptyDoc, type ProjectDoc } from '../src/core/model'
 import { createEditor, type CreateEditorOptions } from '../src/vue/editor-store'
 import type { EditorAdapter } from '../src/vue/types'
+import type { Component } from 'vue'
+import type { EditorModule } from '../src/vue/modules'
+import { SERVER_POLICY } from './fixtures/server-policy'
 
 let pass = 0
 let fail = 0
@@ -47,6 +50,7 @@ function makeEditor(overrides: Partial<CreateEditorOptions> = {}, adapter: Parti
     adapter: base,
     autoLoad: false,
     domParser,
+    policy: SERVER_POLICY,
     ...overrides,
   } as CreateEditorOptions)
   return { editor, saved, adapter: base }
@@ -155,6 +159,60 @@ console.log('── F) 外部事件进入候选 ──')
   const opts = editor.eventOptions()
   assert(opts.some((o) => o.value === 'ext.tick' && o.group === 'in'), 'adapter 外部事件进入 in 组')
   await editor.destroy()
+}
+
+
+console.log('── G) 编辑器模块契约 ──')
+{
+  const Dummy = { name: 'DummyPanel', render: () => null } as unknown as Component
+  let runCount = 0
+  let disposed = false
+  const mod: EditorModule = {
+    id: 'test.host',
+    setup(ctx) {
+      ctx.tabs.add({ id: 'globals', title: '全局变量', component: Dummy, order: 10 })
+      ctx.toolbar.add({
+        id: 'deploy',
+        label: '部署',
+        run: () => {
+          runCount++
+        },
+      })
+      ctx.eventSources.add({
+        id: 'routes',
+        provide: () => [{ value: 'route.in', tag: '路由' }],
+      })
+      ctx.validators.add(() => [
+        { code: 'host.global-undeclared', params: { name: 'gv_x' }, stateId: 'idle' },
+      ])
+      ctx.onDispose(() => {
+        disposed = true
+      })
+    },
+  }
+  const { editor } = makeEditor({ modules: [mod] })
+  await editor.ready
+  assert(editor.moduleTabs.map((t) => t.id).join(',') === 'globals', '模块贡献右侧标签页')
+  assert(editor.moduleToolbar.map((t) => t.id).join(',') === 'deploy', '模块贡献工具栏命令')
+  assert(editor.eventOptions().some((o) => o.value === 'route.in' && o.group === 'in'), '模块贡献外部事件来源')
+  const ok = await editor.validate()
+  assert(!ok && editor.validation?.issues.some((i) => i.code === 'host.global-undeclared' && i.kind === 'module'), '模块校验问题进入统一 validation')
+  await editor.moduleToolbar[0]!.run(editor)
+  assert(runCount === 1, '模块命令可执行')
+  await editor.destroy()
+  assert(disposed && editor.moduleTabs.length === 0, 'destroy 执行模块清理并移除贡献')
+
+  // setup 抛错隔离
+  const bad: EditorModule = {
+    id: 'test.bad',
+    setup() {
+      throw new Error('boom')
+    },
+  }
+  const { editor: e2 } = makeEditor({ modules: [bad] })
+  await e2.ready
+  assert(e2.sim.log.some((l) => l.kind === 'error' && l.text.includes('test.bad')), '模块 setup 抛错被隔离并记录')
+  await e2.destroy()
 }
 
 console.log(`\n结果：${pass} 通过 / ${fail} 失败`)

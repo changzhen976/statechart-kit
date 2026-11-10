@@ -2,8 +2,9 @@
 
 core 与 engine 的诊断统一返回 `{ code, params }`，宿主按 `code` 查表本地化，不再对中文字符串做手术。
 
-`statechart-kit/diagnostics/zh` 提供默认中文格式化（`formatValidationIssue` 等），
-`statechart-kit/vue` 与 `scxml-creator` 共用；其他语言/宿主可自行替换。
+`statechart-kit/diagnostics/zh` 提供**通用** code 的默认中文格式化（`formatValidationIssue` 等），
+`statechart-kit/vue` 与 `scxml-creator` 共用。服务端/MQTT 专属 code（如
+`naming.mqtt-var.requires-machine`）由宿主在自己的 formatter 中扩展；其他语言/宿主可整体替换。
 本文是 P1 的公开契约：新增 code 属于向后兼容；修改/删除 code 视为破坏性变更。
 
 约定：
@@ -24,6 +25,7 @@ core 与 engine 的诊断统一返回 `{ code, params }`，宿主按 `code` 查�
 | `naming.prefix.not-for-event` | block | `name`, `prefix`, `namespace`, `hint?` | 该前缀不能用作事件 |
 | `naming.prefix.not-for-variable` | block | 同上 | 该前缀不能用作变量 |
 | `naming.prefix.warn` | warn | 同上 | 策略声明为警告级；可用 `warnCode` 覆盖 |
+| `naming.mqtt-var.requires-machine` | warn | `name`, `prefix`, `namespace` | **宿主示例**：scxml-creator 的 mqv_ 文案，不在 kit 默认 formatter 中 |
 | `naming.send.reserved` | block | `name`, `prefix`, `namespace` | 部署闸门：该命名空间禁止手动 `send` |
 | `naming.assign.forbidden` | block | `name`, `prefix`, `namespace` | 部署闸门：该命名空间禁止 `assign` |
 | `naming.transition.legacy` | block | `name`, `prefix`, `namespace` | 部署闸门：转移事件使用遗留前缀 |
@@ -85,7 +87,8 @@ core 与 engine 的诊断统一返回 `{ code, params }`，宿主按 `code` 查�
 | `validation.script-action` | `slot`, `event`, `index`, `line` | 文档含自定义 JS 动作（部署闸门用） |
 
 `validateDocument` 会把结构/命名问题转换为同一 `ValidationIssue`，`kind` 分别为
-`structure` / `naming`；`severity` 为 `error` 或 `warning`，只有 error 阻断。
+`structure` / `naming`；编辑器模块的额外校验为 `kind='module'`。`severity` 为 `error` 或
+`warning`，只有 error 阻断。
 
 ## 序列化（`DocumentStructureError`）
 

@@ -36,9 +36,6 @@ export const ENGINE_FILES = [
   'src/engine/engine-loader.ts',
 ]
 
-/** 宿主策略预设（不在 core 入口） */
-export const POLICY_FILES = ['src/policies/server.ts']
-
 /** 宿主诊断格式化（中文；P4 起 scxml-creator 复用） */
 export const DIAGNOSTICS_FILES = ['src/diagnostics/zh.ts']
 
@@ -77,12 +74,12 @@ export const TEST_FILES = [
   'test/verify-validation.ts',
   'test/verify-engine.ts',
   'test/verify-editor.ts',
+  'test/fixtures/server-policy.ts',
 ]
 
 export const KIT_FILES = [
   ...CORE_FILES,
   ...ENGINE_FILES,
-  ...POLICY_FILES,
   ...DIAGNOSTICS_FILES,
   ...VUE_FILES,
   ...TEST_FILES,
@@ -93,11 +90,11 @@ export const SNAPSHOT_FILES = KIT_FILES
 
 /** 仍与 donor 逐字节一致的搬运文件 */
 export const DONOR_MIRRORED = [
-  { file: 'src/core/model.ts', donor: 'src/core/model.ts' },
-  { file: 'src/core/serializer.ts', donor: 'src/core/serializer.ts' },
-  { file: 'src/core/examples.ts', donor: 'src/core/examples.ts' },
-  { file: 'test/smoke-engine.ts', donor: 'scripts/smoke-engine.ts' },
-  { file: 'test/verify-timers.ts', donor: 'scripts/verify-timers.ts' },
+  { file: 'src/core/model.ts', donor: 'src/core/model.ts', ref: '6b5cfb6' },
+  { file: 'src/core/serializer.ts', donor: 'src/core/serializer.ts', ref: '6b5cfb6' },
+  { file: 'src/core/examples.ts', donor: 'src/core/examples.ts', ref: '6b5cfb6' },
+  { file: 'test/smoke-engine.ts', donor: 'scripts/smoke-engine.ts', ref: 'edd8558' },
+  { file: 'test/verify-timers.ts', donor: 'scripts/verify-timers.ts', ref: 'edd8558' },
 ]
 
 /** P1/P2 有意改写的文件：保留在本仓，但不要求与 donor 同字节 */
@@ -112,7 +109,7 @@ export const DONOR_DIVERGED = [
   },
   {
     file: 'src/core/naming.ts',
-    reason: '重写为 NamingPolicy 驱动；服务端前缀与迁移逻辑移到 policies/server',
+    reason: '重写为 NamingPolicy 驱动；服务端前缀与迁移逻辑移到宿主策略',
   },
   {
     file: 'src/core/scxml-import.ts',
@@ -140,7 +137,6 @@ export const DONOR_DIVERGED = [
   { file: 'src/core/active-tree.ts', reason: 'P1 新增：激活状态层级树（从 donor events.ts 拆出）' },
   { file: 'src/core/validate-structure.ts', reason: 'P1 新增：零依赖结构校验' },
   { file: 'src/engine/validator.ts', reason: 'P1 新增：引擎层校验 + validateDocument 分层' },
-  { file: 'src/policies/server.ts', reason: 'P1 新增：服务端命名策略预设（保持 donor 语义）' },
   { file: 'test/verify-naming.ts', reason: 'P1 新增：命名策略测试' },
   { file: 'test/verify-events.ts', reason: 'P1 新增：事件目录/激活树测试' },
   { file: 'test/verify-validation.ts', reason: 'P1 新增：校验分层测试' },

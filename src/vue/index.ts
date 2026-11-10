@@ -34,6 +34,20 @@ export type {
   EditorImportResult,
 } from './types'
 export type { EditorEventOption, EditorEventGroup } from './events'
+export type {
+  EditorEventSourceProvider,
+  EditorEventSourceRegistry,
+  EditorModule,
+  EditorModuleContext,
+  EditorModuleIssue,
+  EditorTabContribution,
+  EditorTabRegistry,
+  EditorToolbarContribution,
+  EditorToolbarRegistry,
+  EditorValidationContext,
+  EditorValidator,
+  EditorValidatorRegistry,
+} from './modules'
 export {
   formatImportWarning,
   formatNamingIssue,

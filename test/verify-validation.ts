@@ -19,7 +19,7 @@ import { DocumentStructureError, serializeChecked } from '../src/core/serialize-
 import { ScxmlImportError, scxmlToDoc } from '../src/core/scxml-import'
 import { serializeToScxml } from '../src/core/serializer'
 import { scanScriptActions } from '../src/core/action-parse'
-import { SERVER_POLICY } from '../src/policies/server'
+import { SERVER_POLICY } from './fixtures/server-policy'
 import {
   scriptHitsToIssues,
   validateAgainstEngine,

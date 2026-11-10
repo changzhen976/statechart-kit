@@ -4,7 +4,6 @@
  */
 const core = await import('statechart-kit')
 const engine = await import('statechart-kit/engine')
-const policies = await import('statechart-kit/policies/server')
 
 const requiredCore = [
   'emptyDoc',
@@ -30,7 +29,6 @@ if (typeof engine.loadEngine !== 'function' || typeof engine.createEngineSession
   throw new Error('engine 缺少懒加载器导出')
 }
 if (typeof engine.validateDocument !== 'function') throw new Error('engine 缺少 validateDocument 导出')
-if (typeof policies.SERVER_POLICY !== 'object') throw new Error('policies/server 缺少 SERVER_POLICY 导出')
 
 // 真的跑一次序列化，确认产物里的代码可用而不只是能 import
 const doc = core.emptyDoc('probe')
@@ -52,9 +50,13 @@ if (!xml.includes('id="idle"')) throw new Error('serializeToScxml 未写出状�
 // 结构校验与策略注入在发布物里可用
 const report = core.validateStructure(doc)
 if (!report.ok) throw new Error(`validateStructure 拒绝了探针文档：${JSON.stringify(report.issues)}`)
-const reserved = core.checkEventName(policies.SERVER_POLICY, 't_tick')
+const customPolicy = {
+  key: 'probe',
+  namespaces: [{ key: 'clock', prefix: 't_', event: 'block', variable: 'block' }],
+}
+const reserved = core.checkEventName(customPolicy, 't_tick')
 if (reserved?.code !== 'naming.prefix.not-for-event') {
-  throw new Error(`SERVER_POLICY 未拦截 t_：${JSON.stringify(reserved)}`)
+  throw new Error(`自定义策略未拦截 t_：${JSON.stringify(reserved)}`)
 }
 if (core.checkEventName(core.BASE_POLICY, 't_tick') !== null) {
   throw new Error('BASE_POLICY 不应认识服务端前缀')
@@ -68,5 +70,5 @@ await engine.loadEngine('sandboxed').then((mod) => {
 
 console.log(
   `probe ok: core ${requiredCore.length} exports, engine SessionRunner/validateDocument, ` +
-    `policies/server SERVER_POLICY, xml ${xml.length} chars`,
+    `policy injection, xml ${xml.length} chars`,
 )

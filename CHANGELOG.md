@@ -2,17 +2,29 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
-## [Unreleased]
+## [0.5.0] - 2026-11-10
+
+P4 边界收敛：kit 只保留核心建模/编辑能力与 `BASE_POLICY`；上层功能模块化。
 
 ### Added (P4 host migration)
 
-- `statechart-kit/diagnostics/zh` 入口：诊断 `{code,params}` 的默认中文格式化，
+- `EditorModule` 契约（`statechart-kit/vue`）：宿主可贡献右侧标签页、工具栏命令、
+  外部事件来源、额外校验，并参与 `destroy` 清理；上层功能不再写进 kit
+- `statechart-kit/diagnostics/zh` 入口：通用诊断 `{code,params}` 的默认中文格式化，
   Vue 编辑器与 `scxml-creator` 共用
 - `EXAMPLES` / 示例构造函数重新从 core 入口导出（P1 重构遗漏；P4 切换时发现）
 
+### Changed (BREAKING)
+
+- 删除 `statechart-kit/policies/server` 入口与 `SERVER_POLICY`：服务端/MQTT 命名策略
+  迁回宿主（`scxml-creator/src/policy/server.ts`）；kit 只保留 `BASE_POLICY`
+- `statechart-kit/vue` 的默认 `policy` 改为 `BASE_POLICY`（宿主应显式传入组合策略）
+- `diagnostics/zh` 不再内置 `naming.mqtt-var.*` 等宿主专属文案；宿主自行扩展
+- P5（Node-RED）从 kit 路线图移除，改为宿主仓库任务；kit 不新增 Node-RED/MQTT 专属 API
+
 ### Planned (P4)
 
-- `scxml-creator` 切换到 `statechart-kit`：core/engine 已切；编辑器 UI 仍待接入
+- `scxml-creator`：用 `EditorModule` 接全局变量/路由/MQTT/部署，切换编辑器 UI
 - 发布后把 donor 的 `file:../statechart-kit` 改为固定版本
 
 ## [0.4.0] - 2026-11-10

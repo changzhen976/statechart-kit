@@ -37,7 +37,7 @@ const baseline = {
   schema: 2,
   generatedAt: new Date().toISOString(),
   package: 'statechart-kit',
-  phase: 'P3 (embedded Vue editor: EditorHost, features, mountEditor, styles)',
+  phase: 'P4 (core/editor boundary, BASE_POLICY, EditorModule)',
   donor: {
     name: 'scxml-creator',
     path: donorRoot,

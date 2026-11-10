@@ -9,6 +9,7 @@
  * 不参与 donor 比对。
  */
 import { createHash } from 'node:crypto'
+import { execFileSync } from 'node:child_process'
 import { readFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -44,7 +45,7 @@ const mirrored =
   }))
 
 if (withDonor) {
-  for (const { file, donor } of mirrored) {
+  for (const { file, donor, ref } of mirrored) {
     let text
     try {
       text = await readFile(resolve(root, file), 'utf8')
@@ -52,11 +53,16 @@ if (withDonor) {
       problems.push(`${file}：文件缺失`)
       continue
     }
+    // P4 后 donor 工作区已删除本地 core/engine；按冻结时的历史 commit 读取快照
+    const commit = ref ?? baseline.donor.coreCommit
     try {
-      const donorText = await readFile(resolve(donorRoot, donor), 'utf8')
-      if (donorText !== text) problems.push(`${file}：与 donor ${donor} 已不同步`)
+      const donorText = execFileSync('git', ['-C', donorRoot, 'show', `${commit}:${donor}`], {
+        encoding: 'utf8',
+        maxBuffer: 32 * 1024 * 1024,
+      })
+      if (donorText !== text) problems.push(`${file}：与 donor ${commit}:${donor} 已不同步`)
     } catch {
-      problems.push(`${file}：读取 donor ${donor} 失败（donor 工作区不可用？）`)
+      problems.push(`${file}：读取 donor ${commit}:${donor} 失败（donor 工作区/commit 不可用？）`)
     }
   }
 }
@@ -68,7 +74,7 @@ if (problems.length) {
   process.exit(1)
 }
 
-const scope = withDonor ? `本仓 + donor(${mirrored.length} mirrored)` : '本仓'
+const scope = withDonor ? `本仓 + donor快照(${mirrored.length} mirrored)` : '本仓'
 console.log(
   `baseline ok: ${Object.keys(baseline.hashes).length} files match ` +
     `(${scope}, phase ${baseline.phase ?? '?'}, donor ${baseline.donor.coreCommit ?? '?'})`,

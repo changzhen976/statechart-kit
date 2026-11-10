@@ -21,12 +21,12 @@
 
 | 项 | 值 |
 | --- | --- |
-| 版本 | `0.4.0`（tag `v0.4.0`） |
+| 版本 | `0.5.0`（P4 边界收敛/模块契约；tag 待打） |
 | 分支 | `main` |
 | 远程 | `ssh://git@debian-dev:2222/changzhen.liu/statechart-kit.git` |
 | P3 提交 | `0257756 feat(p3): add embeddable Vue editor with adapter-driven host boundary` |
-| 已完成阶段 | P0 快照基线、P1 策略/校验/code 化、P2 引擎选项/懒加载、P3 Vue 编辑器 |
-| 下一阶段 | **P4：`scxml-creator` 切换**——core/engine 已切；编辑器 UI 待切 |
+| 已完成阶段 | P0 快照、P1 策略/校验、P2 引擎选项、P3 Vue 编辑器、P4 scope cleanup + EditorModule |
+| 阶段 | P4：core/engine 已切；编辑器模块契约已落；编辑器 UI 切换进行中 |
 
 阶段路线图与估时见 `docs/roadmap.md`；P3 迁移边界见 `docs/editor-p3.md`；
 P2 架构梳理/隐患清单见 `docs/architecture-review-p2.md`；诊断 code 契约见
@@ -78,15 +78,15 @@ src/engine/              依赖 @tinyactors/scxmljs；入口不静态 import 实
   validator.ts           validateScxml / validateAgainstEngine / validateDocument
   index.ts               导出上述
 
-src/diagnostics/zh.ts    诊断 code → 中文展示（宿主共用，P4 起 scxml-creator 使用）
+src/diagnostics/zh.ts    通用诊断 code → 中文展示（宿主可再包一层自己的 code）
 
-src/policies/server.ts   SERVER_POLICY：gv_/ge_/t_/mqe_/mqv_/sys./g_ 兼容预设
-                          （不属于 core 入口；P4/P5 后可搬回宿主）
+# 服务端/MQTT 命名策略不在 kit：scxml-creator/src/policy/server.ts 由宿主维护
 
 src/vue/                 Vue 3 编辑器（Vite 构建，vue 为 optional peer）
   index.ts               mountEditor / createEditor / EditorHost（公开入口）
   editor-store.ts        reactive store：文档 CRUD/undo/保存/校验/仿真/确认
   types.ts               EditorAdapter（宿主能力注入）
+  modules.ts             EditorModule 契约（上层功能以模块注入）
   features.ts            EditorFeatures 能力开关
   browser-adapter.ts     浏览器默认实现（localStorage/文件/示例）
   format.ts              诊断 code → 中文展示
@@ -98,7 +98,7 @@ src/vue/                 Vue 3 编辑器（Vite 构建，vue 为 optional peer�
 
 构建/发布：
 
-- `tsup`：`.`, `./engine`, `./policies/server` → `dist/*.js` + d.ts。
+- `tsup`：`.`, `./engine`, `./diagnostics/zh` → `dist/*.js` + d.ts。
 - `vite`：`src/vue/index.ts` → `dist/vue.js`（`vue`、`@tinyactors/*` external）。
 - `vue-tsc -p tsconfig.vue-dts.json` → `dist/vue-types/**`；`exports["./vue"].types` 指向
   `dist/vue-types/vue/index.d.ts`。
@@ -110,7 +110,8 @@ src/vue/                 Vue 3 编辑器（Vite 构建，vue 为 optional peer�
 1. **core 零运行时依赖**：不 import `@tinyactors/scxmljs`、Vue、Node 内置或浏览器 API。
    `verify-validation` 有静态守卫。
 2. **命名策略注入**：core 源码不得硬编码 `gv_`/`ge_`/`t_`/`mqe_`/`mqv_`/`sys.`/`g_`；
-   服务端语义只在 `src/policies/server.ts`。`verify-naming` 有静态守卫。
+   服务端/MQTT 语义只在宿主（`scxml-creator/src/policy/server.ts`）。`verify-naming`
+   用测试夹具守卫策略引擎，不再随包发布服务端策略。
 3. **诊断只返回 `{code, params}`**：core 不返回中文文案；中文解释在
    `src/vue/format.ts` 或宿主 i18n。新增 code 视为公开 API，更新 `docs/messages.md`。
 4. **engine 入口不静态 import 任一引擎实现**：一律通过 `engine-loader` 动态 import；
@@ -129,11 +130,12 @@ src/vue/                 Vue 3 编辑器（Vite 构建，vue 为 optional peer�
 
 ```ts
 import { BASE_POLICY, checkEventName } from 'statechart-kit'
-import { SERVER_POLICY } from 'statechart-kit/policies/server'
 import { validateDocument, SessionRunner } from 'statechart-kit/engine'
+import type { NamingPolicy } from 'statechart-kit'
 
-checkEventName(SERVER_POLICY, 't_tick', { doc })   // { level, code, params } | null
-validateDocument(doc, { policy: SERVER_POLICY, domParser })
+const policy: NamingPolicy = { key: 'host', namespaces: [/* 宿主命名空间 */] }
+checkEventName(policy, 't_tick', { doc })   // { level, code, params } | null
+validateDocument(doc, { policy, domParser })
 ```
 
 - 结构校验：`validateStructure(doc)` → `{ ok, issues }`（error 阻断，warning 提示）。
@@ -180,9 +182,10 @@ validateDocument(doc, { policy: SERVER_POLICY, domParser })
 **已完成**：donor 删除本地 `src/core`、`src/engine`；改为 `statechart-kit` /
 `statechart-kit/engine`；新增 `src/compat/{naming,validator}.ts` 与宿主
 `src/{events,storage,audit}.ts`；`test:all` 与 9 个浏览器检查全绿；kit 新增
-`diagnostics/zh` 并补回 `EXAMPLES` 导出。
+`diagnostics/zh`、`EditorModule` 契约，并把 `SERVER_POLICY` 迁回宿主。
 
-**待完成**：编辑器 UI 切换（见下）；file: 依赖改固定版本。
+**待完成**：编辑器 UI 切换（见下）；宿主用 `EditorModule` 接全局变量/路由/MQTT/部署；
+file: 依赖改固定版本。
 
 1. core：把 donor `src/core/{model,serializer,action-parse,naming,scxml-import,storage,validator,events}.ts`
    替换为 `statechart-kit` 导入；`naming` 调用改策略优先签名，`events` 用

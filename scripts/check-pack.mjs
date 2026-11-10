@@ -70,8 +70,6 @@ try {
     'dist/index.d.ts',
     'dist/engine.js',
     'dist/engine.d.ts',
-    'dist/policies/server.js',
-    'dist/policies/server.d.ts',
     'dist/diagnostics/zh.js',
     'dist/diagnostics/zh.d.ts',
     'dist/vue.js',

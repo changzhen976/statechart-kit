@@ -15,7 +15,7 @@ import {
   type ExternalEventSource,
 } from '../src/core/event-catalog'
 import { emptyDoc, newUid, type ProjectDoc, type StateNode } from '../src/core/model'
-import { SERVER_POLICY } from '../src/policies/server'
+import { SERVER_POLICY } from './fixtures/server-policy'
 
 let pass = 0
 let fail = 0
