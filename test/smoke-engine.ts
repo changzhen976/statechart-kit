@@ -58,13 +58,13 @@ const snap = session.snapshot()
 assert(snap['cycles'] === 2, `变量 cycles 经 assign 累加 = 2（实际 ${JSON.stringify(snap['cycles'])}）`)
 
 // 注入外部事件 power.off：on → off(final)
-// 注意：MVP 模型暂不支持 <donedata>，done 应解析为 undefined（引擎行为正确）
+// 该示例的终态没有 <donedata>，done 应为 undefined（引擎行为正确）
 session.send('power.off')
 clock.run(16_500)
 await session.settled()
 const done = await session.done
 assert(session.status === 'done', '会话到达终态结束')
-assert(done === undefined, '无 donedata 时 done=undefined（MVP 不支持 donedata，见路线图）')
+assert(done === undefined, '无 donedata 时 done=undefined')
 
 session.dispose()
 console.log('\n── 场景二：并行状态 + 深历史 ──')

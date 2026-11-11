@@ -4,7 +4,7 @@
  */
 import { Window } from 'happy-dom'
 import { EXAMPLES } from '../src/core/examples'
-import { emptyDoc } from '../src/core/model'
+import { emptyDoc, newUid, type DoneData, type ProjectDoc } from '../src/core/model'
 import { serializeToScxml } from '../src/core/serializer'
 import { scxmlToDoc, type ImportWarning } from '../src/core/scxml-import'
 
@@ -44,6 +44,103 @@ console.log('── 通用变量/事件属性 roundtrip ──')
   const back = scxmlToDoc(xml, domParser).doc
   assert(back.datamodel[0]?.attrs?.global === true && back.datamodel[0]?.attrs?.scope === 'shared', 'DataVar.attrs 经 SCXML roundtrip 保留')
   assert(back.eventAttrs?.ping?.broadcast === true && back.eventAttrs?.ping?.route === 'flow', 'eventAttrs 经 SCXML roundtrip 保留')
+}
+
+function finalDoc(doneData: DoneData): ProjectDoc {
+  const doc = emptyDoc('done-data')
+  const u = newUid()
+  doc.states = [
+    {
+      uid: u,
+      id: 'done',
+      label: 'done',
+      kind: 'final',
+      parent: null,
+      initial: null,
+      entryActions: [],
+      exitActions: [],
+      doneData,
+    },
+  ]
+  doc.initial = u
+  return doc
+}
+
+console.log('── final <donedata> roundtrip ──')
+for (const [name, doneData] of [
+  ['expr', { expr: "'ok'" }],
+  ['content', { content: '{"a":1}' }],
+  ['params', { params: [{ name: 'x', expr: '42' }, { name: 'y', expr: "'yes'" }] }],
+] as [string, DoneData][]) {
+  const doc1 = finalDoc(doneData)
+  const xml1 = serializeToScxml(doc1)
+  const r = scxmlToDoc(xml1, domParser)
+  const xml2 = serializeToScxml(r.doc)
+  assert(r.warnings.length === 0, `${name}：导入无警告`)
+  assert(r.doc.states[0]?.doneData !== undefined, `${name}：donedata 保留`)
+  assert(xml1 === xml2, `${name}：serialize(import(serialize)) 逐字节相等`)
+}
+
+console.log('── 无 target 的内部转移 ──')
+{
+  const doc1 = emptyDoc('internal')
+  const a = newUid()
+  const b = newUid()
+  doc1.states = [
+    { uid: a, id: 'a', label: 'a', kind: 'atomic', parent: null, initial: null, entryActions: [], exitActions: [] },
+    { uid: b, id: 'b', label: 'b', kind: 'atomic', parent: null, initial: null, entryActions: [], exitActions: [] },
+  ]
+  doc1.initial = a
+  doc1.transitions = [
+    {
+      id: 't-internal',
+      source: a,
+      target: null,
+      transitionType: 'internal',
+      event: 'cell.start',
+      cond: '',
+      actions: ['send cell.ready'],
+    },
+  ]
+  const xml1 = serializeToScxml(doc1)
+  const r = scxmlToDoc(xml1, domParser)
+  const t = r.doc.transitions[0]
+  assert(t?.target === null && t.transitionType === 'internal', 'targetless + type=internal 保留')
+  assert(t?.actions[0] === 'send cell.ready', 'targetless 的动作保留')
+  assert(!r.warnings.some((w) => w.code === 'import.transition.no-target'), '不再产生 no-target 警告')
+  assert(xml1 === serializeToScxml(r.doc), 'targetless：serialize(import(serialize)) 逐字节相等')
+}
+
+console.log('── 外部 SCXML：donedata + targetless ──')
+{
+  const r = scxmlToDoc(
+    `<scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0">
+      <state id="a"><transition event="cell.start"><send event="cell.ready"/></transition></state>
+      <final id="done"><donedata><content expr="'ok'"/></donedata></final>
+    </scxml>`,
+    domParser,
+  )
+  assert(r.doc.transitions[0]?.target === null, '外部 targetless 转移被保留')
+  assert(r.doc.states.find((s) => s.id === 'done')?.doneData?.expr === "'ok'", '外部 donedata 被保留')
+  assert(!r.warnings.some((w) => w.code === 'import.element.unsupported'), 'donedata 不再报 unsupported')
+  assert(!r.warnings.some((w) => w.code === 'import.transition.no-target'), 'targetless 不再报 no-target')
+}
+
+console.log('── 外部 SCXML：type="internal" 带 target ──')
+{
+  const r = scxmlToDoc(
+    `<scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s">
+      <state id="s" initial="a">
+        <state id="a"/>
+        <state id="b"/>
+        <transition event="go" type="internal" target="b"/>
+      </state>
+    </scxml>`,
+    domParser,
+  )
+  const t = r.doc.transitions[0]
+  assert(t?.target !== null && t.transitionType === 'internal', '带 target 的 type=internal 保留')
+  assert(serializeToScxml(r.doc).includes('type="internal"'), '序列化保留 type=internal')
 }
 
 console.log('── SCXML 导入 roundtrip（serialize → import → serialize） ──')

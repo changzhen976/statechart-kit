@@ -421,8 +421,13 @@ function transitionIdFromLabel(e: PointerEvent): string | null {
     const tEvents = new Set(t.event ? t.event.split(/\s+/) : [eventless])
     const lEvents = new Set(labelEvents.length ? labelEvents : [eventless])
     if (tEvents.size !== lEvents.size || ![...tEvents].every((x) => lEvents.has(x))) return false
-    const tid = idOf(t.target)
-    if (!tid || !targets.includes(tid)) return false
+    if (t.target === null) {
+      // 无 target 的转移在官方渲染里是状态盒内的 chip，title 不含 "→ 目标"
+      if (targets.length) return false
+    } else {
+      const tid = idOf(t.target)
+      if (!tid || !targets.includes(tid)) return false
+    }
     if (condText) {
       if (condTruncated ? !t.cond.startsWith(condPrefix) : t.cond !== condPrefix) return false
     } else if (t.cond) {

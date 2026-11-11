@@ -36,7 +36,8 @@ export type EventOrigin =
       transitionId: string
       event: string
       source: StateRef
-      target: StateRef
+      /** null = 无 target 的内部转移 */
+      target: StateRef | null
     }
   | {
       /** 内部延迟转移：entry 的延时 send 由序列化器自动注入 */
@@ -44,7 +45,7 @@ export type EventOrigin =
       transitionId: string
       event: string
       source: StateRef
-      target: StateRef
+      target: StateRef | null
       delayMs: number
     }
 
@@ -52,7 +53,8 @@ export type EventOrigin =
 export interface ListenEdge {
   transitionId: string
   source: StateRef
-  target: StateRef
+  /** null = 无 target 的内部转移 */
+  target: StateRef | null
 }
 
 /** 文档事件事实：事件 → 发出位置 / 监听转移（编辑器下拉、属性面板、详情页共用） */
@@ -79,6 +81,7 @@ function stateRefs(doc: ProjectDoc): Map<string, StateRef> {
 export function docEventFacts(doc: ProjectDoc): DocEventFacts {
   const refs = stateRefs(doc)
   const ref = (uid: string): StateRef => refs.get(uid) ?? { uid, id: uid, label: uid }
+  const refOrNull = (uid: string | null): StateRef | null => (uid === null ? null : ref(uid))
   const facts: DocEventFacts = {
     sends: new Set(),
     listens: new Set(),
@@ -119,7 +122,7 @@ export function docEventFacts(doc: ProjectDoc): DocEventFacts {
     facts.listens.add(t.event)
     const list = facts.listenEdges.get(t.event) ?? []
     if (!list.some((e) => e.transitionId === t.id)) {
-      list.push({ transitionId: t.id, source: ref(t.source), target: ref(t.target) })
+      list.push({ transitionId: t.id, source: ref(t.source), target: refOrNull(t.target) })
     }
     facts.listenEdges.set(t.event, list)
   }
@@ -135,7 +138,7 @@ export function docEventFacts(doc: ProjectDoc): DocEventFacts {
         transitionId: t.id,
         event,
         source: ref(t.source),
-        target: ref(t.target),
+        target: refOrNull(t.target),
       }))
     }
     // 内部延迟转移（after 语义）：entry 的延时 send 由序列化器自动注入——来源标注
@@ -145,7 +148,7 @@ export function docEventFacts(doc: ProjectDoc): DocEventFacts {
         transitionId: t.id,
         event: t.event,
         source: ref(t.source),
-        target: ref(t.target),
+        target: refOrNull(t.target),
         delayMs: t.delayMs,
       })
     }

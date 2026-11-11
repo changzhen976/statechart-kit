@@ -2,6 +2,36 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.9.0] - 2026-11-11
+
+### Added
+
+- `StateNode.doneData`：final 状态的 `<donedata>` 文档模型，支持 content / expr / param
+  三种形态；`scxmlToDoc` / `serializeToScxml` 无损往返（KIT-003）
+- 无 target 的内部转移：`TransitionEdge.target` 可为 `null`，新增
+  `transitionType?: 'internal' | 'external'`；导入保留、序列化省略 target、
+  `type="internal"` 经 roundtrip 保留（KIT-004）
+- 编辑器：结构面板可新建「无目标（内部转移）」；画布可选中 targetless chip；
+  终态属性面板可编辑 `doneData.expr`，导入的 content/param 只读保留
+- 新增结构诊断：donedata 限 final / 空 / 多形态 / param 非法，
+  history 默认转移无 target，targetless 无事件 warning
+
+### Changed
+
+- **BREAKING**：`TransitionEdge.target` 由 `string` 改为 `string | null`；
+  `ListenEdge.target` 与 `EventOrigin` 的 `target` 同步可空
+- `EditorStore.stateName(uid)` 接受 `string | null`，null 返回「（内部转移）」
+- `EditorStore.addTransition` 的 `targetUid` 接受 `string | null`
+- `import.transition.no-target` 不再发出（无 target 转移会被保留）
+- `import.element.unsupported` 现在只用于 invoke 等仍不支持的元素
+
+### Compatibility
+
+- `scxml-creator` 等宿主若直接访问 `transition.target`，需处理 null；`^0.9.0` 升级前先适配
+- 旧存档（target 始终为字符串、无 doneData）保持兼容，`normalizeDoc` 会补齐默认值
+- `src/core/model.ts` / `src/core/serializer.ts` 由 donor mirrored 转为 diverged；
+  `test/smoke-engine.ts` 同步转为 diverged（仅注释更新）
+
 ## [0.8.1] - 2026-11-11
 
 ### Fixed

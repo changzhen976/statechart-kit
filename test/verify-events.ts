@@ -94,10 +94,30 @@ console.log('── A) docEventFacts ──')
     '自动延迟事件来源标注（2s / b→c）',
   )
   const edge = facts.listenEdges.get('evt.go') ?? []
-  assert(edge.length === 1 && edge[0]!.source.id === 'a' && edge[0]!.target.id === 'b', '监听边 a→b')
+  assert(edge.length === 1 && edge[0]!.source.id === 'a' && edge[0]!.target?.id === 'b', '监听边 a→b')
   // 同一转移内的重复 send 只记一个来源
   const mid = facts.sendOrigins.get('evt.mid') ?? []
   assert(mid.length === 1, '同一转移内重复 send 合并为一个来源')
+}
+
+console.log('── A2) targetless 转移的事件事实 ──')
+{
+  const doc = emptyDoc('internal')
+  const a = newUid()
+  doc.initial = a
+  doc.states = [st(a, 'a')]
+  doc.transitions = [
+    { id: 'ti', source: a, target: null, event: 'evt.ping', cond: '', actions: ['send evt.pong'] },
+  ]
+  const facts = docEventFacts(doc)
+  const edge = facts.listenEdges.get('evt.ping') ?? []
+  assert(edge.length === 1 && edge[0]!.target === null, 'targetless 监听边保留 null target')
+  const origin = facts.sendOrigins.get('evt.pong') ?? []
+  assert(
+    origin.length === 1 && origin[0]!.kind === 'transition-action' && origin[0]!.target === null,
+    'targetless 转移动作的来源 target 为 null',
+  )
+  assert(collectDocEvents(doc).includes('evt.ping') && collectDocEvents(doc).includes('evt.pong'), '事件名收集包含 targetless 转移')
 }
 
 console.log('── B) buildDirectionCatalog ──')

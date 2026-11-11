@@ -11,6 +11,7 @@
 import { Window } from 'happy-dom'
 import type { DOMParserLike } from '@tinyactors/scxmljs/trusted'
 import { emptyDoc, type ProjectDoc } from '../src/core/model'
+import { serializeToScxml } from '../src/core/serializer'
 import { createEditor, type CreateEditorOptions } from '../src/vue/editor-store'
 import type { EditorAdapter } from '../src/vue/types'
 import type { Component } from 'vue'
@@ -94,6 +95,41 @@ console.log('── B) CRUD + 撤销/重做 ──')
 
   editor.setDocMeta({ name: 'renamed' })
   assert(editor.doc.name === 'renamed' && editor.dirty, '文档元数据 + dirty')
+  await editor.destroy()
+}
+
+console.log('── B2) targetless 转移 / donedata ──')
+{
+  const { editor } = makeEditor()
+  await editor.ready
+  editor.addState('atomic')
+  const a = editor.doc.states[0]!
+  editor.addState('atomic')
+  const b = editor.doc.states[1]!
+
+  const err = editor.addTransition(a.uid, null, { event: 'ping' })
+  const t = editor.doc.transitions[0]!
+  assert(err === null && t.target === null && t.transitionType === 'internal', '新增无 target 的内部转移')
+  assert(editor.stateName(null) === editor.labels.noTarget, 'stateName(null) 显示内部转移')
+
+  const delayErr = editor.addTransition(b.uid, null, { delayMs: 2000, delayUnit: 's' })
+  const delayed = editor.doc.transitions[1]!
+  assert(delayErr === null && delayed.event === `delay2s_${b.id}_to_internal`, 'targetless 延时自动名使用 _to_internal')
+
+  editor.updateTransition(t.id, { actions: ['send pong'] })
+  assert(editor.doc.transitions[0]!.actions[0] === 'send pong', 'targetless 转移可编辑动作')
+
+  editor.undo()
+  assert(editor.doc.transitions[0]!.actions.length === 0, 'targetless 编辑可撤销')
+  editor.redo()
+  assert(editor.doc.transitions[0]!.actions[0] === 'send pong', 'targetless 编辑可重做')
+
+  editor.addState('final')
+  const done = editor.doc.states[2]!
+  const doneErr = editor.updateState(done.uid, { doneData: { expr: "'ok'" } })
+  assert(doneErr === null && serializeToScxml(editor.doc).includes('<donedata>'), 'final doneData 可写入并序列化')
+  const nonFinalErr = editor.updateState(a.uid, { doneData: { expr: '1' } })
+  assert(nonFinalErr !== null, '非 final 写入 doneData 被拒绝')
   await editor.destroy()
 }
 

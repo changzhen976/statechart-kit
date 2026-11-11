@@ -211,6 +211,15 @@ export function validateStructure(doc: ProjectDoc): StructureReport {
           stateUid: s.uid,
         })
       }
+      if (s.doneData) {
+        add({
+          severity: 'error',
+          code: 'structure.state.donedata-not-final',
+          params: { id: s.id, kind: s.kind },
+          stateId: s.id,
+          stateUid: s.uid,
+        })
+      }
       continue
     }
     if (s.kind === 'final' && kids.length) {
@@ -221,6 +230,51 @@ export function validateStructure(doc: ProjectDoc): StructureReport {
         stateId: s.id,
         stateUid: s.uid,
       })
+    }
+    if (s.doneData) {
+      if (s.kind !== 'final') {
+        add({
+          severity: 'error',
+          code: 'structure.state.donedata-not-final',
+          params: { id: s.id, kind: s.kind },
+          stateId: s.id,
+          stateUid: s.uid,
+        })
+      }
+      const hasParams = !!s.doneData.params?.length
+      const hasExpr = s.doneData.expr !== undefined
+      const hasContent = s.doneData.content !== undefined
+      const forms = (hasParams ? 1 : 0) + (hasExpr ? 1 : 0) + (hasContent ? 1 : 0)
+      if (forms === 0 || (hasExpr && !s.doneData.expr?.trim()) || (hasContent && !s.doneData.content?.trim())) {
+        add({
+          severity: 'error',
+          code: 'structure.state.donedata-empty',
+          params: { id: s.id },
+          stateId: s.id,
+          stateUid: s.uid,
+        })
+      }
+      if (forms > 1) {
+        add({
+          severity: 'error',
+          code: 'structure.state.donedata-ambiguous',
+          params: { id: s.id, forms },
+          stateId: s.id,
+          stateUid: s.uid,
+        })
+      }
+      for (let i = 0; i < (s.doneData.params?.length ?? 0); i++) {
+        const p = s.doneData.params![i]!
+        if (!p.name?.trim() || typeof p.expr !== 'string' || !p.expr.trim()) {
+          add({
+            severity: 'error',
+            code: 'structure.state.donedata-param-invalid',
+            params: { id: s.id, index: i },
+            stateId: s.id,
+            stateUid: s.uid,
+          })
+        }
+      }
     }
     if (s.kind === 'atomic' && kids.length) {
       add({
@@ -345,13 +399,31 @@ export function validateStructure(doc: ProjectDoc): StructureReport {
         transitionId: t.id,
       })
     }
-    if (!byUid.has(t.target)) {
+    if (t.target !== null && !byUid.has(t.target)) {
       add({
         severity: 'error',
         code: 'structure.transition.missing-target',
         params: { id: t.id, target: t.target, event: t.event },
         transitionId: t.id,
       })
+    }
+    if (t.target === null) {
+      if (byUid.get(t.source)?.kind === 'history') {
+        add({
+          severity: 'error',
+          code: 'structure.transition.history-targetless',
+          params: { id: t.id },
+          transitionId: t.id,
+        })
+      }
+      if (!t.event && t.delayMs === undefined) {
+        add({
+          severity: 'warning',
+          code: 'structure.transition.internal-eventless',
+          params: { id: t.id },
+          transitionId: t.id,
+        })
+      }
     }
     if (t.delayMs !== undefined) {
       if (!Number.isFinite(t.delayMs) || t.delayMs < 10) {

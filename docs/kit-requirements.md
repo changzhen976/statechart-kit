@@ -10,8 +10,8 @@
 | --- | --- | --- | --- | --- |
 | KIT-001 | `statechart-kit` 编辑器 | P1 | 全屏编辑器左侧「结构 / 状态树」栏无法上下滚动 | 已修复（0.8.1） |
 | KIT-002 | `@tinyactors/scxmljs` 渲染器 | P1 | `layoutChart` 在「history 直接挂在 parallel 下 + 转移指向 history」时抛异常，官方 `<scxml-view>` 所有状态重叠 | 已绕过；最小复现 + issue 草案 + fork 方案已记录，待上游修复 |
-| KIT-003 | `statechart-kit` SCXML 导入 | P2 | `scxmlToDoc` 不支持 `<donedata>`，导入时告警并丢弃该元素 | 已移除 donedata；待 kit 支持 |
-| KIT-004 | `statechart-kit` SCXML 导入 | P2 | `scxmlToDoc` 不支持无 target 的内部转移，导入告警且 ProjectDoc 无法表达 | 已改为显式 target；待 kit 支持 |
+| KIT-003 | `statechart-kit` SCXML 导入 | P2 | `scxmlToDoc` 不支持 `<donedata>`，导入时告警并丢弃该元素 | 已支持（0.9.0） |
+| KIT-004 | `statechart-kit` SCXML 导入 | P2 | `scxmlToDoc` 不支持无 target 的内部转移，导入告警且 ProjectDoc 无法表达 | 已支持（0.9.0） |
 | KIT-005 | `@tinyactors/scxmljs` 渲染器 | P2 | 复杂图中同源/同目标的多条条件转移共享走廊，线条近重合、视觉上像重复 | 已记录最小证据与修复方案；待上游修复 |
 
 ---
@@ -76,9 +76,9 @@ Kit 的布局链是完整的：
 - 能滚动到最后一个状态和最后一条转移；
 - 右侧属性栏滚动行为不受影响。
 
-### 当前绕过
+### 修复（0.8.1）
 
-测试服务器使用的已安装包尚未更新，因此本轮未修复远程静态 CSS。上层可在 `editor-page/index.html` 临时覆盖 `.sce-side-left { overflow-y:auto }`，但根因修复应在 kit。
+0.8.1 已在 `src/vue/styles.css` 给 `.sce-side-left` 增加 `overflow-y: auto`，建立左栏独立滚动上下文；右栏仍由 `.sce-tab-body` 滚动。发布后宿主升级依赖即可，无需临时覆盖。
 
 ---
 
@@ -306,6 +306,12 @@ import.element.unsupported
 
 Cell/Supervisor 的终止态已移除 `<donedata>`。终止信息改用事件（`sys.cell.decommissioned`、`sys.supervisor.shutdown`）传递。
 
+### 实现（0.9.0）
+
+`StateNode.doneData` 支持 `content` / `expr` / `param` 三种形态；`scxmlToDoc` 保留
+`<donedata>`，`serializeToScxml` 原样导出，结构校验限制为 final 且拒绝多形态并存。
+宿主之前移除的 donedata 需在宿主侧自行恢复，kit 不会自动改回。
+
 ---
 
 ## KIT-004：`scxmlToDoc` 支持无 target 的内部转移
@@ -347,6 +353,13 @@ import.transition.no-target
 - Job `job.priority`：移除（测试按钮一并删除）。
 
 现在三台机器导入均为 0 warning / 0 structure issue。
+
+### 实现（0.9.0）
+
+`TransitionEdge.target` 允许为 `null`，并新增 `transitionType?: 'internal' | 'external'`。
+导入器保留无 target / `type="internal"` 转移，序列化器省略 target、保留 type；
+编辑器结构面板可新建“无目标（内部转移）”，画布可选中 targetless chip。
+`import.transition.no-target` 不再发出。宿主可以恢复之前的无 target 握手写法。
 
 ---
 
@@ -467,7 +480,7 @@ CASCADE_BASE=http://homeassistant:1880 npm run test:cascade
 
 ## 更新建议
 
-- KIT-001 属于纯 CSS/布局修复，风险低，建议优先进入 `statechart-kit` 0.8.x 补丁。
+- KIT-001 已进入 `statechart-kit` 0.8.1 补丁。
 - KIT-002 属于上游 `@tinyactors/scxmljs` 渲染器修复；在修复前，文档和示例应避免 parallel 直接挂 history。
-- KIT-003 / KIT-004 属于导入器能力补齐，可与编辑器表单改造一起做。
+- KIT-003 / KIT-004 已在 0.9.0 完成模型、导入器、序列化器、校验与编辑器支持。
 - KIT-005 属于上游布线能力增强；建议先做最小边组偏移，再评估 bundle/折叠交互。

@@ -95,10 +95,7 @@ export const SNAPSHOT_FILES = KIT_FILES
 
 /** 仍与 donor 逐字节一致的搬运文件 */
 export const DONOR_MIRRORED = [
-  { file: 'src/core/model.ts', donor: 'src/core/model.ts', ref: '6b5cfb6' },
-  { file: 'src/core/serializer.ts', donor: 'src/core/serializer.ts', ref: '6b5cfb6' },
   { file: 'src/core/examples.ts', donor: 'src/core/examples.ts', ref: '6b5cfb6' },
-  { file: 'test/smoke-engine.ts', donor: 'scripts/smoke-engine.ts', ref: 'edd8558' },
   { file: 'test/verify-timers.ts', donor: 'scripts/verify-timers.ts', ref: 'edd8558' },
 ]
 
@@ -107,6 +104,18 @@ export const DONOR_DIVERGED = [
   {
     file: 'src/core/index.ts',
     reason: 'P1/P2 导出面：命名策略/迁移/事件目录/激活树/结构校验/严格序列化',
+  },
+  {
+    file: 'src/core/model.ts',
+    reason: '0.9：doneData、target 可空、transitionType（KIT-003/004）',
+  },
+  {
+    file: 'src/core/serializer.ts',
+    reason: '0.9：输出 donedata / targetless / type=internal（KIT-003/004）',
+  },
+  {
+    file: 'test/smoke-engine.ts',
+    reason: '0.9：donedata 已支持，更新过时的 MVP 注释；断言不变',
   },
   {
     file: 'src/core/action-parse.ts',

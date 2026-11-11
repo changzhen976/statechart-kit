@@ -26,6 +26,8 @@ const exit = ref('')
 const entryArr = ref<string[]>([])
 const exitArr = ref<string[]>([])
 const idErr = ref('')
+const doneExpr = ref('')
+const doneErr = ref('')
 
 const event = ref('')
 const cond = ref('')
@@ -55,6 +57,8 @@ watch(
     exit.value = s.exitActions.join('\n')
     entryArr.value = [...s.entryActions]
     exitArr.value = [...s.exitActions]
+    doneExpr.value = s.doneData?.expr ?? ''
+    doneErr.value = ''
   },
   { immediate: true },
 )
@@ -93,6 +97,16 @@ const parentOptions = computed(() => {
 const initialKids = computed(() =>
   st.value ? editor.doc.states.filter((s) => s.parent === st.value!.uid && s.kind !== 'history') : [],
 )
+const doneReadOnly = computed(() => {
+  const d = st.value?.doneData
+  return !!d && (!!d.params?.length || d.content !== undefined)
+})
+const doneSummary = computed(() => {
+  const d = st.value?.doneData
+  if (!d) return ''
+  if (d.params?.length) return d.params.map((p) => `param ${p.name} = ${p.expr}`).join('\n')
+  return d.content ?? ''
+})
 const actionEventOptions = computed(() => editor.eventOptions())
 const variableOptions = computed(() => editor.doc.datamodel.map((d) => d.id))
 const sendIdOptions = computed(() => {
@@ -141,6 +155,18 @@ function commitInitial(): void {
 }
 function commitHistoryType(): void {
   if (st.value) editor.updateState(st.value.uid, { historyType: historyType.value })
+}
+function commitDoneExpr(): void {
+  if (!st.value || st.value.kind !== 'final' || doneReadOnly.value) return
+  const expr = doneExpr.value.trim()
+  const err = editor.updateState(st.value.uid, { doneData: expr ? { expr } : undefined })
+  doneErr.value = err ?? ''
+}
+function clearDoneData(): void {
+  if (!st.value) return
+  doneExpr.value = ''
+  const err = editor.updateState(st.value.uid, { doneData: undefined })
+  doneErr.value = err ?? ''
 }
 function commitEntry(): void {
   if (st.value) editor.updateState(st.value.uid, { entryActions: lines(entry.value) })
@@ -260,6 +286,23 @@ function setRootInitial(e: Event): void {
           <option value="deep">{{ editor.labels.deep }}</option>
         </select>
       </div>
+      <div v-if="kind === 'final'" class="sce-field">
+        <label>{{ editor.labels.doneData }}</label>
+        <template v-if="doneReadOnly">
+          <pre class="sce-done-data">{{ doneSummary }}</pre>
+          <p class="sce-meta">{{ editor.labels.doneDataReadOnly }}</p>
+          <button :disabled="editor.locked" @click="clearDoneData">{{ editor.labels.clearDoneData }}</button>
+        </template>
+        <template v-else>
+          <input
+            v-model="doneExpr"
+            :disabled="editor.locked"
+            :placeholder="editor.labels.doneDataExpr"
+            @change="commitDoneExpr"
+          />
+          <p v-if="doneErr" class="sce-error">{{ doneErr }}</p>
+        </template>
+      </div>
 
       <div class="sce-field">
         <label>{{ editor.labels.entryActions }}</label>
@@ -310,6 +353,9 @@ function setRootInitial(e: Event): void {
       </div>
       <p class="sce-meta">
         {{ editor.stateName(tr.source) }} → {{ editor.stateName(tr.target) }}
+      </p>
+      <p v-if="tr.target === null" class="sce-meta">
+        {{ editor.labels.internalTransition }}：只执行动作，不退出/进入状态。
       </p>
       <div class="sce-field">
         <label>{{ editor.labels.event }}</label>

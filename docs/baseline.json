@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "generatedAt": "2026-11-11T10:30:51.585Z",
+  "generatedAt": "2026-11-11T10:38:56.880Z",
   "package": "statechart-kit",
   "phase": "P4 (core/editor boundary, BASE_POLICY, EditorModule)",
   "donor": {
@@ -16,41 +16,41 @@
   },
   "hashes": {
     "src/core/index.ts": "946d7896eb7edfea8a1ef5b6377d5cc5764f08b566451bded352c505524fd1a2",
-    "src/core/model.ts": "42ac87dbfd64b723d5a2868718be86b539dd220e6e8fe0e36f79e8270c9b67bc",
-    "src/core/serializer.ts": "10e49ecd5d828b23939aed988b91f1f16ff9411e2089049c2dd2a8de97c15168",
+    "src/core/model.ts": "8a49f55c8c9e2c8673cffdf28a4e95c7163b12ee852f822f1ac152fa606dda37",
+    "src/core/serializer.ts": "b2857c961229168487865e7505fc053bf138c03ccf4b781d041e99b4840d3a1c",
     "src/core/action-parse.ts": "1e17f872fbc3f4dd162d7ca71050343119e5cddec3819c33b1e6a7c0b6f7d512",
     "src/core/naming-policy.ts": "6f3e79b3276b76af4aacb65189eed5725f2669606456ec8c71e208479d7cdc72",
     "src/core/naming.ts": "2b208bcfa2e8725fbb1962808b98d3f3d00e03ae882cd778ffdf17b61d6a71e8",
     "src/core/migrate.ts": "524780186ef72843c1d8739097dc9f31ebce78d7df1ef18744322615619a520a",
-    "src/core/scxml-import.ts": "468d1e052d891b118be7a67cc70d34fac821d43d3954027b21cd92b576a6342f",
+    "src/core/scxml-import.ts": "ada7cdf787c8559fd2d7746f177aeee0f3dcaf075ccd7ac080e4470526815db8",
     "src/core/examples.ts": "72705f834ba6419259d3cb94141830375aa079d2c871bfd85778e8256ac3dddb",
     "src/core/log.ts": "28e6d494c8eda6c21f0d4596994e54eb7fb69b28e3e445fbba75ca8d463d4a9c",
-    "src/core/event-catalog.ts": "7223566699f8a0cb2a61a0961c1e2cea85162f7da1e31c47d2b20c774419d7b7",
+    "src/core/event-catalog.ts": "198d42651317cdc9f0690711ee4fa88145fe632e422dfb1bf737b3ff56d3f615",
     "src/core/active-tree.ts": "5954ed2011b6bbe95d7bf66eeb1623a3a659a54e4467248754d42a69431350ec",
-    "src/core/validate-structure.ts": "dc4a6d0dc32d3c7949bae3e0f725ba5097b3bd74a810b597eb096d02edd75de9",
+    "src/core/validate-structure.ts": "949f106e1aed98264c4d3b05d339856124b2ede9e0e0a1aa2e9c53636ad7ca0e",
     "src/core/cdata.ts": "6712716be850bca088f14bee52c25ca41b21fb5bb6f5442166f761a4cd312bd0",
     "src/core/serialize-checked.ts": "824309b6b523272a03779b6b0f40e972ef306d56c31725b33a7ad42b71b223da",
     "src/engine/index.ts": "e93152d4b16f435717b7c916d705b81e86ca7bc0da8146cf60d3c422e2fcbfb5",
     "src/engine/session-runner.ts": "1632232faff6990c7c18c3343af132dc6318c3e1b44a613f1aecfc1065a0ead7",
     "src/engine/validator.ts": "560391a2d3224a15ac39e42085ff9c0cd9caeffca878810bd9f91e46a65afd4b",
     "src/engine/engine-loader.ts": "fdd77d765cf437550d5f8a4a934bbc274d791188f394d44d906e4215032dc96d",
-    "src/diagnostics/zh.ts": "3fc3d0bd5663ca3c27e40aea9d51a64ec0c761527a0c58a3a595162befc46881",
+    "src/diagnostics/zh.ts": "26739215c4bbe9d1eddad92d6cd83b307a94696073700c07c65052576b27d9d6",
     "src/vue/index.ts": "9be211a53a848b89bc62e59e037282d451c1498d79de71f6cb9ece09279e5515",
     "src/vue/types.ts": "95be396c038f2094c4d50ad8c47bcb1fb632178f60b35dfc322f7cd0dcc98a6c",
     "src/vue/features.ts": "c964bd123d1360224d2a93330ddbb373840bb6d65737812e8276691deae8ce8d",
-    "src/vue/labels.ts": "ce4b06e39c3b81a9c78223f0da121f5425f9248aa181bf23c7f82b36b8222215",
+    "src/vue/labels.ts": "ef66bcb996900492ff8f148390bc4ba6d3fb45acafb4757ffb377ddf04904216",
     "src/vue/format.ts": "dbdae06d8eca5ea29a1c15baaf688518fbd96af0516a308dd531d45a934181c5",
     "src/vue/events.ts": "923c9ea6c11d5e22713b02b691eede1ec12278de3784dbb365025374a4690c96",
     "src/vue/browser-adapter.ts": "0eb02f35f1394ecc107c7fbdf94c20886d48e12fc5a00ee2274c3a85182074c7",
-    "src/vue/editor-store.ts": "f0ae74ee81c3d2c6b1416ed24b15b2aea81654d124ba79a9ab73a63af24f544d",
+    "src/vue/editor-store.ts": "66c9b14eca8944682012ae9b2fd282ffabb9d9a63af29d723be22372f126cb62",
     "src/vue/use-editor.ts": "5c4e1a312fd464323f8a11d70e377ecf333df7f0b2199f79bc32c38340f8beb1",
     "src/vue/modules.ts": "dfb32c012649f01576b69b1f4cb892cae80a52e755f6807bc8dba898304b2d77",
     "src/vue/shims-vue.d.ts": "aa5ca4dfba3d7281e62ac0efdbb46b0d671d41ab64c8a2c6cd5e66bbe82fc3a8",
     "src/vue/EditorHost.vue": "5c30aca22b76146510f3afac759b6d0eb2d2d8ec299b0788ed747eba9a46ea55",
     "src/vue/Toolbar.vue": "82ff10188f6ff90b936e63be07ea45ffbc57cd1806c840ae5aaf09d2d850cf4b",
-    "src/vue/StructurePanel.vue": "4454c2ff84a31cd51b560f5487bdf5c46d94a076a7ef39d53a1fbeac1f5b2c73",
-    "src/vue/ChartCanvas.vue": "6bd2f198c913993aae735172205a7a8940cbcb19d4d657b33b1211f208776a73",
-    "src/vue/PropertyPanel.vue": "d5d8d2caa3257701ad44d9ce5a392e6e54f7384b376817160805565b16e06676",
+    "src/vue/StructurePanel.vue": "6e017909a0fa0ca2d140dced7eb17928dbc1dca8079e0fc07bb1c39fdcc13ca8",
+    "src/vue/ChartCanvas.vue": "4915b22f5f236112a0da459e97f80d09294d52a1585945d28a8566a2605d60f1",
+    "src/vue/PropertyPanel.vue": "99b9f9da71bad631c4a232a42795a374cf102bf6ef06c84362930a7a1b4229d2",
     "src/vue/ActionListEditor.vue": "ccea226b8015e59d3a3bba5b408dcd90013e4a93c24a91ffaba9a1f82a84545a",
     "src/vue/EventCombo.vue": "0a64f2229b132ef7ea65e70e880a735cf51d752a04b17d4ada718820407273a4",
     "src/vue/VariablesPanel.vue": "e603a72417dc1eda98109c93659b1223924970d504adb5f1978ec735e24857d1",
@@ -59,38 +59,23 @@
     "src/vue/SimBar.vue": "60c23e8d9a9b53bb86149207fa3c6eef60860b4700211e78810c0afb6079f539",
     "src/vue/ValidationDialog.vue": "163afb8437382a05894b7510a1676463a5968617df421722845ae86730ed9fd2",
     "src/vue/ConfirmDialog.vue": "df1d3596d3a918e545ba80d77b17f3577a3c024dea90ac0f00dc7c10bb3c4499",
-    "src/vue/styles.css": "2e25754e9769aa6641769cc7856180287f9e6cab3a9f8a46a9ca2091a1e186db",
-    "test/verify-import.ts": "a0263162f8e6bb0fb0bb9866b839a79da391579fc29f38c4da390d8f456cbfb4",
-    "test/smoke-engine.ts": "62fb993142107b4579902aecfb8835c1c9b658fff33a60164147ecc3c3c4ebc4",
+    "src/vue/styles.css": "971547cc3859968733b5fdbd44101829dccb0873fe1f76224514ade51c1585e6",
+    "test/verify-import.ts": "cbc0870cd7fb0f8231ea7ec1eb8c1e0f7cfae4fd1faa80696327c83e70ab73a0",
+    "test/smoke-engine.ts": "5c34b539ec1b4b9368cde174873948b9460ec126eba94eb05ce9e4a2500ced1e",
     "test/verify-timers.ts": "bb9f57ffb46415179ec600d1722d9e0381efb9b7a180501b9694d6a42f5f4ec4",
     "test/verify-naming.ts": "01567249ad9927b3e65b56ad21eb81fd3bde79f0c06771809a7b05be2910ee10",
-    "test/verify-events.ts": "6668294fa476c2e6bb3c45ffce410617f9712d65555a8920b0d68cca2b9c1da6",
-    "test/verify-validation.ts": "095434160c7d846a80d1255cb516bce2f5b38b1a1c025276fec3347dad9b4bfb",
+    "test/verify-events.ts": "3a62876b4ce4755258a545372f393c768abac2fe221f569b7ac91170f486a6f2",
+    "test/verify-validation.ts": "7b84627da98f7cbe4c2c26b666228f3df4ef5646039e95c600557487b1d63c2a",
     "test/verify-engine.ts": "d40e610b39c545b9e9b5e0a96ebb06214f3fab1903460b3481c7ff961db5e152",
-    "test/verify-editor.ts": "fff20ba52fa69d8adc8dcb0fc10311251afdce934ab79a2187cfcc3a83dbfa39",
-    "test/verify-host-events.ts": "66b753e3570c0526b64d3ef8dccaf1d88bebae1f74bd26bd87f74f03784eb498",
+    "test/verify-editor.ts": "87f3cc33a531bca1ab5840886866fd1a4266108189019cb971075bd9f8d637a7",
+    "test/verify-host-events.ts": "0aeb0e3a777301bde96343e9c3ff9b609f58f42353b13aa863b9f297833a9555",
     "test/fixtures/server-policy.ts": "efa112f336eed9afe591328a26919f93ee5587c25ae504c32220d2d4fa35fd4d"
   },
   "mirrored": [
     {
-      "file": "src/core/model.ts",
-      "donor": "src/core/model.ts",
-      "ref": "6b5cfb6"
-    },
-    {
-      "file": "src/core/serializer.ts",
-      "donor": "src/core/serializer.ts",
-      "ref": "6b5cfb6"
-    },
-    {
       "file": "src/core/examples.ts",
       "donor": "src/core/examples.ts",
       "ref": "6b5cfb6"
-    },
-    {
-      "file": "test/smoke-engine.ts",
-      "donor": "scripts/smoke-engine.ts",
-      "ref": "edd8558"
     },
     {
       "file": "test/verify-timers.ts",
@@ -102,6 +87,18 @@
     {
       "file": "src/core/index.ts",
       "reason": "P1/P2 导出面：命名策略/迁移/事件目录/激活树/结构校验/严格序列化"
+    },
+    {
+      "file": "src/core/model.ts",
+      "reason": "0.9：doneData、target 可空、transitionType（KIT-003/004）"
+    },
+    {
+      "file": "src/core/serializer.ts",
+      "reason": "0.9：输出 donedata / targetless / type=internal（KIT-003/004）"
+    },
+    {
+      "file": "test/smoke-engine.ts",
+      "reason": "0.9：donedata 已支持，更新过时的 MVP 注释；断言不变"
     },
     {
       "file": "src/core/action-parse.ts",

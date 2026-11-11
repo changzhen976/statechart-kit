@@ -131,6 +131,48 @@ console.log('── 4b) done 无 donedata：data 为 undefined ──')
   await runner.stop()
 }
 
+console.log('── 4c) targetless 内部转移：动作执行且状态不变 ──')
+{
+  const runner = new SessionRunner({ domParser })
+  await runner.start(
+    xmlOpen(`
+      <datamodel><data id="n" expr="0"/></datamodel>
+      <state id="a">
+        <transition event="tick" type="internal"><assign location="n" expr="n+1"/></transition>
+        <transition event="go" target="b"/>
+      </state>
+      <state id="b"/>
+    `),
+  )
+  runner.send('tick')
+  await runner.settled()
+  assert(runner.snapshot().n === 1, 'targetless 转移执行 assign')
+  assert(runner.activeStateIds().includes('a') && !runner.activeStateIds().includes('b'), 'targetless 转移不退出源状态')
+  await runner.stop()
+}
+
+console.log('── 4d) donedata content/param 形状 ──')
+{
+  for (const [label, body, expected] of [
+    ['content 文本', '<donedata><content>{"a":1}</content></donedata>', { a: 1 }],
+    ['param', '<donedata><param name="x" expr="42"/></donedata>', { x: 42 }],
+  ] as const) {
+    const runner = new SessionRunner({ domParser })
+    const events = collect(runner)
+    await runner.start(
+      xmlOpen(`<state id="a"><transition event="finish" target="done"/></state><final id="done">${body}</final>`),
+    )
+    runner.send('finish')
+    await runner.settled()
+    const done = events.find((e) => e.type === 'done')
+    assert(
+      done?.type === 'done' && JSON.stringify(done.data) === JSON.stringify(expected),
+      `${label}：done.data 形状正确（${JSON.stringify(done?.data)}）`,
+    )
+    await runner.stop()
+  }
+}
+
 console.log('── 5) error：kind/message 结构化 ──')
 {
   const runner = new SessionRunner({ domParser, engine: 'trusted' })

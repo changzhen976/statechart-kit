@@ -116,12 +116,78 @@ console.log('── A) validateStructure（core）──')
   fallback.states[0]!.kind = 'compound'
   fallback.states.push(st(kid, 'kid', 'atomic', fallback.states[0]!.uid))
   assert(codes(fallback).includes('structure.state.initial-fallback'), '复合状态无 initial → warning（序列化器回退第一个子状态）')
+
+  const internal = twoStateDoc()
+  internal.transitions = [
+    { id: 'ti', source: internal.states[0]!.uid, target: null, transitionType: 'internal', event: 'ping', cond: '', actions: [] },
+  ]
+  assert(validateStructure(internal).ok, '无 target 的内部转移结构合法')
+
+  const historyTargetless = twoStateDoc()
+  historyTargetless.states.push(st(newUid(), 'h', 'history', historyTargetless.states[0]!.uid))
+  historyTargetless.transitions = [
+    { id: 'th', source: historyTargetless.states[2]!.uid, target: null, event: '', cond: '', actions: [] },
+  ]
+  assert(codes(historyTargetless).includes('structure.transition.history-targetless'), '历史默认转移无 target 报错')
+
+  const eventlessInternal = twoStateDoc()
+  eventlessInternal.transitions = [
+    { id: 'te', source: eventlessInternal.states[0]!.uid, target: null, event: '', cond: '', actions: [] },
+  ]
+  assert(
+    validateStructure(eventlessInternal).issues.some(
+      (i) => i.code === 'structure.transition.internal-eventless' && i.severity === 'warning',
+    ),
+    '无事件内部转移给 warning',
+  )
+
+  const done = twoStateDoc()
+  done.states[1]!.kind = 'final'
+  done.states[1]!.doneData = { expr: "'ok'" }
+  assert(validateStructure(done).ok, 'final 的 donedata expr 合法')
+
+  const doneContent = twoStateDoc()
+  doneContent.states[1]!.kind = 'final'
+  doneContent.states[1]!.doneData = { content: '{"a":1}' }
+  assert(validateStructure(doneContent).ok, 'final 的 donedata content 合法')
+
+  const doneParams = twoStateDoc()
+  doneParams.states[1]!.kind = 'final'
+  doneParams.states[1]!.doneData = { params: [{ name: 'x', expr: '42' }] }
+  assert(validateStructure(doneParams).ok, 'final 的 donedata param 合法')
+
+  const doneNonFinal = twoStateDoc()
+  doneNonFinal.states[0]!.doneData = { expr: '1' }
+  assert(codes(doneNonFinal).includes('structure.state.donedata-not-final'), '非 final 的 donedata 报错')
+
+  const doneAmbiguous = twoStateDoc()
+  doneAmbiguous.states[1]!.kind = 'final'
+  doneAmbiguous.states[1]!.doneData = { expr: "'x'", params: [{ name: 'x', expr: '1' }] }
+  assert(codes(doneAmbiguous).includes('structure.state.donedata-ambiguous'), 'donedata 多形态并存报错')
+
+  const doneBadParam = twoStateDoc()
+  doneBadParam.states[1]!.kind = 'final'
+  doneBadParam.states[1]!.doneData = { params: [{ name: '', expr: '' }] }
+  assert(codes(doneBadParam).includes('structure.state.donedata-param-invalid'), 'donedata param 缺 name/expr 报错')
 }
 
 console.log('── B) engine 校验 ──')
 {
   const ok = await validateAgainstEngine(trafficLightDoc(), { domParser })
   assert(ok.ok && ok.issues.length === 0, '合法文档通过引擎 parse+compile')
+
+  const internalEngine = twoStateDoc()
+  internalEngine.transitions = [
+    { id: 'ti', source: internalEngine.states[0]!.uid, target: null, transitionType: 'internal', event: 'ping', cond: '', actions: [] },
+  ]
+  const internalOk = await validateAgainstEngine(internalEngine, { domParser })
+  assert(internalOk.ok, '引擎接受无 target 的内部转移')
+
+  const doneEngine = twoStateDoc()
+  doneEngine.states[1]!.kind = 'final'
+  doneEngine.states[1]!.doneData = { params: [{ name: 'x', expr: '42' }] }
+  const doneOk = await validateAgainstEngine(doneEngine, { domParser })
+  assert(doneOk.ok, '引擎接受 final 的 donedata param')
 
   const broken = await validateScxml('<scxml><state></scxml>', domParser)
   assert(!broken.ok && broken.issues.length > 0, '非法 XML 返回 issues')

@@ -26,7 +26,7 @@
 | Vue 编辑器（`statechart-kit/vue`） | Node-RED 节点与事件总线 |
 | 命名/校验/编辑能力注入（`EditorAdapter`） | 服务端部署、草稿锁、MQTT/路由来源抓取 |
 
-## 状态：P4.1 —— 可嵌入 Vue 编辑器 + 通用宿主属性
+## 状态：0.9.0 —— donedata + 无 target 内部转移
 
 P0 是 `scxml-creator` 的逐字快照；P1 在保持行为的前提下完成四件事（`0.2.0`）：
 
@@ -42,8 +42,8 @@ P0 是 `scxml-creator` 的逐字快照；P1 在保持行为的前提下完成四
 4. **事件模块拆分**：文档事件事实 / 三方向目录 / 激活树进入 core
    （`event-catalog.ts`、`active-tree.ts`）；时钟/路由/MQTT 来源与展示文案留在宿主。
 
-逐字搬运文件（`model`/`serializer`/`examples` 与两个 P0 测试）仍由
-`npm run check:baseline` 保证与 donor 同字节；P1/P2 改写的文件记录在 `docs/baseline.json`
+逐字搬运文件（`examples` 与 P0 的 timers 测试）仍由
+`npm run check:baseline` 保证与 donor 同字节；其余改写文件记录在 `docs/baseline.json`
 的 `diverged` 字段。
 
 P2（`0.3.0`）把 engine 补齐为可独立消费的运行时：

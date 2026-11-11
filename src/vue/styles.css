@@ -193,6 +193,17 @@
 .sce-exit { margin-left: 4px; }
 
 .sce-panel { padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+.sce-done-data {
+  margin: 0;
+  padding: 6px 8px;
+  background: var(--scxml-surface-2);
+  border: 1px solid var(--scxml-border);
+  border-radius: 6px;
+  color: var(--scxml-fg-muted);
+  font: 11.5px/1.5 var(--scxml-font-mono);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
 .sce-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .sce-panel-head h3 { margin: 0; font: 600 13px var(--scxml-font-sans); }
 .sce-panel-head h4 { margin: 6px 0 0; font: 600 12px var(--scxml-font-sans); color: var(--scxml-fg-muted); }

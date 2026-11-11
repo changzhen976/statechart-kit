@@ -198,7 +198,7 @@ export interface EditorStore {
   locateIssue(issue: ValidationIssue): void
 
   eventOptions(): EditorEventOption[]
-  stateName(uid: string): string
+  stateName(uid: string | null): string
   validateEventName(name: string, transitionId?: string): string | null
   checkVarId(index: number, id: string): string | null
 
@@ -223,7 +223,7 @@ export interface EditorStore {
   updateState(uid: string, patch: Partial<StateNode>): string | null
   removeState(uid: string): boolean
   setParent(childUid: string, parentUid: string | null): void
-  addTransition(sourceUid: string, targetUid: string, opts?: { event?: string; delayMs?: number; delayUnit?: 's' | 'ms' }): string | null
+  addTransition(sourceUid: string, targetUid: string | null, opts?: { event?: string; delayMs?: number; delayUnit?: 's' | 'ms' }): string | null
   updateTransition(id: string, patch: Partial<TransitionEdge>): void
   removeTransition(id: string): void
   addVariable(): void
@@ -326,7 +326,8 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     state.selection = { kind, id }
   }
 
-  function stateName(uid: string): string {
+  function stateName(uid: string | null): string {
+    if (uid === null) return labels.noTarget
     const s = state.doc.states.find((x) => x.uid === uid)
     return s ? s.label || s.id : uid
   }
@@ -768,6 +769,9 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
       patch = { ...patch }
       delete patch.historyType
     }
+    if (patch.doneData !== undefined && (patch.kind ?? s.kind) !== 'final') {
+      return '完成数据只能用于终态'
+    }
     captureUndo(`updateState:${uid}`)
     const idChanged = patch.id !== undefined && patch.id !== s.id
     Object.assign(s, patch)
@@ -776,7 +780,7 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
         if (t.delayMs === undefined) continue
         if (t.source !== s.uid && t.target !== s.uid) continue
         const srcId = state.doc.states.find((x) => x.uid === t.source)?.id ?? t.source
-        const dstId = state.doc.states.find((x) => x.uid === t.target)?.id ?? t.target
+        const dstId = t.target === null ? null : (state.doc.states.find((x) => x.uid === t.target)?.id ?? t.target)
         t.event = autoDelayEventName(state.doc, srcId, dstId, t.delayMs, t.delayUnit)
       }
     }
@@ -792,7 +796,7 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     doomed.add(uid)
     state.doc.states = state.doc.states.filter((s) => !doomed.has(s.uid))
     state.doc.transitions = state.doc.transitions.filter(
-      (t) => !doomed.has(t.source) && !doomed.has(t.target),
+      (t) => !doomed.has(t.source) && (t.target === null || !doomed.has(t.target)),
     )
     for (const s of state.doc.states) {
       if (s.initial && doomed.has(s.initial)) s.initial = null
@@ -838,32 +842,35 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
 
   function addTransition(
     sourceUid: string,
-    targetUid: string,
+    targetUid: string | null,
     opts: { event?: string; delayMs?: number; delayUnit?: 's' | 'ms' } = {},
   ): string | null {
     if (readOnly() || state.sim.running) return '当前为只读/仿真中'
-    if (!state.doc.states.some((s) => s.uid === sourceUid)) return '源状态不存在'
-    if (!state.doc.states.some((s) => s.uid === targetUid)) return '目标状态不存在'
     const src = state.doc.states.find((s) => s.uid === sourceUid)
-    const tgt = state.doc.states.find((s) => s.uid === targetUid)
-    if ((src?.kind === 'history' || tgt?.kind === 'history') && sourceUid === targetUid) {
+    if (!src) return '源状态不存在'
+    const tgt = targetUid === null ? null : state.doc.states.find((s) => s.uid === targetUid)
+    if (targetUid !== null && !tgt) return '目标状态不存在'
+    if (src.kind === 'history' && targetUid === null) {
+      return '历史伪态的默认转移必须有目标状态'
+    }
+    if ((src.kind === 'history' || tgt?.kind === 'history') && sourceUid === targetUid) {
       return '历史伪态不能以自身为源/目标'
     }
-    if (src?.kind === 'history' && state.doc.transitions.some((t) => t.source === sourceUid)) {
+    if (src.kind === 'history' && state.doc.transitions.some((t) => t.source === sourceUid)) {
       return '历史伪态只能有一条默认转移'
     }
-    if (src?.kind === 'history' && opts.delayMs !== undefined) {
+    if (src.kind === 'history' && opts.delayMs !== undefined) {
       return '历史伪态的默认转移不能使用延时触发'
     }
     let event = opts.event?.trim() ?? ''
     // 历史伪态的出边是默认转移：不带事件/条件
-    if (src?.kind === 'history') event = ''
+    if (src.kind === 'history') event = ''
     if (opts.delayMs !== undefined) {
       if (!Number.isFinite(opts.delayMs) || opts.delayMs < 10) return '延时需 ≥ 10ms'
       event = autoDelayEventName(
         state.doc,
-        src?.id ?? sourceUid,
-        tgt?.id ?? targetUid,
+        src.id,
+        tgt?.id ?? null,
         opts.delayMs,
         opts.delayUnit ?? 's',
       )
@@ -875,12 +882,13 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
       id: newTransitionId(),
       source: sourceUid,
       target: targetUid,
+      ...(targetUid === null ? { transitionType: 'internal' as const } : {}),
       event,
       cond: '',
       actions: [],
       ...(opts.delayMs !== undefined ? { delayMs: opts.delayMs, delayUnit: opts.delayUnit ?? 's' } : {}),
     }
-    captureUndo(`addTransition:${sourceUid}->${targetUid}`)
+    captureUndo(`addTransition:${sourceUid}->${targetUid ?? 'internal'}`)
     state.doc.transitions.push(t)
     touch()
     select('transition', t.id)
@@ -897,12 +905,22 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
       if ('event' in patch) patch.event = ''
       if ('cond' in patch) patch.cond = ''
       if ('delayMs' in patch) delete patch.delayMs
+      if ('target' in patch && patch.target === null) delete patch.target
+    }
+    if ('target' in patch) {
+      if (patch.target === undefined) {
+        patch = { ...patch }
+        delete patch.target
+      } else if (patch.target !== null && !state.doc.states.some((s) => s.uid === patch.target)) {
+        return
+      }
     }
     captureUndo(`updateTransition:${id}`)
     Object.assign(t, patch)
+    if (t.target === null && t.transitionType === undefined) t.transitionType = 'internal'
     if (t.delayMs !== undefined) {
       const srcId = state.doc.states.find((x) => x.uid === t.source)?.id ?? t.source
-      const dstId = state.doc.states.find((x) => x.uid === t.target)?.id ?? t.target
+      const dstId = t.target === null ? null : (state.doc.states.find((x) => x.uid === t.target)?.id ?? t.target)
       t.event = autoDelayEventName(state.doc, srcId, dstId, t.delayMs, t.delayUnit, t.event)
     } else if (!t.event) {
       // 取消延时后保留用户之前填的事件（若有）；无事件转移合法
@@ -1014,7 +1032,9 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     const doomed = descendantsOf(state.doc, uid)
     doomed.add(uid)
     const kids = doomed.size - 1
-    const trs = state.doc.transitions.filter((t) => doomed.has(t.source) || doomed.has(t.target)).length
+    const trs = state.doc.transitions.filter(
+      (t) => doomed.has(t.source) || (t.target !== null && doomed.has(t.target)),
+    ).length
     const parts = [`将删除状态「${s.label || s.id}」`]
     if (kids) parts.push(`及其 ${kids} 个子状态`)
     if (trs) parts.push(`及 ${trs} 条关联转移`)

@@ -21,12 +21,12 @@
 
 | 项 | 值 |
 | --- | --- |
-| 版本 | `0.8.0`（宿主运行时 typed 事件契约） |
+| 版本 | `0.9.0`（donedata + targetless/internal transitions） |
 | 分支 | `main` |
 | 远程 | 内部 Gitea；公开镜像 GitHub（见 §11） |
 | P3 提交 | `0257756 feat(p3): add embeddable Vue editor with adapter-driven host boundary` |
-| 已完成阶段 | P0 快照、P1 策略/校验、P2 引擎选项、P3 Vue 编辑器、P4 scope cleanup + EditorModule、P4.1 通用变量/事件属性 |
-| 阶段 | P4.2 完成：UI 收尾（固定状态位/标签页/事件面板） |
+| 已完成阶段 | P0 快照、P1 策略/校验、P2 引擎选项、P3 Vue 编辑器、P4 scope cleanup + EditorModule、P4.1 通用变量/事件属性、0.9 导入能力补齐（KIT-003/004） |
+| 阶段 | P4.2 UI 收尾 + 0.9.0 完成：donedata / 无 target 内部转移 |
 
 阶段路线图与估时见 `docs/roadmap.md`；P3 迁移边界见 `docs/editor-p3.md`；
 P2 架构梳理/隐患清单见 `docs/architecture-review-p2.md`；诊断 code 契约见
@@ -37,7 +37,7 @@ P2 架构梳理/隐患清单见 `docs/architecture-review-p2.md`；诊断 code �
 ```bash
 npm install
 npm run typecheck     # tsc --noEmit && vue-tsc --noEmit
-npm test              # 8 个套件（P0 3 + P1 3 + P2 1 + P3 1）
+npm test              # 9 个套件（P0 3 + P1 3 + P2 1 + P3 1 + 0.8 host events）
 npm run build         # tsup(core/engine/policies) + vite(Vue) + vue-tsc d.ts + 样式复制
 npm run verify:all    # typecheck + test + build + baseline + check:vue + check:pack
 npm run check:pack    # 真实打包/解包，按 exports map 导入
@@ -45,7 +45,7 @@ npm run check:vue     # happy-dom 中挂载 dist/vue.js
 ```
 
 单独套件：`test:import` / `test:smoke` / `test:timers` / `test:naming` /
-`test:events` / `test:validation` / `test:engine` / `test:editor`。
+`test:events` / `test:validation` / `test:engine` / `test:editor` / `test:host-events`。
 
 本机 npm 默认 cache 可能只读：
 

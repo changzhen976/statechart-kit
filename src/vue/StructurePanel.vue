@@ -14,6 +14,8 @@ const q = computed(() => filter.value.trim().toLowerCase())
 
 const source = ref('')
 const target = ref('')
+/** 目标下拉的哨兵值：表示无 target 的内部转移（避免 v-model 绑 null 的边界问题） */
+const INTERNAL_TARGET = '__internal__'
 const newEvent = ref('')
 const delayOn = ref(false)
 const delayVal = ref(5)
@@ -30,7 +32,9 @@ watch(
     if (!source.value) source.value = editor.selection.kind === 'state' ? editor.selection.id ?? '' : ''
     if (!target.value) target.value = ''
     if (source.value && !editor.doc.states.some((s) => s.uid === source.value)) source.value = ''
-    if (target.value && !editor.doc.states.some((s) => s.uid === target.value)) target.value = ''
+    if (target.value && target.value !== INTERNAL_TARGET && !editor.doc.states.some((s) => s.uid === target.value)) {
+      target.value = ''
+    }
   },
   { immediate: true },
 )
@@ -113,13 +117,14 @@ async function delTransition(id: string): Promise<void> {
 
 function add(): void {
   addError.value = ''
-  if (!source.value || !target.value) {
-    addError.value = '请选择源状态和目标状态'
+  if (!source.value) {
+    addError.value = '请选择源状态'
     return
   }
+  const targetUid = target.value === INTERNAL_TARGET ? null : target.value || null
   const raw = Number(delayVal.value) || 10
   const delayMs = Math.max(10, delayUnit.value === 's' ? Math.round(raw * 1000) : Math.round(raw))
-  const err = editor.addTransition(source.value, target.value, {
+  const err = editor.addTransition(source.value, targetUid, {
     ...(delayOn.value ? { delayMs, delayUnit: delayUnit.value } : { event: newEvent.value }),
   })
   if (err) {
@@ -187,6 +192,7 @@ function add(): void {
         <label>{{ editor.labels.target }}</label>
         <select v-model="target" :disabled="editor.locked">
           <option value="" disabled>{{ editor.labels.target }}</option>
+          <option :value="INTERNAL_TARGET">{{ editor.labels.noTarget }}</option>
           <option v-for="s in editor.doc.states" :key="s.uid" :value="s.uid">{{ s.label || s.id }}</option>
         </select>
       </div>
@@ -234,8 +240,8 @@ function add(): void {
         @click="selectTransition(t.id)"
       >
         <span class="sce-event">{{ t.event || 'ε' }}</span>
-        <span class="sce-arrow">→</span>
-        <span class="sce-target">{{ editor.stateName(t.target) }}</span>
+        <span class="sce-arrow">{{ t.target === null ? '·' : '→' }}</span>
+        <span class="sce-target">{{ t.target === null ? editor.labels.internalTransition : editor.stateName(t.target) }}</span>
         <span v-if="t.delayMs !== undefined" class="sce-tag">⏱ {{ t.delayMs }}ms</span>
         <button class="sce-icon-btn" :disabled="editor.locked" @click.stop="delTransition(t.id)">×</button>
       </div>

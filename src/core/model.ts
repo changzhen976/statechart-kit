@@ -20,6 +20,27 @@
  */
 export type StateKind = 'atomic' | 'compound' | 'final' | 'parallel' | 'history'
 
+/** 转移语义：internal = 不退出源状态；external 为 SCXML 默认。无 target 时 type 不影响语义。 */
+export type TransitionType = 'internal' | 'external'
+
+/** <donedata><param name="x" expr="..."/></donedata> 的一个参数 */
+export interface DoneDataParam {
+  name: string
+  expr: string
+}
+
+/**
+ * final 状态的 <donedata>。三种形态互斥（content / expr / params）：
+ * - content：<content>文本</content>
+ * - expr：<content expr="..."/>
+ * - params：<param name="..." expr="..."/> 列表
+ */
+export interface DoneData {
+  content?: string
+  expr?: string
+  params?: DoneDataParam[]
+}
+
 /** 内部稳定键（画布 cell id、布局键、引用键） */
 let uidSeq = 1
 export function newUid(prefix = 's'): string {
@@ -63,6 +84,8 @@ export interface StateNode {
   entryActions: string[]
   /** 退出动作；history 伪态无动作 */
   exitActions: string[]
+  /** final 状态的完成数据（<donedata>）；其他状态由校验拦截 */
+  doneData?: DoneData
 }
 
 /** 内部延迟转移事件的延时（after 语义）：挂在转移上——
@@ -75,8 +98,10 @@ export interface TransitionEdge {
   id: string
   /** 源状态 uid */
   source: string
-  /** 目标状态 uid */
-  target: string
+  /** 目标状态 uid；null = 无 target 的内部转移（只执行动作，不退出/进入状态） */
+  target: string | null
+  /** 显式 <transition type="internal|external">；无 target 时新建默认 internal */
+  transitionType?: TransitionType
   /**
    * 事件名。内部延迟转移（delayMs 存在）由工具自动生成：
    * `delay<N><单位>_<源id>_to_<目标id>`（读名即义：进入源状态 N 后触发）。
@@ -209,6 +234,11 @@ export function normalizeDoc(doc: ProjectDoc): ProjectDoc {
     seen.add(s.uid)
     s.entryActions ??= []
     s.exitActions ??= []
+    if (s.doneData) {
+      if (!Array.isArray(s.doneData.params)) delete s.doneData.params
+      if (typeof s.doneData.expr !== 'string') delete s.doneData.expr
+      if (typeof s.doneData.content !== 'string') delete s.doneData.content
+    }
   }
   doc.eventAttrs ??= {}
   for (const d of doc.datamodel) {
@@ -218,6 +248,9 @@ export function normalizeDoc(doc: ProjectDoc): ProjectDoc {
     t.actions ??= []
     t.event ??= ''
     t.cond ??= ''
+    // 老存档/JSON 可能没有 target：按无目标内部转移处理，而不是让序列化崩溃
+    if (t.target === undefined) t.target = null
+    if (t.transitionType !== 'internal' && t.transitionType !== 'external') delete t.transitionType
     // 内部延迟转移容错：延时非法（<10ms / 非数值）时移除，退化为普通转移
     if (t.delayMs !== undefined && (!Number.isFinite(t.delayMs) || t.delayMs < 10)) delete t.delayMs
   }
@@ -225,8 +258,9 @@ export function normalizeDoc(doc: ProjectDoc): ProjectDoc {
 }
 
 /**
- * 生成内部延迟转移事件名：`delay<N><单位>_<源id>_to_<目标id>`
+ * 生成内部延迟转移事件名：`delay<N><单位>_<源id>_to_<目标id|internal>`
  * （读名即义：进入源状态 N（按单位显示 s/ms）后触发，离开源状态自动撤销）。
+ * 无 target 的内部转移使用 `_to_internal`。
  * 同源同目标同延时同单位有冲突时追加序号（`_2`/`_3`…）。与全文档已有定时器名、
  * 转移事件、动作 send 事件均不冲突（NCName 允许中文）。
  * excludeEvent：改名场景排除自身当前事件名（否则自己占用自己的新名，永远加后缀）。
@@ -234,7 +268,7 @@ export function normalizeDoc(doc: ProjectDoc): ProjectDoc {
 export function autoDelayEventName(
   doc: ProjectDoc,
   sourceId: string,
-  targetId: string,
+  targetId: string | null,
   delayMs: number,
   unit: 's' | 'ms' = 's',
   excludeEvent?: string,
@@ -245,7 +279,7 @@ export function autoDelayEventName(
   }
   // 单位 s 且整秒 → `Ns`；非整秒回落 ms（避免 0.8s 这类小数不直观）
   const n = unit === 's' && delayMs % 1000 === 0 ? `${delayMs / 1000}s` : `${delayMs}ms`
-  const base = `delay${n}_${sourceId}_to_${targetId}`
+  const base = `delay${n}_${sourceId}_to_${targetId ?? 'internal'}`
   if (!taken.has(base)) return base
   let k = 2
   while (taken.has(`${base}_${k}`)) k++

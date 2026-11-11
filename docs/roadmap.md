@@ -13,6 +13,8 @@
 | P3 | Vue 编辑器抽离：`EditorHost`、`features`、`mountEditor`、样式随包 | 6–8 人日 | ✅ 完成（v0.4.0） |
 | P4 | `scxml-creator` 切换到本包，删除本地副本 | 2–3 人日 | ✅ 完成（core/engine + 编辑器） |
 | P4.1 | 变量/事件显式属性（全局/广播）替代前缀约定 | 2–3 人日 | ✅ 完成（kit 通用 attrs + 字段注册） |
+| P4.2 | UI 收尾：固定状态位/标签页/事件面板 | 2–3 人日 | ✅ 完成（v0.7.x） |
+| P4.3 | 导入能力补齐：`<donedata>`、无 target / `type="internal"` 转移（KIT-003/004） | 3–4 人日 | ✅ 完成（v0.9.0） |
 | P5 | `node-red-contrib-scxmljs` 切换（**宿主仓库任务**：删除 vendor 与 17 条构建期替换） | 3–4 人日 | 待开始（不在 kit 发布范围） |
 | P6 | 发布与治理：版本策略、CHANGELOG、发布流水线 | 1.5–2 人日 | 待开始 |
 

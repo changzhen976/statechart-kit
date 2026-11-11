@@ -4,16 +4,25 @@
  * 断言 serialize → import → serialize 逐字节相等）。
  *
  * 外部 SCXML 支持：state/parallel/final/history（含嵌套）、initial 属性与
- * <initial> 子元素、onentry/onexit、transition(event/target/cond)、
+ * <initial> 子元素、onentry/onexit、transition(event/target/cond/type)、
+ * final 的 <donedata>（content/expr/param）、无 target 的内部转移，
  * 动作 send(含 <content> 文本/@expr/delay/id)、cancel、assign、log、
  * script（CDATA）、raise（等价 send）、datamodel/data。
  *
  * 不支持（收集 warnings 后跳过，不中断导入）：if/elseif/else/foreach、
- * donedata、invoke、targetless 转移、多 initial（取第一个）。
+ * invoke、多 initial（取第一个）。
  *
  * 标签（label）默认取 SCXML id——标准 SCXML 不含显示名，导入后在编辑器改名即可。
  */
-import type { MetaAttrs, ProjectDoc, StateNode, TransitionEdge, StateKind } from './model'
+import type {
+  DoneData,
+  MetaAttrs,
+  ProjectDoc,
+  StateNode,
+  TransitionEdge,
+  TransitionType,
+  StateKind,
+} from './model'
 import { emptyDoc, newTransitionId, newUid, normalizeDoc, uniqueStateId } from './model'
 import { isAutoDelayEvent } from './naming'
 import { actionToLine, type ActionStruct } from './action-parse'
@@ -173,6 +182,52 @@ function actionsFromContainer(container: Element, at: ImportLocation, ctx: Ctx):
   return lines
 }
 
+/**
+ * <donedata> → DoneData。
+ * SCXML 允许两种互斥形态：单个 <content>（expr 或文本）或若干 <param>。
+ * 歧义/空形态不在这里丢弃，交给结构校验报错；导入器只负责尽量保留原文。
+ */
+function parseDoneData(el: Element, at: ImportLocation, ctx: Ctx): DoneData | null {
+  const data: DoneData = {}
+  let index = 0
+  for (const child of Array.from(el.children)) {
+    const tag = child.tagName.toLowerCase()
+    if (tag === 'content') {
+      if (child.hasAttribute('expr')) {
+        const expr = child.getAttribute('expr') ?? ''
+        if (!expr.trim()) warn(ctx, 'import.donedata.empty-expr', { at })
+        data.expr = expr
+      } else {
+        const text = (child.textContent ?? '').trim()
+        if (!text) warn(ctx, 'import.donedata.empty-content', { at })
+        else data.content = text
+      }
+    } else if (tag === 'param') {
+      const name = child.getAttribute('name') ?? ''
+      const expr = child.getAttribute('expr') ?? ''
+      if (!name.trim()) {
+        warn(ctx, 'import.donedata.param-invalid', { at, index })
+        index++
+        continue
+      }
+      if (!expr.trim()) warn(ctx, 'import.donedata.param-invalid', { at, index, name })
+      if (!data.params) data.params = []
+      data.params.push({ name, expr })
+      index++
+    } else {
+      warn(ctx, 'import.donedata.unsupported-child', { at, tag })
+    }
+  }
+  const forms = [
+    data.params?.length ? 'params' : '',
+    data.expr !== undefined ? 'expr' : '',
+    data.content !== undefined ? 'content' : '',
+  ].filter(Boolean)
+  if (forms.length > 1) warn(ctx, 'import.donedata.ambiguous', { at, forms: forms.join('+') })
+  if (!data.params?.length && data.expr === undefined && data.content === undefined) return null
+  return data
+}
+
 /** 状态元素（state/parallel/final/history）→ [自身, ...全部后代]（扁平，先根后子） */
 function statesFromEl(
   el: Element,
@@ -226,7 +281,10 @@ function statesFromEl(
       if (target) initialId = target
     } else if (STATE_TAGS[ctag]) {
       childStates.push(child)
-    } else if (ctag === 'donedata' || ctag === 'invoke') {
+    } else if (ctag === 'donedata') {
+      const dd = parseDoneData(child, at, ctx)
+      if (dd) node.doneData = dd
+    } else if (ctag === 'invoke') {
       warn(ctx, 'import.element.unsupported', { at, tag: ctag })
     }
   }
@@ -260,27 +318,31 @@ function transitionFromEl(
   ctx: Ctx,
 ): TransitionEdge | null {
   const targetId = el.getAttribute('target')
-  if (!targetId) {
-    warn(ctx, 'import.transition.no-target', {
-      at,
-      event: el.getAttribute('event') ?? '',
-    })
-    return null
+  let target: string | null = null
+  if (targetId && targetId.trim()) {
+    // 多 target（fork 语义）取第一个
+    const first = targetId.trim().split(/\s+/)[0]!
+    if (/\s+/.test(targetId.trim())) {
+      warn(ctx, 'import.transition.multi-target', { at, target: targetId, taken: first })
+    }
+    const targetUid = ctx.idToUid.get(first)
+    if (!targetUid) {
+      warn(ctx, 'import.transition.missing-target', { at, target: first })
+      return null
+    }
+    target = targetUid
   }
-  // 多 target（fork 语义）取第一个
-  const first = targetId.split(/\s+/)[0]!
-  if (targetId.includes(' ')) {
-    warn(ctx, 'import.transition.multi-target', { at, target: targetId, taken: first })
-  }
-  const targetUid = ctx.idToUid.get(first)
-  if (!targetUid) {
-    warn(ctx, 'import.transition.missing-target', { at, target: first })
-    return null
+  let transitionType: TransitionType | undefined
+  const rawType = el.getAttribute('type')
+  if (rawType) {
+    if (rawType === 'internal' || rawType === 'external') transitionType = rawType
+    else warn(ctx, 'import.transition.type-invalid', { at, type: rawType })
   }
   return {
     id: newTransitionId(),
     source: sourceUid,
-    target: targetUid,
+    target,
+    ...(transitionType ? { transitionType } : {}),
     event: el.getAttribute('event') ?? '',
     cond: el.getAttribute('cond') ?? '',
     actions: actionsFromContainer(el, at, ctx),

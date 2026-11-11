@@ -38,6 +38,8 @@ export interface EditorLabels {
   addTransition: string
   source: string
   target: string
+  noTarget: string
+  internalTransition: string
   event: string
   eventHint: string
   delay: string
@@ -66,6 +68,10 @@ export interface EditorLabels {
   historyType: string
   shallow: string
   deep: string
+  doneData: string
+  doneDataExpr: string
+  doneDataReadOnly: string
+  clearDoneData: string
   cond: string
   actionsHint: string
   rootInitial: string
@@ -137,6 +143,8 @@ export const DEFAULT_LABELS: EditorLabels = {
   addTransition: '添加转移',
   source: '源',
   target: '目标',
+  noTarget: '（内部转移）',
+  internalTransition: '内部转移',
   event: '事件',
   eventHint: '事件名（留空 = 无事件转移）',
   delay: '延时触发',
@@ -165,6 +173,10 @@ export const DEFAULT_LABELS: EditorLabels = {
   historyType: '历史类型',
   shallow: '浅历史',
   deep: '深历史',
+  doneData: '完成数据',
+  doneDataExpr: '完成数据表达式（JS）',
+  doneDataReadOnly: '该终态使用 content/param 形式；当前版本只读保留，清除后可改表达式。',
+  clearDoneData: '清除完成数据',
   cond: '条件（JS）',
   actionsHint: '每行一条动作：send / cancel / assign / log / 自定义 JS',
   rootInitial: '根初始状态',

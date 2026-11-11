@@ -13,7 +13,7 @@
  * 说明：选择"逐行小 DSL + JS 兜底"而不是纯 <script>，是因为延时发送（send delay）
  * 无法用普通 JS 表达，而它正是 Stateflow 中 after(n, sec) 的标准等价物。
  */
-import type { ProjectDoc, StateNode, TransitionEdge } from './model'
+import type { DoneData, ProjectDoc, StateNode, TransitionEdge } from './model'
 import { childrenOf, uidMap } from './model'
 
 /** XML 属性值转义 */
@@ -73,11 +73,28 @@ function actionsBlock(actions: string[], pad: string): string {
 function transitionXml(t: TransitionEdge, idOf: (uid: string) => string, pad: string): string {
   const attrs: string[] = []
   if (t.event) attrs.push(`event="${esc(t.event)}"`)
-  attrs.push(`target="${esc(idOf(t.target))}"`)
+  if (t.target !== null) attrs.push(`target="${esc(idOf(t.target))}"`)
+  if (t.transitionType) attrs.push(`type="${esc(t.transitionType)}"`)
   if (t.cond) attrs.push(`cond="${esc(t.cond)}"`)
   const open = `${pad}<transition ${attrs.join(' ')}`
   const body = actionsBlock(t.actions, pad + '  ')
   return body ? `${open}>${body}\n${pad}</transition>` : `${open}/>`
+}
+
+/** final 的 <donedata>；三种形态按 param > expr > content 的优先级输出（校验会拦截歧义） */
+function doneDataXml(d: DoneData, pad: string): string | null {
+  const inner: string[] = []
+  if (d.params?.length) {
+    for (const p of d.params) {
+      inner.push(`${pad}  <param name="${esc(p.name)}" expr="${esc(p.expr)}"/>`)
+    }
+  } else if (d.expr !== undefined && d.expr !== '') {
+    inner.push(`${pad}  <content expr="${esc(d.expr)}"/>`)
+  } else if (d.content !== undefined) {
+    inner.push(`${pad}  <content>${esc(d.content)}</content>`)
+  }
+  if (!inner.length) return null
+  return `${pad}<donedata>\n${inner.join('\n')}\n${pad}</donedata>`
 }
 
 function stateToScxml(doc: ProjectDoc, s: StateNode, idOf: (uid: string) => string, pad: string): string {
@@ -115,6 +132,11 @@ function stateToScxml(doc: ProjectDoc, s: StateNode, idOf: (uid: string) => stri
   }
   if (!isPseudo && exitAll.length) {
     parts.push(`${pad}  <onexit>${actionsBlock(exitAll, pad + '    ')}\n${pad}  </onexit>`)
+  }
+  // <donedata> 只属于 final；非 final 上的 doneData 由结构校验拦截
+  if (s.kind === 'final' && s.doneData) {
+    const dd = doneDataXml(s.doneData, pad + '  ')
+    if (dd) parts.push(dd)
   }
   for (const c of kids) parts.push(stateToScxml(doc, c, idOf, pad + '  '))
   // history 的出边即其"默认转移"（SCXML 规定写在 <history> 元素内部），此处逻辑天然正确
