@@ -78,6 +78,7 @@ export const TEST_FILES = [
   'test/verify-validation.ts',
   'test/verify-engine.ts',
   'test/verify-editor.ts',
+  'test/verify-host-events.ts',
   'test/fixtures/server-policy.ts',
 ]
 

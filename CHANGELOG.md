@@ -2,6 +2,20 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.8.0] - 2026-11-11
+
+### Added
+
+- `RunnerSendEvent` 新增 `target` / `sendid` 透传
+- `RunnerDoneEvent`（含 donedata）与 `RunnerErrorEvent`（`kind` / `message`）
+- `test:host-events` 覆盖 typed send/done/error 与监听器隔离
+
+### Compatibility
+
+- `RunnerEvent` 是联合类型；使用 `never` 穷举的下游 switch 需要补充分支
+- 未加入 `sendType` / `error.element`：需要时再作为可选字段扩展
+- 编辑器、creator 和现有日志/生命周期行为不变
+
 ## [0.7.5] - 2026-11-11
 
 ### Changed

@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generatedAt": "2026-11-11T03:07:45.760Z",
+  "generatedAt": "2026-11-11T03:32:31.338Z",
   "package": "statechart-kit",
   "phase": "P4 (core/editor boundary, BASE_POLICY, EditorModule)",
   "donor": {
     "name": "scxml-creator",
     "path": "../scxml-creator",
-    "head": "ea64a5e",
+    "head": "1d6da71",
     "headDate": "2026-11-11",
     "coreCommit": "b685abe",
     "coreCommitDate": "2026-11-10",
@@ -31,7 +31,7 @@
     "src/core/cdata.ts": "6712716be850bca088f14bee52c25ca41b21fb5bb6f5442166f761a4cd312bd0",
     "src/core/serialize-checked.ts": "824309b6b523272a03779b6b0f40e972ef306d56c31725b33a7ad42b71b223da",
     "src/engine/index.ts": "e93152d4b16f435717b7c916d705b81e86ca7bc0da8146cf60d3c422e2fcbfb5",
-    "src/engine/session-runner.ts": "3256d6956b049f26f93d8d788da090551fc8f4b3879fc3d064bd8f1ac0a4f1b6",
+    "src/engine/session-runner.ts": "1632232faff6990c7c18c3343af132dc6318c3e1b44a613f1aecfc1065a0ead7",
     "src/engine/validator.ts": "560391a2d3224a15ac39e42085ff9c0cd9caeffca878810bd9f91e46a65afd4b",
     "src/engine/engine-loader.ts": "fdd77d765cf437550d5f8a4a934bbc274d791188f394d44d906e4215032dc96d",
     "src/diagnostics/zh.ts": "3fc3d0bd5663ca3c27e40aea9d51a64ec0c761527a0c58a3a595162befc46881",
@@ -68,6 +68,7 @@
     "test/verify-validation.ts": "095434160c7d846a80d1255cb516bce2f5b38b1a1c025276fec3347dad9b4bfb",
     "test/verify-engine.ts": "d40e610b39c545b9e9b5e0a96ebb06214f3fab1903460b3481c7ff961db5e152",
     "test/verify-editor.ts": "fff20ba52fa69d8adc8dcb0fc10311251afdce934ab79a2187cfcc3a83dbfa39",
+    "test/verify-host-events.ts": "66b753e3570c0526b64d3ef8dccaf1d88bebae1f74bd26bd87f74f03784eb498",
     "test/fixtures/server-policy.ts": "efa112f336eed9afe591328a26919f93ee5587c25ae504c32220d2d4fa35fd4d"
   },
   "mirrored": [

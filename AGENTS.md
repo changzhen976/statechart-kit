@@ -21,7 +21,7 @@
 
 | 项 | 值 |
 | --- | --- |
-| 版本 | `0.7.5`（P4.2：移除事件广播 + 路由迁移） |
+| 版本 | `0.8.0`（宿主运行时 typed 事件契约） |
 | 分支 | `main` |
 | 远程 | 内部 Gitea；公开镜像 GitHub（见 §11） |
 | P3 提交 | `0257756 feat(p3): add embeddable Vue editor with adapter-driven host boundary` |
@@ -210,8 +210,8 @@ P5（node-red）再做：替换 `src/vendor/scxml-core` 与 17 条构建期压�
 
 ## 10. 已知接受风险（不要误当 bug 修）
 
-- 运行日志（`SessionRunner` lifecycle/send/error）仍是自由中文文本；P5 接 Node-RED 时统一
-  i18n，不要在 core 里加文案。
+- 运行日志（`SessionRunner` lifecycle/send/error）仍是自由中文文本；typed send/done/error
+  事件已提供 kind/message，但日志文案不在 core 做稳定承诺，P5 宿主自行 localize。
 - 引擎 `error.*` 的原始 message 放在 `params.detail`，不做稳定格式承诺。
 - `serializeToScxml` 默认容忍半成品；部署/运行路径必须用 `serializeChecked` 或先
   `validateStructure`。

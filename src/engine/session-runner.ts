@@ -19,6 +19,7 @@ import type {
   MicrostepEvent,
   PlaybackClock,
   SCXMLErrorEvent,
+  SCXMLErrorKind,
   SCXMLSession,
   SendEvent,
 } from '@tinyactors/scxmljs/trusted'
@@ -45,13 +46,57 @@ export interface FiredPair {
   targetId: string
 }
 
+/** 一次 <send> 被引擎派发（已过 delay；delay=0 时在微步内同步派发）。 */
+export interface RunnerSendEvent {
+  type: 'send'
+  /** 事件名；非 SCXML 处理器可能为空串 */
+  name: string
+  /** <send> 载荷；未提供时 undefined */
+  data?: unknown
+  /**
+   * 目标，原样透传：
+   * '' 默认（外部 / 自身队列）、'#_internal'、'#_parent'、'#_scxml_<sessionId>'、
+   * invoke id 或自定义 URI
+   */
+  target: string
+  /** <send id> / idlocation；仅声明时存在（匿名延时发送没有） */
+  sendid?: string
+}
+
+/** 会话到达顶层终态；引擎 status 变为 done，但 runner.running 仍为 true 直到 stop()。 */
+export interface RunnerDoneEvent {
+  type: 'done'
+  /** 顶层 final 的 <donedata>；cancel 后恒为 undefined */
+  data: unknown
+}
+
+/** 会话抛出 SCXML 错误事件（不一定是致命错误，图表仍可 transition on error.*）。 */
+export interface RunnerErrorEvent {
+  type: 'error'
+  /** error.execution | error.communication | error.platform */
+  kind: SCXMLErrorKind
+  /** 人读信息，格式不承诺稳定 */
+  message: string
+}
+
+export interface RunnerLogEvent {
+  type: 'log'
+  entry: SimLogEntry
+}
+
+export interface RunnerStoppedEvent {
+  type: 'stopped'
+}
+
 /** runner → store 的回调事件 */
 export type RunnerEvent =
   | { type: 'active'; ids: string[] }
   | { type: 'fired'; pairs: FiredPair[] }
-  | { type: 'send'; name: string; data?: unknown }
-  | { type: 'log'; entry: SimLogEntry }
-  | { type: 'stopped' }
+  | RunnerSendEvent
+  | RunnerDoneEvent
+  | RunnerErrorEvent
+  | RunnerLogEvent
+  | RunnerStoppedEvent
 
 type Listener = (ev: RunnerEvent) => void
 
@@ -246,10 +291,12 @@ export class SessionRunner {
     const onError = (e: SCXMLErrorEvent): void => {
       if (!current()) return
       this.log('error', `${e.kind}: ${e.message}`)
+      this.emit({ type: 'error', kind: e.kind, message: e.message })
     }
-    const onDone = (_e: DoneEvent): void => {
+    const onDone = (e: DoneEvent): void => {
       if (!current()) return
       this.log('lifecycle', '会话已到达终态结束')
+      this.emit({ type: 'done', data: e.data })
     }
     const onSendEv = (e: SendEvent): void => {
       if (!current()) return
@@ -261,7 +308,13 @@ export class SessionRunner {
         `发送事件 ${name}${data !== undefined ? ` ${JSON.stringify(data)}` : ''}`,
         { data },
       )
-      this.emit({ type: 'send', name, data })
+      this.emit({
+        type: 'send',
+        name,
+        data,
+        target: e.message.target,
+        ...(e.message.sendid !== undefined ? { sendid: e.message.sendid } : {}),
+      })
     }
 
     session.addEventListener('send', onSendEv)
