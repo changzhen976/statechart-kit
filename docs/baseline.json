@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generatedAt": "2026-11-11T00:45:05.024Z",
+  "generatedAt": "2026-11-11T01:01:57.260Z",
   "package": "statechart-kit",
   "phase": "P4 (core/editor boundary, BASE_POLICY, EditorModule)",
   "donor": {
     "name": "scxml-creator",
     "path": "../scxml-creator",
-    "head": "f550fd9",
+    "head": "d9b1cb9",
     "headDate": "2026-11-11",
     "coreCommit": "b685abe",
     "coreCommitDate": "2026-11-10",
@@ -49,7 +49,7 @@
     "src/vue/EditorHost.vue": "c7225cd0490317ebc470a7adb43b3f9b0ebbe61c7301f211389847dd4645ee1e",
     "src/vue/Toolbar.vue": "82ff10188f6ff90b936e63be07ea45ffbc57cd1806c840ae5aaf09d2d850cf4b",
     "src/vue/StructurePanel.vue": "2e37d3fbb52a3b57ee285cd634942d9e550e20f1a7734c0e6cb2cfa936ed9f81",
-    "src/vue/ChartCanvas.vue": "23212a97cc52a8bcfb906f0e4f75d50d068c0fb67eeffd6cb4403e4c5b2108bc",
+    "src/vue/ChartCanvas.vue": "6bd2f198c913993aae735172205a7a8940cbcb19d4d657b33b1211f208776a73",
     "src/vue/PropertyPanel.vue": "d5d8d2caa3257701ad44d9ce5a392e6e54f7384b376817160805565b16e06676",
     "src/vue/ActionListEditor.vue": "24b17d4d719bbd4639975b4f5a13764cca0628f9d704e9192b91bcc3238d484e",
     "src/vue/EventCombo.vue": "0a64f2229b132ef7ea65e70e880a735cf51d752a04b17d4ada718820407273a4",

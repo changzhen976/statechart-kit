@@ -2,6 +2,13 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.7.2] - 2026-11-11
+
+### Fixed
+
+- 适应窗口时隐藏官方 `<scxml-view>` 宿主的边框/圆角/背景，消除画布边界线
+- 新增 `check-canvas-select` 样式回归（border/radius/background）
+
 ## [0.7.1] - 2026-11-11
 
 ### Fixed

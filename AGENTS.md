@@ -21,7 +21,7 @@
 
 | 项 | 值 |
 | --- | --- |
-| 版本 | `0.7.1`（P4.2：UI 收尾：工具栏/标签页/事件面板） |
+| 版本 | `0.7.2`（P4.2：UI 收尾 + 适应窗口无边界线） |
 | 分支 | `main` |
 | 远程 | 内部 Gitea；公开镜像 GitHub（见 §11） |
 | P3 提交 | `0257756 feat(p3): add embeddable Vue editor with adapter-driven host boundary` |

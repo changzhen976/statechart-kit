@@ -512,6 +512,10 @@ function transitionIdFromLabel(e: PointerEvent): string | null {
 .view {
   width: 100%;
   height: 100%;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 .explorer-host {
   position: absolute;
