@@ -79,6 +79,10 @@ if (!host.textContent.includes('ProbeTab') || !host.textContent.includes('ProbeC
   throw new Error('模块标签页/工具栏未渲染')
 }
 mounted.editor.addVariable()
+mounted.editor.addState('atomic')
+const probeUid = mounted.editor.selection.id
+if (!probeUid) throw new Error('probe state not selected')
+mounted.editor.updateState(probeUid, { entryActions: ['send probe.event'] })
 mounted.editor.setEventAttr('probe.event', 'broadcast', true)
 await new Promise((r) => setTimeout(r, 20))
 const tabTexts = [...host.querySelectorAll('.sce-tabs button')].map((b) => b.textContent.trim())

@@ -310,6 +310,16 @@
 .sce-attr-table td.name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 12px var(--scxml-font-mono); }
 .sce-attr-table input[type="checkbox"] { margin: 0; vertical-align: middle; }
 .sce-attr-table .sce-var-flag { width: 100%; justify-content: center; }
+.sce-event-section { display: flex; flex-direction: column; gap: 4px; }
+.sce-event-section h4 { margin: 2px 0; font: 600 12px var(--scxml-font-sans); color: var(--scxml-fg); display: flex; align-items: center; gap: 6px; }
+.sce-attr-table td.source { color: var(--scxml-fg-subtle); font-size: 11px; }
+.sce-internal-events { border-top: 1px solid var(--scxml-border); padding-top: 6px; margin-top: 4px; }
+.sce-internal-events summary { cursor: pointer; font: 600 11.5px var(--scxml-font-sans); color: var(--scxml-fg-muted); }
+.sce-internal-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px 8px; align-items: center; padding: 4px 2px; border-bottom: 1px solid var(--scxml-border); }
+.sce-internal-row .delay { font: 11px var(--scxml-font-mono); color: var(--scxml-waiting); white-space: nowrap; }
+.sce-internal-row .target { font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sce-internal-row .raw { grid-column: 1 / 3; font: 10.5px var(--scxml-font-mono); color: var(--scxml-fg-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sce-internal-row .mini { grid-column: 3; grid-row: 1 / 3; font-size: 11px; padding: 1px 7px; }
 
 .sce-sim { overflow-y: auto; }
 .sce-event-chips { display: flex; flex-wrap: wrap; gap: 4px; }

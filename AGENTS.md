@@ -21,7 +21,7 @@
 
 | 项 | 值 |
 | --- | --- |
-| 版本 | `0.7.3`（P4.2：UI 收尾 + 动作/延时布局） |
+| 版本 | `0.7.4`（P4.2：UI 收尾 + 事件方向分组） |
 | 分支 | `main` |
 | 远程 | 内部 Gitea；公开镜像 GitHub（见 §11） |
 | P3 提交 | `0257756 feat(p3): add embeddable Vue editor with adapter-driven host boundary` |

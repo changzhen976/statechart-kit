@@ -48,6 +48,13 @@ export interface EditorLabels {
   properties: string
   variables: string
   events: string
+  sendEvents: string
+  receiveEvents: string
+  eventSource: string
+  transitionListen: string
+  internalEvents: string
+  internalEventHint: string
+  locate: string
   simulation: string
   stateId: string
   stateLabel: string
@@ -140,6 +147,13 @@ export const DEFAULT_LABELS: EditorLabels = {
   properties: '属性',
   variables: '变量',
   events: '事件',
+  sendEvents: '发送事件',
+  receiveEvents: '接收事件',
+  eventSource: '来源',
+  transitionListen: '转移监听',
+  internalEvents: '内部延时事件',
+  internalEventHint: '系统自动生成；只在本机内部收发，不参与广播、路由或 MQTT。',
+  locate: '定位',
   simulation: '仿真',
   stateId: 'SCXML id',
   stateLabel: '显示名',
