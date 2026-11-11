@@ -40,7 +40,8 @@ const baseline = {
   phase: 'P4 (core/editor boundary, BASE_POLICY, EditorModule)',
   donor: {
     name: 'scxml-creator',
-    path: donorRoot,
+    // 公开仓库不写本机绝对路径；check-baseline 只用 DONOR_ROOT/相对约定
+    path: '../scxml-creator',
     head: git(['log', '-1', '--format=%h']),
     headDate: git(['log', '-1', '--format=%ad', '--date=short']),
     coreCommit: git(['log', '-1', '--format=%h', '--', 'src/core']),

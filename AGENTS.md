@@ -23,7 +23,7 @@
 | --- | --- |
 | 版本 | `0.7.0`（P4.1：通用变量/事件属性 + creator 接入） |
 | 分支 | `main` |
-| 远程 | `ssh://git@debian-dev:2222/changzhen.liu/statechart-kit.git` |
+| 远程 | 内部 Gitea；公开镜像 GitHub（见 §11） |
 | P3 提交 | `0257756 feat(p3): add embeddable Vue editor with adapter-driven host boundary` |
 | 已完成阶段 | P0 快照、P1 策略/校验、P2 引擎选项、P3 Vue 编辑器、P4 scope cleanup + EditorModule、P4.1 通用变量/事件属性 |
 | 阶段 | P4.1 完成：core/engine/编辑器已切；变量/事件显式 attrs + 宿主字段注册 |
@@ -220,12 +220,7 @@ P5（node-red）再做：替换 `src/vendor/scxml-core` 与 17 条构建期压�
 
 ## 11. 远程 / 环境
 
-- 远程仓库：`ssh://git@debian-dev:2222/changzhen.liu/statechart-kit.git`
-- 本机 `~/.ssh/config` 的 `debian-dev` Host 用 user01 key；Gitea 端口 2222 需要
-  `debian-dev_gitea` key。仓库已设置：
-  `git config core.sshCommand "ssh -F $HOME/.ssh/config -o IdentitiesOnly=yes -i $HOME/.ssh/debian-dev_gitea"`
-  （仓库本地配置，不随代码提交；如 `$HOME` 未展开请写绝对路径）
-- 等价手动命令：
-  `GIT_SSH_COMMAND="ssh -F $HOME/.ssh/config -o IdentitiesOnly=yes -i $HOME/.ssh/debian-dev_gitea" git push origin main --tags`
+- 内部开发仓库：团队 Gitea（地址、SSH key、token 不写入公开仓库）。
+- 公开镜像：`git@github.com:changzhen976/statechart-kit.git`。
 - 相关仓库：`../scxml-creator`（donor，P4 切换）、`../node-red-contrib-scxmljs`（P5 切换）。
   未接到任务时不要修改它们。

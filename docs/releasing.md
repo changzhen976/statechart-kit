@@ -6,7 +6,7 @@
 ## 1. 发布前置检查
 
 ```bash
-cd /home/changzhen/projects/services/statechart-kit
+cd statechart-kit
 git status --short          # 必须干净
 git log --oneline -3
 npm run verify:all          # typecheck + test + build + baseline + vue + pack
@@ -23,7 +23,7 @@ npm pack --ignore-scripts --pack-destination /tmp --silent
 ## 2. NPM 认证（交互式，只在本机执行）
 
 ```bash
-cd /home/changzhen/projects/services/statechart-kit
+cd statechart-kit
 npm login --auth-type=web
 npm whoami
 npm config get registry       # 应为 https://registry.npmjs.org/
@@ -35,7 +35,7 @@ npm config get registry       # 应为 https://registry.npmjs.org/
 ## 3. 发布
 
 ```bash
-cd /home/changzhen/projects/services/statechart-kit
+cd statechart-kit
 npm publish --access public
 ```
 
@@ -71,7 +71,7 @@ node --input-type=module -e "import('statechart-kit').then(m=>console.log('core'
 ## 5. 打 tag（发布前/后均可，必须与 package.json 一致）
 
 ```bash
-cd /home/changzhen/projects/services/statechart-kit
+cd statechart-kit
 git tag -d v0.7.0 2>/dev/null || true
 git push origin :refs/tags/v0.7.0 2>/dev/null || true
 git tag -a v0.7.0 -m "statechart-kit 0.7.0: generic variable/event attrs"
@@ -84,7 +84,7 @@ git push origin v0.7.0
 ## 6. 发布后 creator 的切换（P6 后续）
 
 ```bash
-cd /home/changzhen/projects/services/scxml-creator
+cd ../scxml-creator
 npm install --save statechart-kit@^0.7.0
 git diff package.json package-lock.json
 npm run typecheck && npm run test:all && npm run check:all

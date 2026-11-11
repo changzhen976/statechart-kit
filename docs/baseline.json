@@ -5,7 +5,7 @@
   "phase": "P4 (core/editor boundary, BASE_POLICY, EditorModule)",
   "donor": {
     "name": "scxml-creator",
-    "path": "/home/changzhen/projects/services/scxml-creator",
+    "path": "../scxml-creator",
     "head": "1e86b5a",
     "headDate": "2026-11-10",
     "coreCommit": "b685abe",
