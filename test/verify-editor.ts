@@ -13,6 +13,8 @@ import type { DOMParserLike } from '@tinyactors/scxmljs/trusted'
 import { emptyDoc, type ProjectDoc } from '../src/core/model'
 import { serializeToScxml } from '../src/core/serializer'
 import { createEditor, type CreateEditorOptions } from '../src/vue/editor-store'
+import { matchTransitionId } from '../src/vue/canvas-select'
+import { resolveFeatures } from '../src/vue/features'
 import type { EditorAdapter } from '../src/vue/types'
 import type { Component } from 'vue'
 import type { EditorModule } from '../src/vue/modules'
@@ -150,6 +152,36 @@ console.log('── B2) targetless 转移 / donedata ──')
   const nonFinalErr = editor.updateState(a.uid, { doneData: { expr: '1' } })
   assert(nonFinalErr !== null, '非 final 写入 doneData 被拒绝')
   await editor.destroy()
+}
+
+console.log('── B3) 画布转移标签匹配 ──')
+{
+  assert(resolveFeatures({}).explorer === false, 'Explorer 默认关闭')
+  assert(resolveFeatures({ explorer: true }).explorer === true, 'Explorer 可由 feature flag 打开')
+  const doc = emptyDoc('canvas-select')
+  const a = { uid: 'a1', id: 'a', label: 'a', kind: 'atomic' as const, parent: null, initial: null, entryActions: [], exitActions: [] }
+  const b = { uid: 'b1', id: 'b', label: 'b', kind: 'atomic' as const, parent: null, initial: null, entryActions: [], exitActions: [] }
+  doc.states = [a, b]
+  doc.transitions = [
+    { id: 't-internal', source: a.uid, target: null, event: 'ping', cond: '', actions: [] },
+    { id: 't-edge', source: a.uid, target: b.uid, event: 'go', cond: 'x > 0', actions: [] },
+  ]
+  assert(
+    matchTransitionId(doc, { events: ['ping'], condText: '', targets: [], eventless: 'ε' }) === 't-internal',
+    'targetless chip 标签匹配到内部转移',
+  )
+  assert(
+    matchTransitionId(doc, { events: ['go'], condText: '[x > 0]', targets: ['b'], eventless: 'ε' }) === 't-edge',
+    '有 target 的标签按事件/条件/目标匹配',
+  )
+  assert(
+    matchTransitionId(doc, { events: ['go'], condText: '[x > …]', targets: ['b'], eventless: 'ε' }) === 't-edge',
+    '官方截断的 cond 按前缀匹配',
+  )
+  assert(
+    matchTransitionId(doc, { events: ['go'], condText: '', targets: ['b'], eventless: 'ε' }) === null,
+    '缺少 cond 时不匹配带条件转移',
+  )
 }
 
 console.log('── C) 命名/变量校验 ──')

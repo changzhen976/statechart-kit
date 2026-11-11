@@ -13,7 +13,7 @@ export default defineConfig({
       template: {
         compilerOptions: {
           // 官方 Web Component：不能被当成 Vue 组件解析
-          isCustomElement: (tag) => tag === 'scxml-view',
+          isCustomElement: (tag) => tag === 'scxml-view' || tag === 'scxml-explorer',
         },
       },
     }),
@@ -35,6 +35,7 @@ export default defineConfig({
         '@tinyactors/scxmljs',
         '@tinyactors/scxmljs/view',
         '@tinyactors/scxmljs/trusted',
+        '@tinyactors/scxmljs/explorer',
       ],
     },
   },

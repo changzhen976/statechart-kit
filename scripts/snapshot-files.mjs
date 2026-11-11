@@ -56,6 +56,7 @@ export const VUE_FILES = [
   'src/vue/Toolbar.vue',
   'src/vue/StructurePanel.vue',
   'src/vue/ChartCanvas.vue',
+  'src/vue/canvas-select.ts',
   'src/vue/PropertyPanel.vue',
   'src/vue/ActionListEditor.vue',
   'src/vue/DoneDataEditor.vue',

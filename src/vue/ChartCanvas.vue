@@ -41,6 +41,7 @@ import '@tinyactors/scxmljs/view'
 import { defaultViewStrings } from '@tinyactors/scxmljs/view'
 import { serializeToScxml } from '../core/serializer'
 import { useEditor } from './use-editor'
+import { matchTransitionId } from './canvas-select'
 
 const editor = useEditor()
 
@@ -56,6 +57,9 @@ const selectionText = computed(() => {
 })
 const viewEl = ref<any>(null)
 const panEl = ref<HTMLElement | null>(null)
+const explorerEl = ref<any>(null)
+const explorerOn = ref(false)
+let explorerLoad: Promise<unknown> | null = null
 
 /** 内层画布尺寸：跟随容器实时变化（自适应纵横布局），带最小限制 */
 const innerW = ref(6000)
@@ -156,6 +160,10 @@ watch(
   () => editor.sim.running,
   (running) => {
     resetView()
+    if (!running) {
+      explorerOn.value = false
+      detachExplorer()
+    }
     const el = viewEl.value
     if (!el) return
     if (running) {
@@ -166,6 +174,66 @@ watch(
     }
   },
 )
+
+// ───────────────── Explorer（官方 <scxml-explorer>） ─────────────────
+// 只在仿真运行时可用；按需动态加载，不进入编辑态的初始 bundle 路径。
+
+async function ensureExplorerLoaded(): Promise<void> {
+  if (!explorerLoad) {
+    explorerLoad = import('@tinyactors/scxmljs/explorer').catch((err) => {
+      explorerLoad = null
+      throw err
+    })
+  }
+  await explorerLoad
+}
+
+function detachExplorer(): void {
+  const el = explorerEl.value
+  if (!el) return
+  try {
+    el.detach?.()
+  } catch {
+    /* 元素已卸载时忽略 */
+  }
+}
+
+async function attachExplorer(): Promise<void> {
+  if (!explorerOn.value) return
+  const session = editor.runner.sessionOrNull
+  if (!session) {
+    explorerOn.value = false
+    return
+  }
+  try {
+    await ensureExplorerLoaded()
+    await nextTick()
+    if (!explorerOn.value) return
+    const el = explorerEl.value
+    if (!el) return
+    if (editor.adapter.explorerStrings) el.strings = editor.adapter.explorerStrings
+    el.attach({ session })
+  } catch (err) {
+    explorerOn.value = false
+    editor.pushLog(
+      'system',
+      `Explorer 加载失败：${err instanceof Error ? err.message : String(err)}`,
+      'error',
+    )
+  }
+}
+
+async function toggleExplorer(): Promise<void> {
+  if (!editor.features.explorer) return
+  if (explorerOn.value) {
+    explorerOn.value = false
+    detachExplorer()
+    return
+  }
+  if (!editor.sim.running) return
+  explorerOn.value = true
+  await attachExplorer()
+}
 
 onMounted(() => {
   pushSource()
@@ -184,6 +252,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   if (timer) clearTimeout(timer)
   ro?.disconnect()
+  detachExplorer()
 })
 
 // ───────────────── 缩放 / 平移层（手势阈值模型） ─────────────────
@@ -360,8 +429,6 @@ const OFFICIAL = {
   eventless: defaultViewStrings.eventless,
   /** title 中指向目标列表的箭头分隔符 */
   titleArrow: '→',
-  /** 官方 cond 截断尾部标记 */
-  truncMark: /(…|\.\.\.)$/,
   /** 真交互控件（官方发送/播放/折叠按钮等）；edge-label 是 SPAN 不在其中 */
   interactive: 'button, a, input, select, textarea, label, summary, [role="button"]',
 } as const
@@ -392,7 +459,6 @@ function stateIdFromEvent(e: PointerEvent): string | null {
  * 匹配到多条时取文档顺序第一条；零匹配返回 null（无操作）。
  */
 function transitionIdFromLabel(e: PointerEvent): string | null {
-  const eventless = OFFICIAL.eventless
   const label = e
     .composedPath()
     .find(
@@ -405,10 +471,6 @@ function transitionIdFromLabel(e: PointerEvent): string | null {
     .map((s) => s.textContent?.trim() ?? '')
     .filter(Boolean)
   const condText = (label.querySelector(`[part="${OFFICIAL.condPart}"]`)?.textContent ?? '').trim()
-  // 去掉方括号；截断以 … 或 ... 结尾 → 前缀匹配
-  const condBody = condText.replace(/^\[/, '').replace(/\]$/, '')
-  const condTruncated = OFFICIAL.truncMark.test(condBody)
-  const condPrefix = condBody.replace(OFFICIAL.truncMark, '').trim()
   const title = label.getAttribute('title') ?? ''
   const arrow = title.lastIndexOf(OFFICIAL.titleArrow)
   const targets = (arrow >= 0 ? title.slice(arrow + 1) : '')
@@ -416,26 +478,12 @@ function transitionIdFromLabel(e: PointerEvent): string | null {
     .map((s) => s.trim())
     .filter(Boolean)
 
-  const idOf = (uid: string) => editor.doc.states.find((s) => s.uid === uid)?.id
-  const candidates = editor.doc.transitions.filter((t) => {
-    const tEvents = new Set(t.event ? t.event.split(/\s+/) : [eventless])
-    const lEvents = new Set(labelEvents.length ? labelEvents : [eventless])
-    if (tEvents.size !== lEvents.size || ![...tEvents].every((x) => lEvents.has(x))) return false
-    if (t.target === null) {
-      // 无 target 的转移在官方渲染里是状态盒内的 chip，title 不含 "→ 目标"
-      if (targets.length) return false
-    } else {
-      const tid = idOf(t.target)
-      if (!tid || !targets.includes(tid)) return false
-    }
-    if (condText) {
-      if (condTruncated ? !t.cond.startsWith(condPrefix) : t.cond !== condPrefix) return false
-    } else if (t.cond) {
-      return false
-    }
-    return true
+  return matchTransitionId(editor.doc, {
+    events: labelEvents,
+    condText,
+    targets,
+    eventless: OFFICIAL.eventless,
   })
-  return candidates[0]?.id ?? null
 }
 </script>
 
@@ -466,7 +514,16 @@ function transitionIdFromLabel(e: PointerEvent): string | null {
           autostart="false"
         ></scxml-view>
       </div>
+      <div v-if="explorerOn" class="explorer-host">
+        <scxml-explorer ref="explorerEl"></scxml-explorer>
+      </div>
       <div class="top-right">
+        <button
+          v-if="editor.features.explorer && editor.sim.running"
+          class="explorer-toggle"
+          :class="{ on: explorerOn }"
+          @click="toggleExplorer"
+        >{{ editor.labels.explorer }}</button>
         <div v-if="editor.doc.states.length > 0" class="dir-switch">
           <button :class="{ on: dirMode === 'down' }" title="纵向布局" @click="dirMode = 'down'">纵向</button>
           <button :class="{ on: dirMode === 'right' }" title="横向布局" @click="dirMode = 'right'">横向</button>
@@ -526,6 +583,26 @@ function transitionIdFromLabel(e: PointerEvent): string | null {
   position: absolute;
   inset: 0;
   z-index: 5;
+  background: var(--scxml-surface);
+}
+.explorer-host scxml-explorer {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.explorer-toggle {
+  font: 11px var(--scxml-font-sans);
+  padding: 4px 10px;
+  border: 1px solid var(--scxml-border-2);
+  border-radius: 6px;
+  background: var(--scxml-surface);
+  color: var(--scxml-fg-muted);
+  cursor: pointer;
+}
+.explorer-toggle.on {
+  background: var(--scxml-accent);
+  border-color: var(--scxml-accent);
+  color: var(--scxml-on-accent);
 }
 
 .top-right {

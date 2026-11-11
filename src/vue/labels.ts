@@ -61,6 +61,7 @@ export interface EditorLabels {
   internalEventHint: string
   locate: string
   simulation: string
+  explorer: string
   stateId: string
   stateLabel: string
   kind: string
@@ -178,6 +179,7 @@ export const DEFAULT_LABELS: EditorLabels = {
   internalEventHint: '系统自动生成；只在本机内部收发，不参与广播、路由或 MQTT。',
   locate: '定位',
   simulation: '仿真',
+  explorer: 'Explorer',
   stateId: 'SCXML id',
   stateLabel: '显示名',
   kind: '类型',
