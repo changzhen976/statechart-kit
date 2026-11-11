@@ -2,6 +2,13 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.8.1] - 2026-11-11
+
+### Fixed
+
+- 编辑器左栏「结构」页在状态/转移较多时无法纵向滚动（KIT-001）：`.sce-side-left`
+  建立独立滚动上下文，右侧属性栏滚动行为不变
+
 ## [0.8.0] - 2026-11-11
 
 ### Added

@@ -86,7 +86,9 @@
   background: var(--scxml-surface);
   overflow: hidden;
 }
-.sce-side-left { width: 300px; border-right: 1px solid var(--scxml-border); }
+/* KIT-001：父级 .sce-side 是 overflow:hidden，左栏必须建立自己的纵向滚动上下文，
+   否则结构树与转移列表会被直接裁掉（右栏由 .sce-tab-body 负责滚动）。 */
+.sce-side-left { width: 300px; border-right: 1px solid var(--scxml-border); overflow-y: auto; }
 .sce-side-right { width: 340px; border-left: 1px solid var(--scxml-border); }
 .sce-center { flex: 1; min-width: 0; }
 .sce-center-empty { background: var(--scxml-bg); }

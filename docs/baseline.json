@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generatedAt": "2026-11-11T03:32:31.338Z",
+  "generatedAt": "2026-11-11T10:30:51.585Z",
   "package": "statechart-kit",
   "phase": "P4 (core/editor boundary, BASE_POLICY, EditorModule)",
   "donor": {
     "name": "scxml-creator",
     "path": "../scxml-creator",
-    "head": "1d6da71",
+    "head": "2ff18d5",
     "headDate": "2026-11-11",
     "coreCommit": "b685abe",
     "coreCommitDate": "2026-11-10",
@@ -59,7 +59,7 @@
     "src/vue/SimBar.vue": "60c23e8d9a9b53bb86149207fa3c6eef60860b4700211e78810c0afb6079f539",
     "src/vue/ValidationDialog.vue": "163afb8437382a05894b7510a1676463a5968617df421722845ae86730ed9fd2",
     "src/vue/ConfirmDialog.vue": "df1d3596d3a918e545ba80d77b17f3577a3c024dea90ac0f00dc7c10bb3c4499",
-    "src/vue/styles.css": "f97a63816bbe6b9cb146b3b330475ae3416ec556eece417a27b2ade9f161ef4c",
+    "src/vue/styles.css": "2e25754e9769aa6641769cc7856180287f9e6cab3a9f8a46a9ca2091a1e186db",
     "test/verify-import.ts": "a0263162f8e6bb0fb0bb9866b839a79da391579fc29f38c4da390d8f456cbfb4",
     "test/smoke-engine.ts": "62fb993142107b4579902aecfb8835c1c9b658fff33a60164147ecc3c3c4ebc4",
     "test/verify-timers.ts": "bb9f57ffb46415179ec600d1722d9e0381efb9b7a180501b9694d6a42f5f4ec4",
