@@ -62,6 +62,9 @@ export interface EditorLabels {
   locate: string
   simulation: string
   explorer: string
+  explorerTransitions: string
+  explorerNoState: string
+  explorerNoTransitions: string
   stateId: string
   stateLabel: string
   kind: string
@@ -180,6 +183,9 @@ export const DEFAULT_LABELS: EditorLabels = {
   locate: '定位',
   simulation: '仿真',
   explorer: 'Explorer',
+  explorerTransitions: '状态转移',
+  explorerNoState: '在 Explorer 中选择一个状态',
+  explorerNoTransitions: '该状态没有出边',
   stateId: 'SCXML id',
   stateLabel: '显示名',
   kind: '类型',

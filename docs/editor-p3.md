@@ -143,6 +143,7 @@ P4 引入 [`EditorModule`](editor-modules.md)：全局变量/事件路由/MQTT/�
 
 - 转移属性面板支持编辑 target 与 `internal`/`external`；
 - `DoneDataEditor` 支持 content / expr / param 三种形态；
-- `features.explorer` 接入官方 `<scxml-explorer>`（默认关闭，仿真中可用）；
+- `features.explorer` 接入官方 `<scxml-explorer>`（默认关闭）：编辑态使用未 start 的预览
+  session，仿真态跟随活会话；点击状态会同步选中；覆盖层里的转移列表可直接选中转移；
 - 画布标签匹配抽成 `canvas-select.ts`，有纯函数回归测试；
 - 左右栏拖拽/折叠、真实浏览器回归仍留待 0.10.1。

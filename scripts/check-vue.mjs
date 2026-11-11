@@ -17,7 +17,9 @@ const globals = {
   Element: window.Element,
   Node: window.Node,
   Event: window.Event,
+  EventTarget: window.EventTarget,
   CustomEvent: window.CustomEvent,
+  CSSStyleSheet: window.CSSStyleSheet,
   customElements: window.customElements,
   getComputedStyle: window.getComputedStyle.bind(window),
   requestAnimationFrame: (fn) => setTimeout(() => fn(Date.now()), 0),
@@ -91,4 +93,62 @@ if (!host.textContent.includes('ProbeGlobal') || !host.textContent.includes('Pro
   throw new Error('变量/事件字段未渲染')
 }
 mounted.unmount()
-console.log('vue ok: dist/vue.js mounts EditorHost and unmounts')
+
+// Explorer：编辑态预览 session + 状态/转移选中桥接。官方 explorer 依赖
+// EventTarget/CSSStyleSheet，happy-dom 已提供；真实布局仍由浏览器验证。
+const explorerHost = document.createElement('div')
+document.body.append(explorerHost)
+const explorerDoc = {
+  formatVersion: 1,
+  name: 'explorer-probe',
+  initial: 's1',
+  datamodel: [],
+  layout: {},
+  states: [
+    { uid: 's1', id: 'a', label: 'a', kind: 'atomic', parent: null, initial: null, entryActions: [], exitActions: [] },
+    { uid: 's2', id: 'b', label: 'b', kind: 'atomic', parent: null, initial: null, entryActions: [], exitActions: [] },
+  ],
+  transitions: [
+    { id: 't1', source: 's1', target: 's2', event: 'go', cond: 'x > 0', actions: [] },
+  ],
+}
+const explorerMounted = mountEditor(explorerHost, {
+  initialDoc: explorerDoc,
+  features: {
+    canvas: true,
+    explorer: true,
+    simulation: false,
+    simBar: false,
+    validation: false,
+    examples: false,
+  },
+  autoLoad: false,
+  adapter: { load: () => null, save: () => {}, domParser: new window.DOMParser() },
+})
+await explorerMounted.ready
+const explorerButton = [...explorerHost.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Explorer')
+if (!explorerButton) throw new Error('Explorer 按钮未渲染')
+explorerButton.click()
+await new Promise((r) => setTimeout(r, 900))
+const explorerEl = explorerHost.querySelector('scxml-explorer')
+if (!explorerEl || !explorerEl.shadowRoot) throw new Error('Explorer 未升级/挂载')
+explorerEl.dispatchEvent(
+  new window.CustomEvent('scxml-select', {
+    detail: { state: { id: 'a' } },
+    bubbles: true,
+    composed: true,
+  }),
+)
+await new Promise((r) => setTimeout(r, 80))
+if (explorerMounted.editor.selection.kind !== 'state' || explorerMounted.editor.selection.id !== 's1') {
+  throw new Error(`Explorer 状态选中未同步：${JSON.stringify(explorerMounted.editor.selection)}`)
+}
+const transitionRow = explorerHost.querySelector('.explorer-transition')
+if (!transitionRow) throw new Error('Explorer 转移列表未渲染')
+transitionRow.click()
+await new Promise((r) => setTimeout(r, 50))
+if (explorerMounted.editor.selection.kind !== 'transition' || explorerMounted.editor.selection.id !== 't1') {
+  throw new Error(`Explorer 转移选中未同步：${JSON.stringify(explorerMounted.editor.selection)}`)
+}
+explorerMounted.unmount()
+console.log('vue ok: EditorHost mounts; Explorer edit preview and selection bridge work')
