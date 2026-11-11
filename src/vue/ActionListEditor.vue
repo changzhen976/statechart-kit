@@ -15,7 +15,7 @@ import {
   actionToLine,
   parseActionLine,
   type ActionStruct,
-} from 'statechart-kit'
+} from '../core/action-parse'
 import type { EditorEventOption } from './events'
 import { checkEventName, checkVarName } from '../core/naming'
 import { formatNamingIssue } from './format'
