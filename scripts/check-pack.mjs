@@ -23,6 +23,10 @@ const tmp = await mkdtemp(join(tmpdir(), 'statechart-kit-pack-'))
 try {
   // npm 的默认 cache/logs 目录在只读环境（CI 容器、沙箱）里会 EROFS；
   // 一律指到本次临时目录，保证脚本在任何环境下都能跑。
+  // 外层若是 `npm publish --dry-run`，npm 会把 dry_run 通过环境传给子进程；
+  // 嵌套的 `npm pack` 继承后只模拟、不产出 tgz，必须显式清掉。
+  const packEnv = { ...process.env }
+  delete packEnv.npm_config_dry_run
   execFileSync(
     'npm',
     [
@@ -36,7 +40,7 @@ try {
       join(tmp, 'npm-logs'),
       '--silent',
     ],
-    { cwd: root, stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8' },
+    { cwd: root, env: packEnv, stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8' },
   )
   const tarball = (await readdir(tmp)).find((f) => f.endsWith('.tgz'))
   if (!tarball) throw new Error('npm pack 没有产出 tarball')

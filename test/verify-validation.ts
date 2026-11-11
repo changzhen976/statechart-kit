@@ -160,6 +160,18 @@ console.log('── A) validateStructure（core）──')
   doneNonFinal.states[0]!.doneData = { expr: '1' }
   assert(codes(doneNonFinal).includes('structure.state.donedata-not-final'), '非 final 的 donedata 报错')
 
+  const finalOut = twoStateDoc()
+  finalOut.states[1]!.kind = 'final'
+  finalOut.transitions.push({
+    id: 't-final-out',
+    source: finalOut.states[1]!.uid,
+    target: finalOut.states[0]!.uid,
+    event: 'back',
+    cond: '',
+    actions: [],
+  })
+  assert(codes(finalOut).includes('structure.state.final-transition'), 'final 的出边报错')
+
   const doneAmbiguous = twoStateDoc()
   doneAmbiguous.states[1]!.kind = 'final'
   doneAmbiguous.states[1]!.doneData = { expr: "'x'", params: [{ name: 'x', expr: '1' }] }

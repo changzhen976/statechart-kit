@@ -1,8 +1,16 @@
 {
   "name": "statechart-kit",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "description": "Statechart authoring model, editor and session runner. Produces and drives SCXML; it does not interpret SCXML.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/changzhen976/statechart-kit.git"
+  },
+  "homepage": "https://github.com/changzhen976/statechart-kit#readme",
+  "bugs": {
+    "url": "https://github.com/changzhen976/statechart-kit/issues"
+  },
   "type": "module",
   "sideEffects": [
     "./dist/vue.js",

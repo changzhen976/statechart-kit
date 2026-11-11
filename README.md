@@ -26,7 +26,7 @@
 | Vue 编辑器（`statechart-kit/vue`） | Node-RED 节点与事件总线 |
 | 命名/校验/编辑能力注入（`EditorAdapter`） | 服务端部署、草稿锁、MQTT/路由来源抓取 |
 
-## 状态：0.9.0 —— donedata + 无 target 内部转移
+## 状态：0.9.1 —— donedata + 无 target 内部转移 + 发布工具链收口
 
 P0 是 `scxml-creator` 的逐字快照；P1 在保持行为的前提下完成四件事（`0.2.0`）：
 

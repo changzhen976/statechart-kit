@@ -43,6 +43,7 @@ core 与 engine 的诊断统一返回 `{ code, params }`，宿主按 `code` 查�
 | `structure.state.history-root` / `history-children` | error | history 伪态必须有父、不能有子 |
 | `structure.state.history-actions` | warning | history 的 entry/exit 会被序列化器丢弃 |
 | `structure.state.final-children` / `atomic-children` | error | final/atomic 不能有子状态 |
+| `structure.state.final-transition` | error | final 不能有出边 |
 | `structure.state.donedata-not-final` | error | donedata 只允许出现在 final 状态 |
 | `structure.state.donedata-empty` | error | donedata 的 content/expr 为空，或没有任何形态 |
 | `structure.state.donedata-ambiguous` | error | content / expr / param 多种形态并存 |

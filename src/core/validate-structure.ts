@@ -231,6 +231,18 @@ export function validateStructure(doc: ProjectDoc): StructureReport {
         stateUid: s.uid,
       })
     }
+    if (s.kind === 'final') {
+      const outs = doc.transitions.filter((t) => t.source === s.uid)
+      if (outs.length) {
+        add({
+          severity: 'error',
+          code: 'structure.state.final-transition',
+          params: { id: s.id, count: outs.length },
+          stateId: s.id,
+          stateUid: s.uid,
+        })
+      }
+    }
     if (s.doneData) {
       if (s.kind !== 'final') {
         add({

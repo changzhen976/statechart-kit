@@ -2,6 +2,20 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.9.1] - 2026-11-11
+
+### Fixed
+
+- `check:pack` 在 `npm publish --dry-run` 下失败：嵌套 `npm pack` 不再继承
+  `npm_config_dry_run`，发布前预演可正常完成
+- 结构校验新增 final 状态出边检查（`structure.state.final-transition`），避免非法
+  `<final>` 出边进入引擎后才报错
+
+### Changed
+
+- `package.json` 补充 `repository` / `homepage` / `bugs` 元数据
+- 更新 `docs/releasing.md` 到 0.9.x 实际发布流程（含 2FA、processing、tag/远程约定）
+
 ## [0.9.0] - 2026-11-11
 
 ### Added

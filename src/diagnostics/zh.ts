@@ -46,6 +46,7 @@ const STRUCTURE: Record<string, string> = {
   'structure.state.history-children': '历史伪态「{id}」不能有子状态',
   'structure.state.history-actions': '历史伪态「{id}」的 entry/exit 动作会被忽略',
   'structure.state.final-children': '终态「{id}」不能有子状态',
+  'structure.state.final-transition': '终态「{id}」不能有 {count} 条出边',
   'structure.state.atomic-children': '原子状态「{id}」不能有子状态',
   'structure.state.compound-empty': '组合状态「{id}」没有子状态',
   'structure.state.parallel-initial': '并行状态「{id}」的 initial 会被忽略',

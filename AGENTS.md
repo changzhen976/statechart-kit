@@ -21,12 +21,12 @@
 
 | 项 | 值 |
 | --- | --- |
-| 版本 | `0.9.0`（donedata + targetless/internal transitions） |
+| 版本 | `0.9.1`（0.9 发布工具链收口 + final 出边校验） |
 | 分支 | `main` |
 | 远程 | 内部 Gitea；公开镜像 GitHub（见 §11） |
 | P3 提交 | `0257756 feat(p3): add embeddable Vue editor with adapter-driven host boundary` |
 | 已完成阶段 | P0 快照、P1 策略/校验、P2 引擎选项、P3 Vue 编辑器、P4 scope cleanup + EditorModule、P4.1 通用变量/事件属性、0.9 导入能力补齐（KIT-003/004） |
-| 阶段 | P4.2 UI 收尾 + 0.9.0 完成：donedata / 无 target 内部转移 |
+| 阶段 | P4.2 UI 收尾 + 0.9.x：donedata / 无 target 内部转移 / 发布工具链收口 |
 
 阶段路线图与估时见 `docs/roadmap.md`；P3 迁移边界见 `docs/editor-p3.md`；
 P2 架构梳理/隐患清单见 `docs/architecture-review-p2.md`；诊断 code 契约见
@@ -185,7 +185,8 @@ validateDocument(doc, { policy, domParser })
 `src/{events,storage,audit}.ts`；`test:all` 与 9 个浏览器检查全绿；kit 新增
 `diagnostics/zh`、`EditorModule` 契约，并把 `SERVER_POLICY` 迁回宿主。
 
-**待完成**：file: 依赖改固定版本；Explorer 调试视图/侧栏拖拽等增强可按需作为模块补回。
+**待完成**：creator 已改 `statechart-kit@^0.8.0`，升级到 `^0.9.x` 时需适配可空
+`transition.target`；Explorer 调试视图/侧栏拖拽等增强可按需作为模块补回。
 
 1. core：把 donor `src/core/{model,serializer,action-parse,naming,scxml-import,storage,validator,events}.ts`
    替换为 `statechart-kit` 导入；`naming` 调用改策略优先签名，`events` 用
