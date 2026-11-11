@@ -58,6 +58,7 @@ export const VUE_FILES = [
   'src/vue/ChartCanvas.vue',
   'src/vue/PropertyPanel.vue',
   'src/vue/ActionListEditor.vue',
+  'src/vue/DoneDataEditor.vue',
   'src/vue/EventCombo.vue',
   'src/vue/VariablesPanel.vue',
   'src/vue/EventAttrsPanel.vue',

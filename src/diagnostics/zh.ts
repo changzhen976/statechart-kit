@@ -59,6 +59,7 @@ const STRUCTURE: Record<string, string> = {
   'structure.state.donedata-empty': '状态「{id}」的完成数据为空',
   'structure.state.donedata-ambiguous': '状态「{id}」的完成数据同时使用了多种形式：content / expr / param 只能选一种',
   'structure.state.donedata-param-invalid': '状态「{id}」的第 {index} 个 donedata param 缺少 name 或 expr',
+  'structure.state.donedata-param-duplicate': '状态「{id}」的 donedata param 名称「{name}」重复',
   'structure.root.initial-missing': '根 initial「{initial}」不存在',
   'structure.root.initial-not-top': '根 initial「{initial}」不是顶层状态',
   'structure.variable.missing-id': '第 {index} 个变量缺少 id',

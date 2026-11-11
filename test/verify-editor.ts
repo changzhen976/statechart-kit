@@ -124,10 +124,29 @@ console.log('── B2) targetless 转移 / donedata ──')
   editor.redo()
   assert(editor.doc.transitions[0]!.actions[0] === 'send pong', 'targetless 编辑可重做')
 
+  const current = editor.doc.transitions.find((x) => x.id === t.id)!
+  editor.updateTransition(current.id, { target: b.uid })
+  assert(editor.doc.transitions.find((x) => x.id === t.id)?.target === b.uid, '已有转移可改 target')
+  editor.updateTransition(current.id, { target: null })
+  assert(editor.doc.transitions.find((x) => x.id === t.id)?.target === null, '已有转移可改回无 target')
+  editor.updateTransition(current.id, { transitionType: 'external' })
+  assert(editor.doc.transitions.find((x) => x.id === t.id)?.transitionType === 'external', '可切换 transitionType')
+
+  const delayedId = delayed.id
+  editor.updateTransition(delayedId, { target: a.uid })
+  assert(
+    editor.doc.transitions.find((x) => x.id === delayedId)?.event === `delay2s_${b.id}_to_${a.id}`,
+    '改 target 后延时事件名重算',
+  )
+
   editor.addState('final')
   const done = editor.doc.states[2]!
   const doneErr = editor.updateState(done.uid, { doneData: { expr: "'ok'" } })
   assert(doneErr === null && serializeToScxml(editor.doc).includes('<donedata>'), 'final doneData 可写入并序列化')
+  const contentErr = editor.updateState(done.uid, { doneData: { content: '{"a":1}' } })
+  assert(contentErr === null && serializeToScxml(editor.doc).includes('<content>'), 'doneData content 可写入并序列化')
+  const paramsErr = editor.updateState(done.uid, { doneData: { params: [{ name: 'x', expr: '42' }] } })
+  assert(paramsErr === null && serializeToScxml(editor.doc).includes('<param name="x" expr="42"/>'), 'doneData param 可写入并序列化')
   const nonFinalErr = editor.updateState(a.uid, { doneData: { expr: '1' } })
   assert(nonFinalErr !== null, '非 final 写入 doneData 被拒绝')
   await editor.destroy()

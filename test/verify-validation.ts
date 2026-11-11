@@ -181,6 +181,13 @@ console.log('── A) validateStructure（core）──')
   doneBadParam.states[1]!.kind = 'final'
   doneBadParam.states[1]!.doneData = { params: [{ name: '', expr: '' }] }
   assert(codes(doneBadParam).includes('structure.state.donedata-param-invalid'), 'donedata param 缺 name/expr 报错')
+
+  const doneDupParam = twoStateDoc()
+  doneDupParam.states[1]!.kind = 'final'
+  doneDupParam.states[1]!.doneData = {
+    params: [{ name: 'x', expr: '1' }, { name: 'x', expr: '2' }],
+  }
+  assert(codes(doneDupParam).includes('structure.state.donedata-param-duplicate'), 'donedata param name 重复报错')
 }
 
 console.log('── B) engine 校验 ──')
