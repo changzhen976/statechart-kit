@@ -51,7 +51,7 @@ export interface EditorFieldOption {
  * 通用属性字段（宿主注册）。
  *
  * kit 只负责渲染/写入 `DataVar.attrs` 或 `ProjectDoc.eventAttrs`，不解释 key 的语义：
- * creator 注册 `global`/`broadcast`，Node-RED 可注册 `scope`/`route`。
+ * 宿主可注册 `global`、`scope`、`channel` 等字段；kit 不解释语义。
  */
 export interface EditorAttributeField {
   /** 全局唯一（避免多个模块抢同一 key） */
@@ -130,7 +130,7 @@ export interface EditorModuleContext {
   validators: EditorValidatorRegistry
   /** 变量行内的宿主属性字段（如“全局”） */
   variableFields: EditorAttributeFieldRegistry
-  /** 事件属性字段（如“广播”） */
+  /** 事件属性字段（宿主自定义） */
   eventFields: EditorAttributeFieldRegistry
   /** 模块自定义清理；destroy 时按注册逆序执行 */
   onDispose(fn: () => void): void

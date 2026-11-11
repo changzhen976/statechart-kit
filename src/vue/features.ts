@@ -17,6 +17,8 @@ export interface EditorFeatures {
   structuredActions: boolean
   /** 右栏变量面板 */
   variables: boolean
+  /** 右栏事件面板（发送/接收/内部延时；无事件字段时只读） */
+  events: boolean
   /** 右栏仿真面板 */
   simulation: boolean
   /** 底部仿真控制条 */
@@ -42,6 +44,7 @@ export const DEFAULT_FEATURES: EditorFeatures = {
   properties: true,
   structuredActions: true,
   variables: true,
+  events: true,
   simulation: true,
   simBar: true,
   validation: true,

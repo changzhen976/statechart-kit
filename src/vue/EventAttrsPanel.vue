@@ -87,7 +87,7 @@ const hasAny = computed(() => sendRows.value.length > 0 || receiveRows.value.len
       <h3>{{ editor.labels.events }}</h3>
     </div>
     <p class="sce-meta">
-      发送事件可配置宿主字段（如广播）；接收事件只读；内部延时事件仅在本机内部收发。
+      发送事件可配置宿主字段；接收事件只读；内部延时事件仅在本机内部收发。
     </p>
     <p v-if="!hasAny" class="sce-empty">
       还没有事件：先给转移或 send 动作设置事件名。

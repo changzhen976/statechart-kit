@@ -71,7 +71,7 @@ P3（`0.4.0`）新增可嵌入编辑器 `statechart-kit/vue`：
 **P4 已完成**：`scxml-creator` 已删除本地 `src/core`、`src/engine` 与旧编辑器
 `components/panels/viewhost/stores/project.ts`，改用本包 core/engine + `statechart-kit/vue`。
 宿主命名策略（含 MQTT）迁回 creator，kit 只保留 `BASE_POLICY`。
-编辑器具备画布点击/缩放平移、结构化动作、校验定位；变量/事件的全局/广播等宿主属性
+编辑器具备画布点击/缩放平移、结构化动作、校验定位；变量/事件的全局/自定义属性
 通过 `EditorModule.variableFields/eventFields` 注册，路由/MQTT/部署通过 `EditorModule` / `EditorAdapter` 注入，详见 [`docs/editor-modules.md`](docs/editor-modules.md)。
 
 ## 安装与使用
@@ -248,7 +248,7 @@ npm run verify:all    # 类型 + 测试 + 构建 + 基线 + 打包冒烟
 - 语义化版本；`0.x` 期间 minor 可含破坏性变更，破坏性变更必须写进 `CHANGELOG.md`。
 - 消费方（`scxml-creator`、`node-red-contrib-scxmljs`）应在同一时间 pin 同一版本，避免快照漂移。
 - 每个阶段的完成点打 tag：`v0.1.0` = P0 快照基线，`v0.2.0` = P1 策略/校验/消息 code，`v0.3.0` = P2 引擎选项，`v0.4.0` = P3 Vue 编辑器，`v0.5.0` = P4 边界收敛 + EditorModule，`v0.6.0` = P4 编辑器核心 + creator 接入，
-`v0.7.4` = P4.2 UI 收尾（工具栏/标签页/事件分组/内部延时只读）。
+`v0.7.5` = P4.2 UI 收尾（移除事件广播，统一事件路由）。
 
 ## 路线图
 

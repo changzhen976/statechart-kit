@@ -29,7 +29,7 @@ import type {
 | `ctx.eventSources.add()` | 外部事件来源：时钟/路由/MQTT 入向，合并进事件下拉 |
 | `ctx.validators.add()` | 额外校验：全局变量声明、路由保留事件、MQTT 绑定 |
 | `ctx.variableFields.add()` | 变量行属性：`global`/`scope` 等（写入 `DataVar.attrs`） |
-| `ctx.eventFields.add()` | 事件属性：`broadcast`/`scope` 等（写入 `ProjectDoc.eventAttrs`） |
+| `ctx.eventFields.add()` | 事件属性：宿主自定义 `scope`/`channel` 等（写入 `ProjectDoc.eventAttrs`） |
 | `ctx.onDispose()` | 模块自己的清理（订阅、轮询、连接状态监听） |
 
 模块贡献只通过 `EditorStore` 的公开 action 改文档（`addState`/`updateTransition`/`touch` 等），
@@ -64,11 +64,15 @@ export const globalsModule: EditorModule = {
       defaultValue: false,
     })
     ctx.eventFields.add({
-      id: 'creator.event.broadcast',
-      key: 'broadcast',
-      label: '广播',
-      type: 'boolean',
-      defaultValue: false,
+      id: 'host.event.scope',
+      key: 'scope',
+      label: '范围',
+      type: 'select',
+      options: [
+        { value: 'local', label: '本机' },
+        { value: 'shared', label: '共享' },
+      ],
+      defaultValue: 'local',
     })
     ctx.validators.add(({ doc }) => {
       const bad = doc.datamodel.filter((d) => d.attrs?.global === true && !declared(d.id))

@@ -36,7 +36,7 @@ const moduleTabs = computed(() =>
     }
   }),
 )
-const showEvents = computed(() => editor.eventFields.length > 0)
+const showEvents = computed(() => editor.features.events)
 const initialTab: Tab = editor.features.properties
   ? 'props'
   : editor.features.variables

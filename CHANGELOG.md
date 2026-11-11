@@ -2,6 +2,14 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.7.5] - 2026-11-11
+
+### Changed
+
+- 新增 `features.events`；事件页在没有宿主 eventFields 时仍可显示发送/接收/内部延时只读视图
+- creator 移除 `broadcast` 事件字段；旧 broadcast/ge_ 在服务端迁移为 `target=all` 路由
+- 事件页不再出现跨机广播 checkbox，广播能力统一由事件路由表达
+
 ## [0.7.4] - 2026-11-11
 
 ### Changed
