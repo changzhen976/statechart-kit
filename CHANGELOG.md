@@ -12,6 +12,8 @@
   仿真态跟随运行会话；点击状态同步选中，覆盖层转移列表可选中转移；
   `EditorAdapter.explorerStrings` 可覆盖界面文案（默认关闭）
 - 结构面板在选中变化时自动滚动到对应状态/转移行
+- `preview/` 只读预览容器：多阶段 Dockerfile、`/api/latest` 读取最新 `.scxml/.json`、
+  只读编辑器 + 仿真 + Explorer；附 compose、示例数据与 `preview:build`/`preview:serve` 脚本
 - `canvas-select.ts`：画布标签匹配抽成纯函数，新增 targetless chip / 条件截断回归测试
 - 结构校验：donedata param name 必须为 NCName 且不可重复
 

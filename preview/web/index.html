@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>statechart-kit preview</title>
+    <style>
+      html, body { height: 100%; margin: 0; background: #111418; color: #e8edf2; }
+      body { font: 13px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+      #bar { height: 42px; display: flex; align-items: center; gap: 12px; padding: 0 14px;
+             border-bottom: 1px solid #2a3038; background: #171b20; }
+      #bar strong { font-size: 13px; }
+      #bar .spacer { flex: 1; }
+      #bar .status { color: #8f9aa8; font-size: 11px; max-width: 55%; overflow: hidden;
+                     text-overflow: ellipsis; white-space: nowrap; }
+      #bar .status.error { color: #ff8a84; }
+      #bar button { font: 12px system-ui; padding: 4px 10px; border: 1px solid #35404c;
+                    border-radius: 6px; background: #20262d; color: #e8edf2; cursor: pointer; }
+      #bar button:hover { background: #2a323b; }
+      #app { height: calc(100% - 43px); }
+    </style>
+  </head>
+  <body>
+    <div id="bar">
+      <strong>statechart-kit preview</strong>
+      <span class="status" id="status">加载中…</span>
+      <span class="spacer"></span>
+      <button id="refresh" type="button">刷新最新</button>
+    </div>
+    <div id="app"></div>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

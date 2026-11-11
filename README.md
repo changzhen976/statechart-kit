@@ -256,6 +256,17 @@ npm run verify:all    # 类型 + 测试 + 构建 + 基线 + 打包冒烟
 ## 路线图
 
 见 [`docs/roadmap.md`](docs/roadmap.md)。P4 将把 `scxml-creator` 切换到本包并删除本地副本；
+### 只读预览容器
+
+[`preview/`](preview/README.md) 提供一个极小的只读预览容器：读取挂载目录里最新的
+`.scxml` / `.json`，打开 kit 编辑器做仿真、校验和 Explorer 查看。
+
+```bash
+docker build -f preview/Dockerfile -t statechart-preview .
+docker run -d --name statechart-preview -p 5182:5182 \
+  -v /opt/statechart-preview/data:/data:ro statechart-preview
+```
+
 编辑器迁移边界见 [`docs/editor-p3.md`](docs/editor-p3.md)，P2 架构梳理见
 [`docs/architecture-review-p2.md`](docs/architecture-review-p2.md)。
 

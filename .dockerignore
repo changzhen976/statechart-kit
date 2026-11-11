@@ -1,0 +1,8 @@
+node_modules
+dist
+.tmp
+.npm-cache
+.git
+.gitignore
+*.tgz
+preview/dist

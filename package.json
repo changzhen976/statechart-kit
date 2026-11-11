@@ -75,7 +75,9 @@
     "check:vue": "node scripts/check-vue.mjs",
     "test:editor": "tsx test/verify-editor.ts",
     "prepublishOnly": "npm run verify:all",
-    "test:host-events": "tsx test/verify-host-events.ts"
+    "test:host-events": "tsx test/verify-host-events.ts",
+    "preview:build": "vite build --config preview/vite.config.ts",
+    "preview:serve": "node preview/server.mjs"
   },
   "dependencies": {
     "@tinyactors/scxmljs": "0.2.0-dev.0"
