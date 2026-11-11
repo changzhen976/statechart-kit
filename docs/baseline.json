@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "generatedAt": "2026-11-11T12:33:39.896Z",
+  "generatedAt": "2026-11-11T12:53:29.287Z",
   "package": "statechart-kit",
   "phase": "P4 (core/editor boundary, BASE_POLICY, EditorModule)",
   "donor": {
@@ -38,7 +38,7 @@
     "src/vue/index.ts": "9be211a53a848b89bc62e59e037282d451c1498d79de71f6cb9ece09279e5515",
     "src/vue/types.ts": "b43c2cb02e391074ca6641272fba38d762b89d40b6d5b28b851843d216c46b8a",
     "src/vue/features.ts": "cee73ce5ddc122e52caef8c15c55e7ca536f9fc638d7f77eb510200b2894f4df",
-    "src/vue/labels.ts": "acb33b3b95387f056bd00d8991cfe19f4f031e2339251592bd9ea568db4d8324",
+    "src/vue/labels.ts": "041a86fe13a8841966b878adbd0a4105ab9b4371a61443dca0f8b9ef78cf7966",
     "src/vue/format.ts": "dbdae06d8eca5ea29a1c15baaf688518fbd96af0516a308dd531d45a934181c5",
     "src/vue/events.ts": "923c9ea6c11d5e22713b02b691eede1ec12278de3784dbb365025374a4690c96",
     "src/vue/browser-adapter.ts": "0eb02f35f1394ecc107c7fbdf94c20886d48e12fc5a00ee2274c3a85182074c7",
@@ -48,8 +48,8 @@
     "src/vue/shims-vue.d.ts": "aa5ca4dfba3d7281e62ac0efdbb46b0d671d41ab64c8a2c6cd5e66bbe82fc3a8",
     "src/vue/EditorHost.vue": "5c30aca22b76146510f3afac759b6d0eb2d2d8ec299b0788ed747eba9a46ea55",
     "src/vue/Toolbar.vue": "82ff10188f6ff90b936e63be07ea45ffbc57cd1806c840ae5aaf09d2d850cf4b",
-    "src/vue/StructurePanel.vue": "6e017909a0fa0ca2d140dced7eb17928dbc1dca8079e0fc07bb1c39fdcc13ca8",
-    "src/vue/ChartCanvas.vue": "6828742289afbb7c6dd7eb2c0a7f1cd0b1715d023ac0313cae9f2bc1d0deb425",
+    "src/vue/StructurePanel.vue": "a1ef1834eca77716fc280c0dc2e298766470df34e20a15fc0043d82e1364799e",
+    "src/vue/ChartCanvas.vue": "564ae8fd083ede711830a22490b92e08c65d187bef3c688e481eec0264e13c34",
     "src/vue/canvas-select.ts": "3b1d21b11b98df3616a45e04d2bac109a5a6e77e7afe92674a8d80794ddee0ba",
     "src/vue/PropertyPanel.vue": "c62b793adab14c62faf0efc18f8830ad9e217266143b7cef466708b754adc151",
     "src/vue/ActionListEditor.vue": "ccea226b8015e59d3a3bba5b408dcd90013e4a93c24a91ffaba9a1f82a84545a",

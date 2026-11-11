@@ -64,7 +64,10 @@ P3（`0.4.0`）新增可嵌入编辑器 `statechart-kit/vue`：
 - **`EditorAdapter`**：持久化、文件导入导出、外部事件来源、部署/退出全部由宿主注入；
   编辑器本身不读 localStorage、不发 HTTP。
 - **`features`**：toolbar / structure / canvas / properties / variables / simulation / simBar /
-  validation / importExport / examples / undoRedo / deploy / exit 可按场景裁剪。
+  validation / importExport / examples / undoRedo / deploy / exit / explorer 可按场景裁剪。
+- **Explorer（可选）**：`features.explorer` 打开官方 `<scxml-explorer>`；编辑态使用未启动的
+  预览 session，仿真态跟随运行会话。点击状态会同步选中；覆盖层内的转移列表可直接
+  选中转移并打开属性面板。
 - **样式随包**：`statechart-kit/vue/style.css`（显式 import，避免 CSS 注入时序）。
 - 迁移边界与 P4 清单见 [`docs/editor-p3.md`](docs/editor-p3.md)。
 
@@ -226,7 +229,7 @@ const policy: NamingPolicy = {
 ```sh
 npm install
 npm run typecheck     # tsc --noEmit
-npm test              # 8 个纯逻辑验证套件（P0 三个 + P1 三个 + P2 引擎 + P3 编辑器）
+npm test              # 9 个验证套件（核心/引擎/编辑器/宿主事件）
 npm run build         # tsup（core/engine/policies）+ Vite（Vue）+ vue-tsc d.ts
 npm run verify:all    # 类型 + 测试 + 构建 + 基线 + 打包冒烟
 ```
