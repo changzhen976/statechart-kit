@@ -1,14 +1,12 @@
 <script setup lang="ts">
 /**
- * 变量/事件属性面板。
+ * 变量面板。
  *
  * 变量行 = 名字 + 初始值 + 宿主注册的属性字段（如 creator 的“全局”）。
- * 事件区 = 文档中出现的事件 + 宿主注册的事件字段（如“广播”）。
- * kit 只写 DataVar.attrs / ProjectDoc.eventAttrs，不解释字段语义。
+ * 事件属性在独立的 EventAttrsPanel；kit 不解释字段语义。
  */
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import { useEditor } from './use-editor'
-import { parseActionLine } from '../core/action-parse'
 import type { MetaAttrs, MetaValue } from '../core/model'
 import type { EditorAttributeField } from './modules'
 
@@ -45,29 +43,6 @@ function readField(field: EditorAttributeField, e: Event): MetaValue {
 function setVarField(index: number, field: EditorAttributeField, e: Event): void {
   editor.setVariableAttr(index, field.key, readField(field, e))
 }
-function setEventField(name: string, field: EditorAttributeField, e: Event): void {
-  editor.setEventAttr(name, field.key, readField(field, e))
-}
-
-/** 文档中实际出现的事件（转移监听 + send 动作 + 已有属性） */
-const eventNames = computed(() => {
-  const names = new Set<string>()
-  for (const t of editor.doc.transitions) {
-    if (t.event.trim()) names.add(t.event.trim())
-    for (const line of t.actions) {
-      const a = parseActionLine(line)
-      if (a.type === 'send' && a.event.trim()) names.add(a.event.trim())
-    }
-  }
-  for (const s of editor.doc.states) {
-    for (const line of [...s.entryActions, ...s.exitActions]) {
-      const a = parseActionLine(line)
-      if (a.type === 'send' && a.event.trim()) names.add(a.event.trim())
-    }
-  }
-  for (const name of Object.keys(editor.doc.eventAttrs ?? {})) names.add(name)
-  return [...names].sort((a, b) => a.localeCompare(b))
-})
 </script>
 
 <template>
@@ -77,7 +52,7 @@ const eventNames = computed(() => {
       <button :disabled="editor.locked" @click="editor.addVariable()">{{ editor.labels.addVariable }}</button>
     </div>
     <p class="sce-meta">
-      变量与事件属性由宿主模块定义；序列化为
+      变量属性由宿主模块定义；序列化为
       <code>&lt;data id expr data-kit-attrs/&gt;</code>。
     </p>
     <p v-if="err" class="sce-error">{{ err }}</p>
@@ -132,46 +107,5 @@ const eventNames = computed(() => {
       <button class="sce-icon-btn" :disabled="editor.locked" @click="editor.removeVariable(i)">×</button>
     </div>
 
-    <template v-if="editor.eventFields.length">
-      <div class="sce-panel-head sce-event-head">
-        <h3>事件</h3>
-      </div>
-      <p class="sce-meta">广播等属性作用于“事件名”，不改变转移/动作本身。</p>
-      <p v-if="!eventNames.length" class="sce-empty">还没有事件：先给转移或 send 动作设置事件名。</p>
-      <div v-for="name in eventNames" :key="name" class="sce-event-row">
-        <span class="sce-event-name" :title="name">{{ name }}</span>
-        <template v-for="field in editor.eventFields" :key="field.id">
-          <label v-if="field.type === 'boolean'" class="sce-var-flag" :title="field.title">
-            <input
-              type="checkbox"
-              :checked="fieldValue(editor.doc.eventAttrs?.[name], field) === true"
-              :disabled="editor.locked"
-              @change="setEventField(name, field, $event)"
-            />
-            {{ field.label }}
-          </label>
-          <select
-            v-else-if="field.type === 'select'"
-            class="sce-var-select"
-            :value="String(fieldValue(editor.doc.eventAttrs?.[name], field))"
-            :disabled="editor.locked"
-            :title="field.title"
-            @change="setEventField(name, field, $event)"
-          >
-            <option v-for="opt in field.options ?? []" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-          </select>
-          <input
-            v-else
-            class="sce-var-attr"
-            :type="field.type === 'number' ? 'number' : 'text'"
-            :value="String(fieldValue(editor.doc.eventAttrs?.[name], field))"
-            :disabled="editor.locked"
-            :title="field.title"
-            :placeholder="field.label"
-            @change="setEventField(name, field, $event)"
-          />
-        </template>
-      </div>
-    </template>
   </div>
 </template>

@@ -54,6 +54,18 @@ const mounted = mountEditor(host, {
       setup(ctx) {
         ctx.tabs.add({ id: 'probe-tab', title: 'ProbeTab', component: { render: () => null } })
         ctx.toolbar.add({ id: 'probe-cmd', label: 'ProbeCmd', run: () => {} })
+        ctx.variableFields.add({
+          id: 'probe.var.global',
+          key: 'global',
+          label: 'ProbeGlobal',
+          type: 'boolean',
+        })
+        ctx.eventFields.add({
+          id: 'probe.event.broadcast',
+          key: 'broadcast',
+          label: 'ProbeBroadcast',
+          type: 'boolean',
+        })
       },
     },
   ],
@@ -65,6 +77,14 @@ if (!mounted.editor.doc || mounted.editor.doc.formatVersion !== 1) {
 }
 if (!host.textContent.includes('ProbeTab') || !host.textContent.includes('ProbeCmd')) {
   throw new Error('模块标签页/工具栏未渲染')
+}
+mounted.editor.addVariable()
+mounted.editor.setEventAttr('probe.event', 'broadcast', true)
+await new Promise((r) => setTimeout(r, 20))
+const tabTexts = [...host.querySelectorAll('.sce-tabs button')].map((b) => b.textContent.trim())
+if (!tabTexts.includes('事件')) throw new Error(`事件标签页未渲染：${tabTexts.join(',')}`)
+if (!host.textContent.includes('ProbeGlobal') || !host.textContent.includes('ProbeBroadcast')) {
+  throw new Error('变量/事件字段未渲染')
 }
 mounted.unmount()
 console.log('vue ok: dist/vue.js mounts EditorHost and unmounts')

@@ -21,12 +21,12 @@
 
 | 项 | 值 |
 | --- | --- |
-| 版本 | `0.7.0`（P4.1：通用变量/事件属性 + creator 接入） |
+| 版本 | `0.7.1`（P4.2：UI 收尾：工具栏/标签页/事件面板） |
 | 分支 | `main` |
 | 远程 | 内部 Gitea；公开镜像 GitHub（见 §11） |
 | P3 提交 | `0257756 feat(p3): add embeddable Vue editor with adapter-driven host boundary` |
 | 已完成阶段 | P0 快照、P1 策略/校验、P2 引擎选项、P3 Vue 编辑器、P4 scope cleanup + EditorModule、P4.1 通用变量/事件属性 |
-| 阶段 | P4.1 完成：core/engine/编辑器已切；变量/事件显式 attrs + 宿主字段注册 |
+| 阶段 | P4.2 完成：UI 收尾（固定状态位/标签页/事件面板） |
 
 阶段路线图与估时见 `docs/roadmap.md`；P3 迁移边界见 `docs/editor-p3.md`；
 P2 架构梳理/隐患清单见 `docs/architecture-review-p2.md`；诊断 code 契约见

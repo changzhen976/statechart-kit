@@ -60,6 +60,7 @@ export const VUE_FILES = [
   'src/vue/ActionListEditor.vue',
   'src/vue/EventCombo.vue',
   'src/vue/VariablesPanel.vue',
+  'src/vue/EventAttrsPanel.vue',
   'src/vue/SimPanel.vue',
   'src/vue/SimBar.vue',
   'src/vue/ValidationDialog.vue',

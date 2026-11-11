@@ -47,6 +47,7 @@ export interface EditorLabels {
   milliseconds: string
   properties: string
   variables: string
+  events: string
   simulation: string
   stateId: string
   stateLabel: string
@@ -138,6 +139,7 @@ export const DEFAULT_LABELS: EditorLabels = {
   milliseconds: '毫秒',
   properties: '属性',
   variables: '变量',
+  events: '事件',
   simulation: '仿真',
   stateId: 'SCXML id',
   stateLabel: '显示名',

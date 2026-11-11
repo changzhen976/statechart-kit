@@ -109,7 +109,7 @@ await mounted.ready
 ```
 
 - 模块按传入顺序 `setup`；贡献项按 `order` 排序（缺省 100）。
-- `tabs`/`toolbar` 的 id 必须唯一；与内置 `props`/`vars`/`sim` 冲突会抛错并被隔离。
+- `tabs`/`toolbar` 的 id 必须唯一；与内置 `props`/`vars`/`events`/`sim` 冲突会抛错并被隔离。
 - `eventSources` 与 `adapter.externalEvents` 的结果按事件名合并：tag 去重、tip 换行。
 - 模块校验问题进入统一 `validation.issues`，`kind='module'`，参与 `ok` 判定（warning 不阻断）。
 - `editor.destroy()` 先执行模块清理，再停会话/保存。

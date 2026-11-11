@@ -72,7 +72,12 @@ async function runModule(c: EditorToolbarContribution): Promise<void> {
         :title="editor.labels.projectName"
         @change="onNameChange"
       />
-      <span class="sce-save-state" :class="{ dirty: editor.dirty }">{{ stateText }}</span>
+      <span
+        class="sce-save-state"
+        :class="{ dirty: editor.dirty, saving: editor.saving }"
+        :title="stateText"
+        aria-live="polite"
+      >{{ stateText }}</span>
     </div>
 
     <div v-if="editor.features.undoRedo" class="sce-group">

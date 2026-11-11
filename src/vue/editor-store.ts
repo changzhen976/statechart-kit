@@ -118,7 +118,7 @@ const UNDO_LIMIT = 50
 const UNDO_COALESCE_MS = 800
 const LOG_LIMIT = 300
 const SAVE_DEBOUNCE_MS = 400
-const BUILTIN_TAB_IDS = new Set(['props', 'vars', 'sim'])
+const BUILTIN_TAB_IDS = new Set(['props', 'vars', 'events', 'sim'])
 
 /** ProjectDoc 是纯 JSON 数据；JSON 克隆同时避开 Vue reactive Proxy（structuredClone 不能克隆 Proxy） */
 function cloneDoc(doc: ProjectDoc): ProjectDoc {

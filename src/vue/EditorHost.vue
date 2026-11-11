@@ -14,6 +14,7 @@ import StructurePanel from './StructurePanel.vue'
 import ChartCanvas from './ChartCanvas.vue'
 import PropertyPanel from './PropertyPanel.vue'
 import VariablesPanel from './VariablesPanel.vue'
+import EventAttrsPanel from './EventAttrsPanel.vue'
 import SimPanel from './SimPanel.vue'
 import SimBar from './SimBar.vue'
 import ConfirmDialog from './ConfirmDialog.vue'
@@ -35,13 +36,16 @@ const moduleTabs = computed(() =>
     }
   }),
 )
+const showEvents = computed(() => editor.eventFields.length > 0)
 const initialTab: Tab = editor.features.properties
   ? 'props'
   : editor.features.variables
     ? 'vars'
-    : editor.features.simulation
-      ? 'sim'
-      : (moduleTabs.value[0]?.id ?? 'props')
+    : showEvents.value
+      ? 'events'
+      : editor.features.simulation
+        ? 'sim'
+        : (moduleTabs.value[0]?.id ?? 'props')
 const tab = ref<Tab>(initialTab)
 const activeModule = computed(() => moduleTabs.value.find((t) => t.id === tab.value) ?? null)
 
@@ -49,6 +53,7 @@ const showRight = computed(
   () =>
     editor.features.properties ||
     editor.features.variables ||
+    showEvents.value ||
     editor.features.simulation ||
     moduleTabs.value.length > 0,
 )
@@ -97,26 +102,41 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
       <div v-else class="sce-center sce-center-empty" />
 
       <aside v-if="showRight" class="sce-side sce-side-right">
-        <nav class="sce-tabs">
+        <nav class="sce-tabs" role="tablist">
           <button
             v-if="editor.features.properties"
             :class="{ on: tab === 'props' }"
+            role="tab"
+            :aria-selected="tab === 'props'"
             @click="tab = 'props'"
           >{{ editor.labels.properties }}</button>
           <button
             v-if="editor.features.variables"
             :class="{ on: tab === 'vars' }"
+            role="tab"
+            :aria-selected="tab === 'vars'"
             @click="tab = 'vars'"
           >{{ editor.labels.variables }}</button>
           <button
+            v-if="showEvents"
+            :class="{ on: tab === 'events' }"
+            role="tab"
+            :aria-selected="tab === 'events'"
+            @click="tab = 'events'"
+          >{{ editor.labels.events }}</button>
+          <button
             v-if="editor.features.simulation"
             :class="{ on: tab === 'sim' }"
+            role="tab"
+            :aria-selected="tab === 'sim'"
             @click="tab = 'sim'"
           >{{ editor.labels.simulation }}</button>
           <button
             v-for="t in moduleTabs"
             :key="t.id"
             :class="{ on: tab === t.id, 'sce-tab-module': true }"
+            role="tab"
+            :aria-selected="tab === t.id"
             :title="t.title"
             @click="tab = t.id"
           >{{ t.title }}</button>
@@ -124,6 +144,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
         <div class="sce-tab-body">
           <PropertyPanel v-if="editor.features.properties" v-show="tab === 'props'" />
           <VariablesPanel v-if="editor.features.variables" v-show="tab === 'vars'" />
+          <EventAttrsPanel v-if="showEvents" v-show="tab === 'events'" />
           <SimPanel v-if="editor.features.simulation" v-show="tab === 'sim'" />
           <component
             :is="activeModule.component"
