@@ -28,7 +28,7 @@ services:
     mem_limit: 256m
     cpus: "1.0"
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:5182/health || exit 1"]
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5182/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 30s
       timeout: 5s
       retries: 3

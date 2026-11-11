@@ -45,6 +45,7 @@ docker compose -f preview/compose.yaml up -d --build
 ```bash
 docker build -f preview/Dockerfile \
   --build-arg NPM_REGISTRY=https://registry.npmmirror.com \
+  --build-arg NODE_IMAGE=docker.m.daocloud.io/library/node:22-alpine \
   -t statechart-preview .
 ```
 
