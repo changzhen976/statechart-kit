@@ -132,7 +132,7 @@ export const DEFAULT_LABELS: EditorLabels = {
   target: '目标',
   event: '事件',
   eventHint: '事件名（留空 = 无事件转移）',
-  delay: '内部延迟',
+  delay: '延时触发',
   delayMs: '延时',
   delayUnit: '单位',
   sequence: '秒',

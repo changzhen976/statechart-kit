@@ -236,6 +236,8 @@
 .sce-transition-form { display: flex; flex-direction: column; gap: 6px; padding: 8px; background: var(--scxml-surface-2); border-radius: 6px; }
 .sce-field-row { display: flex; align-items: center; gap: 6px; }
 .sce-field-row label { flex: none; width: 52px; color: var(--scxml-fg-muted); }
+.sce-field-row.sce-delay-row > label { width: auto; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.sce-field-row.sce-delay-row input[type='checkbox'] { flex: none; margin: 0; }
 .sce-field-row select,
 .sce-field-row input:not([type='checkbox']) { flex: 1; }
 .sce-field { display: flex; flex-direction: column; gap: 4px; }

@@ -197,8 +197,8 @@ function add(): void {
       <datalist :id="datalistId">
         <option v-for="name in eventNames" :key="name" :value="name" />
       </datalist>
-      <div class="sce-field-row">
-        <label>
+      <div class="sce-field-row sce-delay-row">
+        <label class="sce-check">
           <input v-model="delayOn" type="checkbox" :disabled="editor.locked" />
           {{ editor.labels.delay }}
         </label>
@@ -218,7 +218,7 @@ function add(): void {
       <div v-for="t in delayed" :key="'delay-' + t.id" class="delay-row">
         <button
           class="link"
-          :title="`内部延迟转移 → ${editor.stateName(t.target)}`"
+          :title="`延时触发转移 → ${editor.stateName(t.target)}`"
           @click="selectTransition(t.id)"
         >⏱ {{ delayLabel(t) }}</button>
       </div>

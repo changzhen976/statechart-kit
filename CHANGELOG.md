@@ -2,6 +2,14 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.7.3] - 2026-11-11
+
+### Fixed
+
+- 赋值动作改为两行：变量选择独占一行、表达式独占一行，避免变量框被压没
+- `内部延迟` 更名 `延时触发`，结构面板标签不再换行（同一行显示 checkbox + 数值 + 单位）
+- 新增 `check-ui-layout` 浏览器回归
+
 ## [0.7.2] - 2026-11-11
 
 ### Fixed

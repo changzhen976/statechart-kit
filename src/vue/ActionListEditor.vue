@@ -332,40 +332,45 @@ function setSendData(i: number, raw: string): void {
         </div>
       </template>
 
-      <!-- 赋值 -->
+      <!-- 赋值：变量选择独占第一行，表达式独占第二行，避免狭小面板把变量框压没 -->
       <template v-else-if="row.type === 'assign'">
-        <div class="combo">
-          <input
-            class="f-var"
-            :value="row.target"
-            :disabled="disabled"
-            placeholder="变量"
-            @change="onInput(i, { type: 'assign', target: ($event.target as HTMLInputElement).value, expr: row.expr })"
-            @blur="closeDd"
-          />
-          <button
-            v-if="!disabled && (variableOptions?.length ?? 0) > 0"
-            class="dd-btn"
-            tabindex="-1"
-            title="选择变量"
-            @mousedown.prevent="toggleDd(i + ':target')"
-          >▼</button>
-          <div v-if="openDd === i + ':target'" class="dd-list">
-            <div
-              v-for="v in variableOptions"
-              :key="v"
-              class="dd-opt"
-              @mousedown.prevent="pickOption(i, 'target', v)"
-            >{{ v }}</div>
+        <div class="assign-main">
+          <div class="combo">
+            <input
+              class="f-var"
+              :value="row.target"
+              :disabled="disabled"
+              placeholder="变量"
+              title="变量名（可从下拉选择或直接输入）"
+              @change="onInput(i, { type: 'assign', target: ($event.target as HTMLInputElement).value, expr: row.expr })"
+              @blur="closeDd"
+            />
+            <button
+              v-if="!disabled && (variableOptions?.length ?? 0) > 0"
+              class="dd-btn"
+              tabindex="-1"
+              title="选择变量"
+              @mousedown.prevent="toggleDd(i + ':target')"
+            >▼</button>
+            <div v-if="openDd === i + ':target'" class="dd-list">
+              <div
+                v-for="v in variableOptions"
+                :key="v"
+                class="dd-opt"
+                @mousedown.prevent="pickOption(i, 'target', v)"
+              >{{ v }}</div>
+            </div>
           </div>
         </div>
-        <span class="lbl">=</span>
-        <input
-          :value="row.expr"
-          :disabled="disabled"
-          placeholder="JS 表达式"
-          @change="onInput(i, { type: 'assign', target: row.target, expr: ($event.target as HTMLInputElement).value })"
-        />
+        <div class="assign-expr">
+          <span class="lbl">=</span>
+          <input
+            :value="row.expr"
+            :disabled="disabled"
+            placeholder="JS 表达式"
+            @change="onInput(i, { type: 'assign', target: row.target, expr: ($event.target as HTMLInputElement).value })"
+          />
+        </div>
       </template>
 
       <!-- 日志 -->
@@ -455,6 +460,24 @@ function setSendData(i: number, raw: string): void {
 .ale-row.t-send {
   flex-wrap: wrap;
 }
+/* 赋值动作：变量选择一行、表达式一行；窄面板也保证变量名可见 */
+.ale-row.t-assign {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "drag badge var del"
+    "drag badge expr expr";
+  align-items: center;
+  row-gap: 4px;
+}
+.ale-row.t-assign .drag-handle { grid-area: drag; }
+.ale-row.t-assign .ale-badge { grid-area: badge; }
+.ale-row.t-assign .assign-main { grid-area: var; min-width: 0; display: flex; }
+.ale-row.t-assign .combo { flex: 1; min-width: 0; }
+.ale-row.t-assign .f-var { flex: 1; min-width: 0; }
+.ale-row.t-assign .assign-expr { grid-area: expr; display: flex; align-items: center; gap: 4px; min-width: 0; }
+.ale-row.t-assign .assign-expr input { flex: 1; min-width: 0; }
+.ale-row.t-assign .del { grid-area: del; }
 .f-data {
   flex: 1 1 100%;
   order: 5;

@@ -853,7 +853,7 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
       return '历史伪态只能有一条默认转移'
     }
     if (src?.kind === 'history' && opts.delayMs !== undefined) {
-      return '历史伪态的默认转移不能使用内部延迟'
+      return '历史伪态的默认转移不能使用延时触发'
     }
     let event = opts.event?.trim() ?? ''
     // 历史伪态的出边是默认转移：不带事件/条件

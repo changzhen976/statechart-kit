@@ -1,6 +1,6 @@
 # 发布与 NPM 认证（P6 前置）
 
-> 目标：发布 `statechart-kit@0.7.2`，之后 creator 改为固定版本依赖，Docker 不再 vendor。
+> 目标：发布 `statechart-kit@0.7.3`，之后 creator 改为固定版本依赖，Docker 不再 vendor。
 > 本文只写命令与检查，不保存任何 token。
 
 ## 1. 发布前置检查
@@ -15,7 +15,7 @@ npm pack --ignore-scripts --pack-destination /tmp --silent
 
 预期：
 
-- 版本 `0.7.2`；
+- 版本 `0.7.3`；
 - tarball 包含 `dist/index.js`、`dist/engine.js`、`dist/vue.js`、
   `dist/vue/style.css`、`dist/vue-types/**`；
 - `check:pack` 输出 `pack ok: exports resolve, d.ts present, version consistent`。
@@ -54,7 +54,7 @@ npm publish --dry-run --access public
 ## 4. 发布后验证
 
 ```bash
-npm view statechart-kit@0.7.2 version dist.tarball
+npm view statechart-kit@0.7.3 version dist.tarball
 npm view statechart-kit dist-tags
 ```
 
@@ -64,7 +64,7 @@ npm view statechart-kit dist-tags
 cd /tmp
 rm -rf kit-probe && mkdir kit-probe && cd kit-probe
 npm init -y >/dev/null
-npm install statechart-kit@0.7.2
+npm install statechart-kit@0.7.3
 node --input-type=module -e "import('statechart-kit').then(m=>console.log('core', Object.keys(m).length)); import('statechart-kit/vue').then(()=>console.log('vue ok'))"
 ```
 
@@ -72,24 +72,24 @@ node --input-type=module -e "import('statechart-kit').then(m=>console.log('core'
 
 ```bash
 cd statechart-kit
-git tag -d v0.7.2 2>/dev/null || true
-git push origin :refs/tags/v0.7.2 2>/dev/null || true
-git tag -a v0.7.2 -m "statechart-kit 0.7.2: UI polish for toolbar/tabs/event panel"
-git push origin v0.7.2
+git tag -d v0.7.3 2>/dev/null || true
+git push origin :refs/tags/v0.7.3 2>/dev/null || true
+git tag -a v0.7.3 -m "statechart-kit 0.7.3: UI polish for toolbar/tabs/event panel"
+git push origin v0.7.3
 ```
 
-> 仅在 `v0.7.2` 尚未发布到 npm 时重打 tag；如果已经发布，不要移动 tag，
-> 改用新版本号 `0.7.2`，避免 tag 与已发布内容不一致。
+> 仅在 `v0.7.3` 尚未发布到 npm 时重打 tag；如果已经发布，不要移动 tag，
+> 改用新版本号 `0.7.3`，避免 tag 与已发布内容不一致。
 
 ## 6. 发布后 creator 的切换（P6 后续）
 
 ```bash
 cd ../scxml-creator
-npm install --save statechart-kit@^0.7.2
+npm install --save statechart-kit@^0.7.3
 git diff package.json package-lock.json
 npm run typecheck && npm run test:all && npm run check:all
 git add package.json package-lock.json
-git commit -m "chore: use published statechart-kit 0.7.2"
+git commit -m "chore: use published statechart-kit 0.7.3"
 ```
 
 切换后：
