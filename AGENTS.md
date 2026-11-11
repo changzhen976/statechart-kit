@@ -74,7 +74,7 @@ src/core/                零运行时依赖；禁止 import 引擎/Vue/浏览器
 
 src/engine/              依赖 @tinyactors/scxmljs；入口不静态 import 实现
   engine-loader.ts       loadEngine / preloadEngine / createEngineSession（按 mode 懒加载）
-  session-runner.ts      SessionRunner：回放/事件桥/变量/生命周期
+  session-runner.ts      SessionRunner：回放/事件桥/变量/生命周期；typed host events
   validator.ts           validateScxml / validateAgainstEngine / validateDocument
   index.ts               导出上述
 
@@ -156,6 +156,7 @@ validateDocument(doc, { policy, domParser })
 | `test/verify-events.ts` | 事件事实/方向目录/激活树 |
 | `test/verify-validation.ts` | 结构/引擎校验、严格序列化、CDATA、无 DOMParser |
 | `test/verify-engine.ts` | 懒加载、两种数据模型、data 预置、生命周期竞态、监听器隔离 |
+| `test/verify-host-events.ts` | typed send/done/error、target/sendid、done data、监听器隔离 |
 | `test/verify-editor.ts` | adapter、CRUD/undo、命名、校验/运行/停止、确认/保存 |
 
 发布前必须 `npm run verify:all` 全绿。`check:baseline -- --donor` 需要本地

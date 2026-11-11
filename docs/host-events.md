@@ -1,6 +1,7 @@
-# 宿主运行时事件（0.8+）
+# 0.8 新增宿主事件
 
 `SessionRunner` 向宿主暴露的 typed 事件。该契约只透传引擎事实，不包含宿主过滤策略。
+`active` / `fired` / `log` / `stopped` 沿用 0.7.x 的语义，不在此表重复。
 
 ```ts
 import type {
