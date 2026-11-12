@@ -2,6 +2,32 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.10.0] - 2026-11-11
+
+### Added
+
+- 转移属性面板可编辑 target 与 `transitionType`（internal/external），改 target 自动重算延时事件名
+- `DoneDataEditor`：final 状态的 `<donedata>` 支持 content / expr / param 三种形态的完整编辑
+- `features.explorer`：可选接入官方 `<scxml-explorer>`；编辑态使用未 start 的预览 session，
+  仿真态跟随运行会话；点击状态同步选中，覆盖层转移列表可选中转移；
+  `EditorAdapter.explorerStrings` 可覆盖界面文案（默认关闭）
+- 结构面板在选中变化时自动滚动到对应状态/转移行
+- `preview/` 只读预览容器：多阶段 Dockerfile、`/api/latest` 读取最新 `.scxml/.json`、
+  只读编辑器 + 仿真 + Explorer；附 compose、示例数据与 `preview:build`/`preview:serve` 脚本
+- `canvas-select.ts`：画布标签匹配抽成纯函数，新增 targetless chip / 条件截断回归测试
+- 结构校验：donedata param name 必须为 NCName 且不可重复
+
+### Changed
+
+- Vue 构建将 `@tinyactors/scxmljs/explorer` 作为 external，按需动态加载，不重复打包 explorer
+- 更新 `docs/editor-p3.md` 的 0.10 状态说明
+
+### Compatibility
+
+- `ProjectDoc` / SCXML 输出不变；A/B/C 均为编辑器增量能力
+- `features.explorer` 为可选字段，默认 `false`，不改变现有宿主行为
+- 编辑态 Explorer 的预览 session 不 start，不执行 entry/exit、定时器或 send
+
 ## [0.9.1] - 2026-11-11
 
 ### Fixed

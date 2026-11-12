@@ -275,9 +275,11 @@ export function validateStructure(doc: ProjectDoc): StructureReport {
           stateUid: s.uid,
         })
       }
+      const paramNames = new Set<string>()
       for (let i = 0; i < (s.doneData.params?.length ?? 0); i++) {
         const p = s.doneData.params![i]!
-        if (!p.name?.trim() || typeof p.expr !== 'string' || !p.expr.trim()) {
+        const name = p.name?.trim() ?? ''
+        if (!name || !NCNAME_RE.test(name) || typeof p.expr !== 'string' || !p.expr.trim()) {
           add({
             severity: 'error',
             code: 'structure.state.donedata-param-invalid',
@@ -285,6 +287,18 @@ export function validateStructure(doc: ProjectDoc): StructureReport {
             stateId: s.id,
             stateUid: s.uid,
           })
+        }
+        if (name) {
+          if (paramNames.has(name)) {
+            add({
+              severity: 'error',
+              code: 'structure.state.donedata-param-duplicate',
+              params: { id: s.id, name, index: i },
+              stateId: s.id,
+              stateUid: s.uid,
+            })
+          }
+          paramNames.add(name)
         }
       }
     }

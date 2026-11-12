@@ -3,12 +3,13 @@
  * 左栏结构编辑：状态树 + 按源状态分组的转移列表 + 新建转移表单。
  * 画布点击选中留在宿主/P4（官方 shadow DOM 契约较脆），这里保证表单路径完整。
  */
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import type { StateNode, TransitionEdge } from '../core/model'
 import { childrenOf } from '../core/model'
 import { useEditor } from './use-editor'
 
 const editor = useEditor()
+const root = ref<HTMLElement | null>(null)
 const filter = ref('')
 const q = computed(() => filter.value.trim().toLowerCase())
 
@@ -40,8 +41,17 @@ watch(
 )
 watch(
   () => editor.selection,
-  (sel) => {
+  async (sel) => {
     if (sel.kind === 'state' && sel.id) source.value = sel.id
+    await nextTick()
+    const attr = sel.kind === 'state' ? 'data-suid' : sel.kind === 'transition' ? 'data-tid' : null
+    if (!attr || !sel.id) return
+    const row = root.value?.querySelector(`[${attr}="${sel.id}"]`)
+    try {
+      row?.scrollIntoView({ block: 'nearest' })
+    } catch {
+      /* happy-dom / SSR 没有布局时忽略 */
+    }
   },
 )
 
@@ -136,7 +146,7 @@ function add(): void {
 </script>
 
 <template>
-  <div class="sce-panel sce-structure">
+  <div ref="root" class="sce-panel sce-structure">
     <div class="sce-panel-head">
       <h3>{{ editor.labels.structure }}</h3>
       <span class="sce-count">{{ editor.doc.states.length }}</span>
@@ -236,6 +246,7 @@ function add(): void {
         v-for="t in g.items"
         :key="t.id"
         class="sce-transition-row"
+        :data-tid="t.id"
         :class="{ on: editor.selection.kind === 'transition' && editor.selection.id === t.id }"
         @click="selectTransition(t.id)"
       >

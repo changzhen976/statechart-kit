@@ -26,7 +26,7 @@
 | Vue 编辑器（`statechart-kit/vue`） | Node-RED 节点与事件总线 |
 | 命名/校验/编辑能力注入（`EditorAdapter`） | 服务端部署、草稿锁、MQTT/路由来源抓取 |
 
-## 状态：0.9.1 —— donedata + 无 target 内部转移 + 发布工具链收口
+## 状态：0.10.0 —— 编辑器完整性与可选 Explorer
 
 P0 是 `scxml-creator` 的逐字快照；P1 在保持行为的前提下完成四件事（`0.2.0`）：
 
@@ -64,7 +64,10 @@ P3（`0.4.0`）新增可嵌入编辑器 `statechart-kit/vue`：
 - **`EditorAdapter`**：持久化、文件导入导出、外部事件来源、部署/退出全部由宿主注入；
   编辑器本身不读 localStorage、不发 HTTP。
 - **`features`**：toolbar / structure / canvas / properties / variables / simulation / simBar /
-  validation / importExport / examples / undoRedo / deploy / exit 可按场景裁剪。
+  validation / importExport / examples / undoRedo / deploy / exit / explorer 可按场景裁剪。
+- **Explorer（可选）**：`features.explorer` 打开官方 `<scxml-explorer>`；编辑态使用未启动的
+  预览 session，仿真态跟随运行会话。点击状态会同步选中；覆盖层内的转移列表可直接
+  选中转移并打开属性面板。
 - **样式随包**：`statechart-kit/vue/style.css`（显式 import，避免 CSS 注入时序）。
 - 迁移边界与 P4 清单见 [`docs/editor-p3.md`](docs/editor-p3.md)。
 
@@ -226,7 +229,7 @@ const policy: NamingPolicy = {
 ```sh
 npm install
 npm run typecheck     # tsc --noEmit
-npm test              # 8 个纯逻辑验证套件（P0 三个 + P1 三个 + P2 引擎 + P3 编辑器）
+npm test              # 9 个验证套件（核心/引擎/编辑器/宿主事件）
 npm run build         # tsup（core/engine/policies）+ Vite（Vue）+ vue-tsc d.ts
 npm run verify:all    # 类型 + 测试 + 构建 + 基线 + 打包冒烟
 ```
@@ -253,6 +256,17 @@ npm run verify:all    # 类型 + 测试 + 构建 + 基线 + 打包冒烟
 ## 路线图
 
 见 [`docs/roadmap.md`](docs/roadmap.md)。P4 将把 `scxml-creator` 切换到本包并删除本地副本；
+### 只读预览容器
+
+[`preview/`](preview/README.md) 提供一个极小的只读预览容器：读取挂载目录里最新的
+`.scxml` / `.json`，打开 kit 编辑器做仿真、校验和 Explorer 查看。
+
+```bash
+docker build -f preview/Dockerfile -t statechart-preview .
+docker run -d --name statechart-preview -p 5182:5182 \
+  -v /opt/statechart-preview/data:/data:ro statechart-preview
+```
+
 编辑器迁移边界见 [`docs/editor-p3.md`](docs/editor-p3.md)，P2 架构梳理见
 [`docs/architecture-review-p2.md`](docs/architecture-review-p2.md)。
 

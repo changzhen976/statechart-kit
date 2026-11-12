@@ -47,7 +47,8 @@ core 与 engine 的诊断统一返回 `{ code, params }`，宿主按 `code` 查�
 | `structure.state.donedata-not-final` | error | donedata 只允许出现在 final 状态 |
 | `structure.state.donedata-empty` | error | donedata 的 content/expr 为空，或没有任何形态 |
 | `structure.state.donedata-ambiguous` | error | content / expr / param 多种形态并存 |
-| `structure.state.donedata-param-invalid` | error | param 缺少 name 或 expr |
+| `structure.state.donedata-param-invalid` | error | param 缺少 name / name 非 NCName / 缺 expr |
+| `structure.state.donedata-param-duplicate` | error | 同一個 donedata 内 param name 重复 |
 | `structure.state.compound-empty` | warning | 复合状态没有子状态 |
 | `structure.state.parallel-initial` | warning | parallel 的 initial 会被忽略 |
 | `structure.state.initial-ignored` | warning | 非 compound 状态的 initial 会被忽略 |

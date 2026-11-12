@@ -40,7 +40,9 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import '@tinyactors/scxmljs/view'
 import { defaultViewStrings } from '@tinyactors/scxmljs/view'
 import { serializeToScxml } from '../core/serializer'
+import { createEngineSession } from '../engine/engine-loader'
 import { useEditor } from './use-editor'
+import { matchTransitionId } from './canvas-select'
 
 const editor = useEditor()
 
@@ -56,6 +58,24 @@ const selectionText = computed(() => {
 })
 const viewEl = ref<any>(null)
 const panEl = ref<HTMLElement | null>(null)
+const explorerEl = ref<any>(null)
+const explorerOn = ref(false)
+const explorerStateUid = ref<string | null>(editor.selectedState?.uid ?? null)
+let explorerLoad: Promise<unknown> | null = null
+let previewSession: { dispose(): void } | null = null
+let previewTimer: ReturnType<typeof setTimeout> | null = null
+let previewGen = 0
+
+const explorerState = computed(() =>
+  explorerStateUid.value === null
+    ? null
+    : (editor.doc.states.find((s) => s.uid === explorerStateUid.value) ?? null),
+)
+const explorerTransitions = computed(() =>
+  explorerState.value
+    ? editor.doc.transitions.filter((t) => t.source === explorerState.value!.uid)
+    : [],
+)
 
 /** 内层画布尺寸：跟随容器实时变化（自适应纵横布局），带最小限制 */
 const innerW = ref(6000)
@@ -157,14 +177,184 @@ watch(
   (running) => {
     resetView()
     const el = viewEl.value
-    if (!el) return
+    if (el) {
+      if (running) {
+        el.session = editor.runner.sessionOrNull ?? undefined
+      } else {
+        el.session = undefined
+        pushSource()
+      }
+    }
     if (running) {
-      el.session = editor.runner.sessionOrNull ?? undefined
+      if (explorerOn.value) {
+        disposePreviewSession()
+        detachExplorer()
+        void attachLiveExplorer()
+      }
+      return
+    }
+    detachExplorer()
+    disposePreviewSession()
+    if (explorerOn.value && editor.features.explorer) {
+      void reloadPreviewExplorer()
     } else {
-      el.session = undefined
-      pushSource()
+      explorerOn.value = false
     }
   },
+)
+
+// ───────────────── Explorer（官方 <scxml-explorer>） ─────────────────
+// 仿真时 attach runner 的活会话；编辑时 attach 一个 **未 start** 的预览会话，
+// 只编译模型、不执行 entry/定时器/脚本。按需动态加载 explorer。
+
+async function ensureExplorerLoaded(): Promise<void> {
+  if (!explorerLoad) {
+    explorerLoad = import('@tinyactors/scxmljs/explorer').catch((err) => {
+      explorerLoad = null
+      throw err
+    })
+  }
+  await explorerLoad
+}
+
+function configureExplorer(el: any): void {
+  if (editor.adapter.explorerStrings) el.strings = editor.adapter.explorerStrings
+}
+
+function detachExplorer(): void {
+  const el = explorerEl.value
+  if (!el) return
+  try {
+    el.detach?.()
+  } catch {
+    /* 元素已卸载时忽略 */
+  }
+}
+
+function disposePreviewSession(): void {
+  previewGen++
+  if (previewTimer) {
+    clearTimeout(previewTimer)
+    previewTimer = null
+  }
+  previewSession?.dispose()
+  previewSession = null
+}
+
+async function attachLiveExplorer(): Promise<void> {
+  if (!explorerOn.value || !editor.sim.running) return
+  const session = editor.runner.sessionOrNull
+  if (!session) {
+    explorerOn.value = false
+    return
+  }
+  try {
+    await ensureExplorerLoaded()
+    await nextTick()
+    if (!explorerOn.value || !editor.sim.running) return
+    const el = explorerEl.value
+    if (!el) return
+    disposePreviewSession()
+    configureExplorer(el)
+    el.attach({ session })
+  } catch (err) {
+    explorerOn.value = false
+    editor.pushLog(
+      'system',
+      `Explorer 加载失败：${err instanceof Error ? err.message : String(err)}`,
+      'error',
+    )
+  }
+}
+
+async function reloadPreviewExplorer(): Promise<void> {
+  if (!explorerOn.value || editor.sim.running) return
+  const gen = ++previewGen
+  const xml = serializeToScxml(editor.doc)
+  try {
+    // 预览只编译模型，不 start；trusted 避免为了结构视图加载 QuickJS。
+    const domParser = editor.adapter.domParser ?? editor.adapter.runner?.domParser
+    const session = await createEngineSession(xml, {
+      engine: 'trusted',
+      ...(domParser ? { domParser } : {}),
+    })
+    if (gen !== previewGen || !explorerOn.value || editor.sim.running) {
+      session.dispose()
+      return
+    }
+    await ensureExplorerLoaded()
+    await nextTick()
+    if (gen !== previewGen || !explorerOn.value || editor.sim.running) {
+      session.dispose()
+      return
+    }
+    const el = explorerEl.value
+    if (!el) {
+      session.dispose()
+      return
+    }
+    detachExplorer()
+    previewSession?.dispose()
+    previewSession = session
+    configureExplorer(el)
+    el.attach({ session })
+  } catch (err) {
+    if (gen !== previewGen) return
+    previewSession?.dispose()
+    previewSession = null
+    editor.pushLog(
+      'system',
+      `Explorer 预览失败：${err instanceof Error ? err.message : String(err)}`,
+      'error',
+    )
+  }
+}
+
+async function toggleExplorer(): Promise<void> {
+  if (!editor.features.explorer) return
+  if (explorerOn.value) {
+    explorerOn.value = false
+    detachExplorer()
+    disposePreviewSession()
+    return
+  }
+  explorerOn.value = true
+  if (editor.sim.running) await attachLiveExplorer()
+  else await reloadPreviewExplorer()
+}
+
+function onExplorerSelect(event: Event): void {
+  const detail = (event as CustomEvent<{ state?: { id?: string } }>).detail
+  const id = detail?.state?.id
+  if (!id) return
+  const state = editor.doc.states.find((s) => s.id === id)
+  if (!state) return
+  explorerStateUid.value = state.uid
+  editor.select('state', state.uid)
+}
+
+function selectExplorerTransition(id: string): void {
+  editor.select('transition', id)
+}
+
+watch(
+  () => editor.state.revision,
+  () => {
+    if (!explorerOn.value || editor.sim.running) return
+    if (previewTimer) clearTimeout(previewTimer)
+    previewTimer = setTimeout(() => {
+      previewTimer = null
+      void reloadPreviewExplorer()
+    }, 300)
+  },
+)
+
+watch(
+  () => editor.selection,
+  (sel) => {
+    if (sel.kind === 'state' && sel.id) explorerStateUid.value = sel.id
+  },
+  { deep: true },
 )
 
 onMounted(() => {
@@ -184,6 +374,8 @@ onMounted(() => {
 onBeforeUnmount(() => {
   if (timer) clearTimeout(timer)
   ro?.disconnect()
+  detachExplorer()
+  disposePreviewSession()
 })
 
 // ───────────────── 缩放 / 平移层（手势阈值模型） ─────────────────
@@ -360,8 +552,6 @@ const OFFICIAL = {
   eventless: defaultViewStrings.eventless,
   /** title 中指向目标列表的箭头分隔符 */
   titleArrow: '→',
-  /** 官方 cond 截断尾部标记 */
-  truncMark: /(…|\.\.\.)$/,
   /** 真交互控件（官方发送/播放/折叠按钮等）；edge-label 是 SPAN 不在其中 */
   interactive: 'button, a, input, select, textarea, label, summary, [role="button"]',
 } as const
@@ -392,7 +582,6 @@ function stateIdFromEvent(e: PointerEvent): string | null {
  * 匹配到多条时取文档顺序第一条；零匹配返回 null（无操作）。
  */
 function transitionIdFromLabel(e: PointerEvent): string | null {
-  const eventless = OFFICIAL.eventless
   const label = e
     .composedPath()
     .find(
@@ -405,10 +594,6 @@ function transitionIdFromLabel(e: PointerEvent): string | null {
     .map((s) => s.textContent?.trim() ?? '')
     .filter(Boolean)
   const condText = (label.querySelector(`[part="${OFFICIAL.condPart}"]`)?.textContent ?? '').trim()
-  // 去掉方括号；截断以 … 或 ... 结尾 → 前缀匹配
-  const condBody = condText.replace(/^\[/, '').replace(/\]$/, '')
-  const condTruncated = OFFICIAL.truncMark.test(condBody)
-  const condPrefix = condBody.replace(OFFICIAL.truncMark, '').trim()
   const title = label.getAttribute('title') ?? ''
   const arrow = title.lastIndexOf(OFFICIAL.titleArrow)
   const targets = (arrow >= 0 ? title.slice(arrow + 1) : '')
@@ -416,26 +601,12 @@ function transitionIdFromLabel(e: PointerEvent): string | null {
     .map((s) => s.trim())
     .filter(Boolean)
 
-  const idOf = (uid: string) => editor.doc.states.find((s) => s.uid === uid)?.id
-  const candidates = editor.doc.transitions.filter((t) => {
-    const tEvents = new Set(t.event ? t.event.split(/\s+/) : [eventless])
-    const lEvents = new Set(labelEvents.length ? labelEvents : [eventless])
-    if (tEvents.size !== lEvents.size || ![...tEvents].every((x) => lEvents.has(x))) return false
-    if (t.target === null) {
-      // 无 target 的转移在官方渲染里是状态盒内的 chip，title 不含 "→ 目标"
-      if (targets.length) return false
-    } else {
-      const tid = idOf(t.target)
-      if (!tid || !targets.includes(tid)) return false
-    }
-    if (condText) {
-      if (condTruncated ? !t.cond.startsWith(condPrefix) : t.cond !== condPrefix) return false
-    } else if (t.cond) {
-      return false
-    }
-    return true
+  return matchTransitionId(editor.doc, {
+    events: labelEvents,
+    condText,
+    targets,
+    eventless: OFFICIAL.eventless,
   })
-  return candidates[0]?.id ?? null
 }
 </script>
 
@@ -466,7 +637,35 @@ function transitionIdFromLabel(e: PointerEvent): string | null {
           autostart="false"
         ></scxml-view>
       </div>
+      <div v-if="explorerOn" class="explorer-host">
+        <scxml-explorer ref="explorerEl" @scxml-select="onExplorerSelect"></scxml-explorer>
+        <div class="explorer-transitions">
+          <div class="explorer-transitions-head">
+            <span>{{ editor.labels.explorerTransitions }}</span>
+            <span class="sce-count">{{ explorerTransitions.length }}</span>
+          </div>
+          <div v-if="!explorerState" class="explorer-transitions-empty">{{ editor.labels.explorerNoState }}</div>
+          <div v-else-if="!explorerTransitions.length" class="explorer-transitions-empty">{{ editor.labels.explorerNoTransitions }}</div>
+          <button
+            v-for="t in explorerTransitions"
+            :key="t.id"
+            class="explorer-transition"
+            :class="{ on: editor.selection.kind === 'transition' && editor.selection.id === t.id }"
+            @click="selectExplorerTransition(t.id)"
+          >
+            <span class="ev">{{ t.event || 'ε' }}</span>
+            <span v-if="t.cond" class="cond">[{{ t.cond }}]</span>
+            <span class="to">→ {{ t.target === null ? editor.labels.internalTransition : editor.stateName(t.target) }}</span>
+          </button>
+        </div>
+      </div>
       <div class="top-right">
+        <button
+          v-if="editor.features.explorer"
+          class="explorer-toggle"
+          :class="{ on: explorerOn }"
+          @click="toggleExplorer"
+        >{{ editor.labels.explorer }}</button>
         <div v-if="editor.doc.states.length > 0" class="dir-switch">
           <button :class="{ on: dirMode === 'down' }" title="纵向布局" @click="dirMode = 'down'">纵向</button>
           <button :class="{ on: dirMode === 'right' }" title="横向布局" @click="dirMode = 'right'">横向</button>
@@ -526,6 +725,85 @@ function transitionIdFromLabel(e: PointerEvent): string | null {
   position: absolute;
   inset: 0;
   z-index: 5;
+  background: var(--scxml-surface);
+}
+.explorer-host scxml-explorer {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.explorer-transitions {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  z-index: 6;
+  width: 280px;
+  max-height: 42%;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px;
+  border: 1px solid var(--scxml-border-2);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--scxml-surface) 94%, transparent);
+  box-shadow: var(--scxml-shadow, 0 4px 16px rgba(0, 0, 0, 0.18));
+}
+.explorer-transitions-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 4px;
+  font: 600 11px var(--scxml-font-sans);
+  color: var(--scxml-fg-muted);
+}
+.explorer-transitions-empty {
+  padding: 4px 2px;
+  font: 11px var(--scxml-font-sans);
+  color: var(--scxml-fg-subtle);
+}
+.explorer-transition {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  width: 100%;
+  padding: 4px 6px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--scxml-fg);
+  text-align: left;
+  font: 11px var(--scxml-font-mono);
+  cursor: pointer;
+}
+.explorer-transition:hover {
+  background: var(--scxml-surface-2);
+}
+.explorer-transition.on {
+  border-color: var(--scxml-accent);
+  background: var(--scxml-accent-subtle);
+}
+.explorer-transition .cond { color: var(--scxml-fg-muted); }
+.explorer-transition .to {
+  margin-left: auto;
+  color: var(--scxml-fg-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.explorer-toggle {
+  font: 11px var(--scxml-font-sans);
+  padding: 4px 10px;
+  border: 1px solid var(--scxml-border-2);
+  border-radius: 6px;
+  background: var(--scxml-surface);
+  color: var(--scxml-fg-muted);
+  cursor: pointer;
+}
+.explorer-toggle.on {
+  background: var(--scxml-accent);
+  border-color: var(--scxml-accent);
+  color: var(--scxml-on-accent);
 }
 
 .top-right {

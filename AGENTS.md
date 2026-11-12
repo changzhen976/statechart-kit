@@ -21,12 +21,12 @@
 
 | 项 | 值 |
 | --- | --- |
-| 版本 | `0.9.1`（0.9 发布工具链收口 + final 出边校验） |
+| 版本 | `0.10.0`（编辑器完整性：target/type、doneData、可选 Explorer） |
 | 分支 | `main` |
 | 远程 | 内部 Gitea；公开镜像 GitHub（见 §11） |
 | P3 提交 | `0257756 feat(p3): add embeddable Vue editor with adapter-driven host boundary` |
-| 已完成阶段 | P0 快照、P1 策略/校验、P2 引擎选项、P3 Vue 编辑器、P4 scope cleanup + EditorModule、P4.1 通用变量/事件属性、0.9 导入能力补齐（KIT-003/004） |
-| 阶段 | P4.2 UI 收尾 + 0.9.x：donedata / 无 target 内部转移 / 发布工具链收口 |
+| 已完成阶段 | P0 快照、P1 策略/校验、P2 引擎选项、P3 Vue 编辑器、P4 scope cleanup + EditorModule、P4.1 通用变量/事件属性、0.9 导入能力补齐（KIT-003/004）、0.10 A/B/C 编辑器完整性 |
+| 阶段 | P4.2 UI 收尾 + 0.10.0：转移 target/type、doneData 编辑器、可选 Explorer |
 
 阶段路线图与估时见 `docs/roadmap.md`；P3 迁移边界见 `docs/editor-p3.md`；
 P2 架构梳理/隐患清单见 `docs/architecture-review-p2.md`；诊断 code 契约见
@@ -87,12 +87,14 @@ src/vue/                 Vue 3 编辑器（Vite 构建，vue 为 optional peer�
   editor-store.ts        reactive store：文档 CRUD/undo/保存/校验/仿真/确认
   types.ts               EditorAdapter（宿主能力注入）
   modules.ts             EditorModule 契约（上层功能以模块注入）
-  features.ts            EditorFeatures 能力开关
+  features.ts            EditorFeatures 能力开关（含 explorer）
   browser-adapter.ts     浏览器默认实现（localStorage/文件/示例）
   format.ts              诊断 code → 中文展示
   events.ts              事件候选（展示层）
   labels.ts              默认中文文案
   styles.css             全部编辑器样式 → dist/vue/style.css
+  DoneDataEditor.vue     final doneData 的 content/expr/param 编辑器
+  canvas-select.ts       画布标签 → 转移匹配（纯函数，可测试）
   *.vue                  EditorHost/Toolbar/Structure/Canvas/Property/Variables/Sim/...
 ```
 
@@ -186,7 +188,7 @@ validateDocument(doc, { policy, domParser })
 `diagnostics/zh`、`EditorModule` 契约，并把 `SERVER_POLICY` 迁回宿主。
 
 **待完成**：creator 已改 `statechart-kit@^0.8.0`，升级到 `^0.9.x` 时需适配可空
-`transition.target`；Explorer 调试视图/侧栏拖拽等增强可按需作为模块补回。
+`transition.target`；侧栏拖拽/真实浏览器回归等增强可按需补回。
 
 1. core：把 donor `src/core/{model,serializer,action-parse,naming,scxml-import,storage,validator,events}.ts`
    替换为 `statechart-kit` 导入；`naming` 调用改策略优先签名，`events` 用
@@ -199,12 +201,8 @@ validateDocument(doc, { policy, domParser })
    - `externalEvents` ← 时钟/路由/MQTT 来源；
    - `deploy/exit` ← 草稿部署与退出守卫；
    - `readOnly` ← 草稿软锁/冲突。
-4. P3 有意未搬、P4 要补的能力（见 `docs/editor-p3.md` §6）：
-   - 画布点击选中转移、缩放/平移层（`ChartViewHost` 的 shadow DOM 契约）；
-   - Explorer 逐层调试；
-   - 结构化动作编辑器（当前 P3 是 textarea）；
-   - 服务端机器绑定、草稿锁/冲突横幅、部署前守卫；
-   - 全局变量/MQTT/路由出向 tip 文案。
+4. 0.10 已补回画布点击/缩放、结构化动作、Explorer（opt-in）、target/type 与 doneData 编辑；
+   仍留在宿主的能力：服务端机器绑定、草稿锁/冲突横幅、部署前守卫、全局变量/MQTT tip。
 5. 删除 donor 本地副本后跑 `test:all` / `check:all`，再更新 donor 的 `AGENTS`/README。
 
 P5（node-red）再做：替换 `src/vendor/scxml-core` 与 17 条构建期压缩替换，改用

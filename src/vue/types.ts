@@ -10,6 +10,7 @@ import type { NamingPolicy } from '../core/naming-policy'
 import type { ExternalEventSource } from '../core/event-catalog'
 import type { SessionRunnerOptions } from '../engine/session-runner'
 import type { DOMParserLike } from '@tinyactors/scxmljs/trusted'
+import type { ExplorerStrings } from '@tinyactors/scxmljs/explorer'
 
 export interface EditorImportResult {
   doc: ProjectDoc
@@ -40,6 +41,8 @@ export interface EditorAdapter {
   externalEvents?(): ExternalEventSource[] | Promise<ExternalEventSource[]>
   /** 会话选项（引擎/damParser/timeout/data）；domParser 也可单独提供 */
   runner?: SessionRunnerOptions
+  /** `features.explorer` 打开时的界面文案覆盖（未提供的键用官方英文默认值） */
+  explorerStrings?: Partial<ExplorerStrings>
   domParser?: DOMParserLike
   /** 命名策略；缺省 BASE_POLICY（无前缀规则，宿主应传入自己的策略） */
   policy?: NamingPolicy

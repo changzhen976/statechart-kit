@@ -13,6 +13,8 @@ import type { DOMParserLike } from '@tinyactors/scxmljs/trusted'
 import { emptyDoc, type ProjectDoc } from '../src/core/model'
 import { serializeToScxml } from '../src/core/serializer'
 import { createEditor, type CreateEditorOptions } from '../src/vue/editor-store'
+import { matchTransitionId } from '../src/vue/canvas-select'
+import { resolveFeatures } from '../src/vue/features'
 import type { EditorAdapter } from '../src/vue/types'
 import type { Component } from 'vue'
 import type { EditorModule } from '../src/vue/modules'
@@ -124,13 +126,62 @@ console.log('── B2) targetless 转移 / donedata ──')
   editor.redo()
   assert(editor.doc.transitions[0]!.actions[0] === 'send pong', 'targetless 编辑可重做')
 
+  const current = editor.doc.transitions.find((x) => x.id === t.id)!
+  editor.updateTransition(current.id, { target: b.uid })
+  assert(editor.doc.transitions.find((x) => x.id === t.id)?.target === b.uid, '已有转移可改 target')
+  editor.updateTransition(current.id, { target: null })
+  assert(editor.doc.transitions.find((x) => x.id === t.id)?.target === null, '已有转移可改回无 target')
+  editor.updateTransition(current.id, { transitionType: 'external' })
+  assert(editor.doc.transitions.find((x) => x.id === t.id)?.transitionType === 'external', '可切换 transitionType')
+
+  const delayedId = delayed.id
+  editor.updateTransition(delayedId, { target: a.uid })
+  assert(
+    editor.doc.transitions.find((x) => x.id === delayedId)?.event === `delay2s_${b.id}_to_${a.id}`,
+    '改 target 后延时事件名重算',
+  )
+
   editor.addState('final')
   const done = editor.doc.states[2]!
   const doneErr = editor.updateState(done.uid, { doneData: { expr: "'ok'" } })
   assert(doneErr === null && serializeToScxml(editor.doc).includes('<donedata>'), 'final doneData 可写入并序列化')
+  const contentErr = editor.updateState(done.uid, { doneData: { content: '{"a":1}' } })
+  assert(contentErr === null && serializeToScxml(editor.doc).includes('<content>'), 'doneData content 可写入并序列化')
+  const paramsErr = editor.updateState(done.uid, { doneData: { params: [{ name: 'x', expr: '42' }] } })
+  assert(paramsErr === null && serializeToScxml(editor.doc).includes('<param name="x" expr="42"/>'), 'doneData param 可写入并序列化')
   const nonFinalErr = editor.updateState(a.uid, { doneData: { expr: '1' } })
   assert(nonFinalErr !== null, '非 final 写入 doneData 被拒绝')
   await editor.destroy()
+}
+
+console.log('── B3) 画布转移标签匹配 ──')
+{
+  assert(resolveFeatures({}).explorer === false, 'Explorer 默认关闭')
+  assert(resolveFeatures({ explorer: true }).explorer === true, 'Explorer 可由 feature flag 打开')
+  const doc = emptyDoc('canvas-select')
+  const a = { uid: 'a1', id: 'a', label: 'a', kind: 'atomic' as const, parent: null, initial: null, entryActions: [], exitActions: [] }
+  const b = { uid: 'b1', id: 'b', label: 'b', kind: 'atomic' as const, parent: null, initial: null, entryActions: [], exitActions: [] }
+  doc.states = [a, b]
+  doc.transitions = [
+    { id: 't-internal', source: a.uid, target: null, event: 'ping', cond: '', actions: [] },
+    { id: 't-edge', source: a.uid, target: b.uid, event: 'go', cond: 'x > 0', actions: [] },
+  ]
+  assert(
+    matchTransitionId(doc, { events: ['ping'], condText: '', targets: [], eventless: 'ε' }) === 't-internal',
+    'targetless chip 标签匹配到内部转移',
+  )
+  assert(
+    matchTransitionId(doc, { events: ['go'], condText: '[x > 0]', targets: ['b'], eventless: 'ε' }) === 't-edge',
+    '有 target 的标签按事件/条件/目标匹配',
+  )
+  assert(
+    matchTransitionId(doc, { events: ['go'], condText: '[x > …]', targets: ['b'], eventless: 'ε' }) === 't-edge',
+    '官方截断的 cond 按前缀匹配',
+  )
+  assert(
+    matchTransitionId(doc, { events: ['go'], condText: '', targets: ['b'], eventless: 'ε' }) === null,
+    '缺少 cond 时不匹配带条件转移',
+  )
 }
 
 console.log('── C) 命名/变量校验 ──')

@@ -5,10 +5,11 @@
  */
 import { computed, ref, watch } from 'vue'
 import { descendantsOf } from '../core/model'
-import type { StateKind, StateNode } from '../core/model'
+import type { DoneData, StateKind, StateNode } from '../core/model'
 import { isAutoDelayEvent } from '../core/naming'
 import { useEditor } from './use-editor'
 import ActionListEditor from './ActionListEditor.vue'
+import DoneDataEditor from './DoneDataEditor.vue'
 import { parseActionLine } from '../core/action-parse'
 
 const editor = useEditor()
@@ -26,7 +27,6 @@ const exit = ref('')
 const entryArr = ref<string[]>([])
 const exitArr = ref<string[]>([])
 const idErr = ref('')
-const doneExpr = ref('')
 const doneErr = ref('')
 
 const event = ref('')
@@ -37,6 +37,12 @@ const delayOn = ref(false)
 const delayMs = ref(5000)
 const delayUnit = ref<'s' | 'ms'>('s')
 const eventErr = ref('')
+
+/** 目标下拉的哨兵值：表示无 target 的内部转移 */
+const INTERNAL_TARGET = '__internal__'
+const targetChoice = ref(INTERNAL_TARGET)
+const transitionType = ref<'internal' | 'external'>('external')
+const targetErr = ref('')
 
 function lines(text: string): string[] {
   return text.split('\n').map((l) => l.trimEnd()).filter((l) => l.length > 0)
@@ -57,7 +63,6 @@ watch(
     exit.value = s.exitActions.join('\n')
     entryArr.value = [...s.entryActions]
     exitArr.value = [...s.exitActions]
-    doneExpr.value = s.doneData?.expr ?? ''
     doneErr.value = ''
   },
   { immediate: true },
@@ -67,7 +72,10 @@ watch(
   tr,
   (t) => {
     eventErr.value = ''
+    targetErr.value = ''
     if (!t) return
+    targetChoice.value = t.target ?? INTERNAL_TARGET
+    transitionType.value = t.transitionType ?? 'external'
     event.value = t.event
     cond.value = t.cond
     actions.value = t.actions.join('\n')
@@ -97,15 +105,10 @@ const parentOptions = computed(() => {
 const initialKids = computed(() =>
   st.value ? editor.doc.states.filter((s) => s.parent === st.value!.uid && s.kind !== 'history') : [],
 )
-const doneReadOnly = computed(() => {
-  const d = st.value?.doneData
-  return !!d && (!!d.params?.length || d.content !== undefined)
-})
-const doneSummary = computed(() => {
-  const d = st.value?.doneData
-  if (!d) return ''
-  if (d.params?.length) return d.params.map((p) => `param ${p.name} = ${p.expr}`).join('\n')
-  return d.content ?? ''
+const targetlessAllowed = computed(() => {
+  const t = tr.value
+  if (!t) return false
+  return editor.doc.states.find((s) => s.uid === t.source)?.kind !== 'history'
 })
 const actionEventOptions = computed(() => editor.eventOptions())
 const variableOptions = computed(() => editor.doc.datamodel.map((d) => d.id))
@@ -156,16 +159,9 @@ function commitInitial(): void {
 function commitHistoryType(): void {
   if (st.value) editor.updateState(st.value.uid, { historyType: historyType.value })
 }
-function commitDoneExpr(): void {
-  if (!st.value || st.value.kind !== 'final' || doneReadOnly.value) return
-  const expr = doneExpr.value.trim()
-  const err = editor.updateState(st.value.uid, { doneData: expr ? { expr } : undefined })
-  doneErr.value = err ?? ''
-}
-function clearDoneData(): void {
+function onDoneDataUpdate(value: DoneData | undefined): void {
   if (!st.value) return
-  doneExpr.value = ''
-  const err = editor.updateState(st.value.uid, { doneData: undefined })
+  const err = editor.updateState(st.value.uid, { doneData: value })
   doneErr.value = err ?? ''
 }
 function commitEntry(): void {
@@ -195,6 +191,20 @@ function commitEvent(): void {
   }
   eventErr.value = ''
   editor.updateTransition(tr.value.id, { event: name })
+}
+function commitTarget(): void {
+  if (!tr.value) return
+  const target = targetChoice.value === INTERNAL_TARGET ? null : targetChoice.value
+  if (target === null && !targetlessAllowed.value) {
+    targetErr.value = '历史伪态的默认转移必须有目标状态'
+    targetChoice.value = tr.value.target ?? INTERNAL_TARGET
+    return
+  }
+  targetErr.value = ''
+  editor.updateTransition(tr.value.id, { target })
+}
+function commitTransitionType(): void {
+  if (tr.value) editor.updateTransition(tr.value.id, { transitionType: transitionType.value })
 }
 function commitCond(): void {
   if (tr.value) editor.updateTransition(tr.value.id, { cond: cond.value })
@@ -288,20 +298,12 @@ function setRootInitial(e: Event): void {
       </div>
       <div v-if="kind === 'final'" class="sce-field">
         <label>{{ editor.labels.doneData }}</label>
-        <template v-if="doneReadOnly">
-          <pre class="sce-done-data">{{ doneSummary }}</pre>
-          <p class="sce-meta">{{ editor.labels.doneDataReadOnly }}</p>
-          <button :disabled="editor.locked" @click="clearDoneData">{{ editor.labels.clearDoneData }}</button>
-        </template>
-        <template v-else>
-          <input
-            v-model="doneExpr"
-            :disabled="editor.locked"
-            :placeholder="editor.labels.doneDataExpr"
-            @change="commitDoneExpr"
-          />
-          <p v-if="doneErr" class="sce-error">{{ doneErr }}</p>
-        </template>
+        <DoneDataEditor
+          :model-value="st.doneData"
+          :disabled="editor.locked"
+          @update:model-value="onDoneDataUpdate"
+        />
+        <p v-if="doneErr" class="sce-error">{{ doneErr }}</p>
       </div>
 
       <div class="sce-field">
@@ -357,6 +359,22 @@ function setRootInitial(e: Event): void {
       <p v-if="tr.target === null" class="sce-meta">
         {{ editor.labels.internalTransition }}：只执行动作，不退出/进入状态。
       </p>
+      <div class="sce-field">
+        <label>{{ editor.labels.target }}</label>
+        <select v-model="targetChoice" :disabled="editor.locked" @change="commitTarget">
+          <option v-if="targetlessAllowed" :value="INTERNAL_TARGET">{{ editor.labels.internalTransition }}</option>
+          <option v-for="s in editor.doc.states" :key="s.uid" :value="s.uid">{{ s.label || s.id }}</option>
+        </select>
+        <p v-if="targetErr" class="sce-error">{{ targetErr }}</p>
+      </div>
+      <div class="sce-field">
+        <label>{{ editor.labels.transitionType }}</label>
+        <select v-model="transitionType" :disabled="editor.locked" @change="commitTransitionType">
+          <option value="external">{{ editor.labels.external }}</option>
+          <option value="internal">{{ editor.labels.internal }}</option>
+        </select>
+        <p v-if="tr.target === null" class="sce-meta">无 target 时 type 不影响运行语义。</p>
+      </div>
       <div class="sce-field">
         <label>{{ editor.labels.event }}</label>
         <input v-model="event" :list="datalistId" :disabled="editor.locked || tr.delayMs !== undefined" @change="commitEvent" />

@@ -1,6 +1,6 @@
 {
   "name": "statechart-kit",
-  "version": "0.9.1",
+  "version": "0.10.0",
   "description": "Statechart authoring model, editor and session runner. Produces and drives SCXML; it does not interpret SCXML.",
   "license": "MIT",
   "repository": {
@@ -75,7 +75,9 @@
     "check:vue": "node scripts/check-vue.mjs",
     "test:editor": "tsx test/verify-editor.ts",
     "prepublishOnly": "npm run verify:all",
-    "test:host-events": "tsx test/verify-host-events.ts"
+    "test:host-events": "tsx test/verify-host-events.ts",
+    "preview:build": "vite build --config preview/vite.config.ts",
+    "preview:serve": "node preview/server.mjs"
   },
   "dependencies": {
     "@tinyactors/scxmljs": "0.2.0-dev.0"

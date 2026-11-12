@@ -119,7 +119,7 @@ statechart-kit/vue
 P4 引入 [`EditorModule`](editor-modules.md)：全局变量/事件路由/MQTT/部署以模块注入，
 不进入 kit。编辑器本身保持宿主无关。
 
-## 7. 有意保留到 P4 的能力
+## 7. P3 时有意保留的能力（0.10 状态见 §9）
 
 以下功能依赖 `scxml-creator` 的服务端 store / 官方 shadow DOM 细节，P3 不做“半套”复制：
 
@@ -129,12 +129,21 @@ P4 引入 [`EditorModule`](editor-modules.md)：全局变量/事件路由/MQTT/�
 4. 服务端机器绑定、草稿锁/冲突横幅、部署前守卫；
 5. 全局变量/MQTT 出向/路由出向的 tip 文案（P3 事件下拉只展示本地 + adapter 外部来源 tag）。
 
-P4 的迁移顺序建议：先切 store/校验/仿真（已就绪），再把 `ChartViewHost` 的高级交互作为
-可选 `canvasEnhancer` 注入，最后搬服务绑定 UI。
+> 0.10 更新：画布点击/缩放、结构化动作编辑器、Explorer 已补回；Explorer 通过
+> `features.explorer` 选择启用。服务绑定/草稿锁仍由宿主模块承载。
 
 ## 8. 验收
 
 - `npm run typecheck`：tsc + vue-tsc
-- `npm test`：8 套件；`verify-editor` 25 条断言
+- `npm test`：9 套件；`verify-editor` 覆盖 A/B/C 新能力
 - `npm run check:vue`：构建产物真实挂载
 - `npm run check:pack`：三入口 + Vue 资源/类型
+
+## 9. 0.10 更新
+
+- 转移属性面板支持编辑 target 与 `internal`/`external`；
+- `DoneDataEditor` 支持 content / expr / param 三种形态；
+- `features.explorer` 接入官方 `<scxml-explorer>`（默认关闭）：编辑态使用未 start 的预览
+  session，仿真态跟随活会话；点击状态会同步选中；覆盖层里的转移列表可直接选中转移；
+- 画布标签匹配抽成 `canvas-select.ts`，有纯函数回归测试；
+- 左右栏拖拽/折叠、真实浏览器回归仍留待 0.10.1。

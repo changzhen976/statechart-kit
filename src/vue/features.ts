@@ -11,6 +11,8 @@ export interface EditorFeatures {
   structure: boolean
   /** 中间 scxml-view 画布 */
   canvas: boolean
+  /** 仿真时显示官方 <scxml-explorer> 覆盖层（默认关闭） */
+  explorer?: boolean
   /** 右栏属性面板 */
   properties: boolean
   /** 结构化动作编辑器（false = textarea 降级） */
@@ -41,6 +43,7 @@ export const DEFAULT_FEATURES: EditorFeatures = {
   toolbar: true,
   structure: true,
   canvas: true,
+  explorer: false,
   properties: true,
   structuredActions: true,
   variables: true,

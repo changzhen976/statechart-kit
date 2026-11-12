@@ -40,6 +40,9 @@ export interface EditorLabels {
   target: string
   noTarget: string
   internalTransition: string
+  transitionType: string
+  internal: string
+  external: string
   event: string
   eventHint: string
   delay: string
@@ -58,6 +61,10 @@ export interface EditorLabels {
   internalEventHint: string
   locate: string
   simulation: string
+  explorer: string
+  explorerTransitions: string
+  explorerNoState: string
+  explorerNoTransitions: string
   stateId: string
   stateLabel: string
   kind: string
@@ -69,7 +76,16 @@ export interface EditorLabels {
   shallow: string
   deep: string
   doneData: string
+  doneDataNone: string
   doneDataExpr: string
+  doneDataExprMode: string
+  doneDataContent: string
+  doneDataContentMode: string
+  doneDataParamsMode: string
+  doneDataAddParam: string
+  doneDataParamName: string
+  doneDataParamExpr: string
+  doneDataSwitchConfirm: string
   doneDataReadOnly: string
   clearDoneData: string
   cond: string
@@ -145,6 +161,9 @@ export const DEFAULT_LABELS: EditorLabels = {
   target: '目标',
   noTarget: '（内部转移）',
   internalTransition: '内部转移',
+  transitionType: '转移类型',
+  internal: 'internal',
+  external: 'external',
   event: '事件',
   eventHint: '事件名（留空 = 无事件转移）',
   delay: '延时触发',
@@ -163,6 +182,10 @@ export const DEFAULT_LABELS: EditorLabels = {
   internalEventHint: '系统自动生成；只在本机内部收发，不参与广播、路由或 MQTT。',
   locate: '定位',
   simulation: '仿真',
+  explorer: 'Explorer',
+  explorerTransitions: '状态转移',
+  explorerNoState: '在 Explorer 中选择一个状态',
+  explorerNoTransitions: '该状态没有出边',
   stateId: 'SCXML id',
   stateLabel: '显示名',
   kind: '类型',
@@ -174,7 +197,16 @@ export const DEFAULT_LABELS: EditorLabels = {
   shallow: '浅历史',
   deep: '深历史',
   doneData: '完成数据',
+  doneDataNone: '（无完成数据）',
   doneDataExpr: '完成数据表达式（JS）',
+  doneDataExprMode: 'content expr',
+  doneDataContent: 'content 文本，如 {"a":1}',
+  doneDataContentMode: 'content 文本',
+  doneDataParamsMode: 'param 列表',
+  doneDataAddParam: '＋参数',
+  doneDataParamName: '参数名',
+  doneDataParamExpr: '表达式',
+  doneDataSwitchConfirm: '切换完成数据形式会清除当前内容，继续？',
   doneDataReadOnly: '该终态使用 content/param 形式；当前版本只读保留，清除后可改表达式。',
   clearDoneData: '清除完成数据',
   cond: '条件（JS）',

@@ -1,0 +1,35 @@
+# 在 statechart-kit 仓库根目录执行：
+#   docker compose -f preview/compose.yaml up -d --build
+#
+# 数据目录：/opt/statechart-preview/data，挂到容器 /data（只读）。
+# 放入 latest.scxml 或 latest.json；或让服务读取目录内最新的 .scxml/.json。
+
+name: statechart-preview
+
+services:
+  preview:
+    build:
+      context: ..
+      dockerfile: preview/Dockerfile
+      args:
+        NPM_REGISTRY: ${NPM_REGISTRY:-}
+    image: statechart-preview:latest
+    container_name: statechart-preview
+    ports:
+      - "5182:5182"
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+      DATA_DIR: /data
+    volumes:
+      - /opt/statechart-preview/data:/data:ro
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 10s
+    mem_limit: 256m
+    cpus: "1.0"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5182/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
