@@ -90,6 +90,37 @@ statechart-kit/vue
 `deploy` / `exit` / `explorer` / `resizablePanes` 默认关闭；其余默认开启。宿主可以只打开表单 + 画布，
 也可以全开并接部署/退出。
 
+## 本地化与诊断
+
+默认中文。英文宿主可以：
+
+```ts
+import { DEFAULT_LABELS_EN, mountEditor } from 'statechart-kit/vue'
+
+mountEditor('#editor', {
+  locale: 'en',
+  labels: { appTitle: 'Workflow Editor' }, // 少量宿主专有文案
+  diagnostics: {
+    formatValidationIssue: (issue) => myEnglishFormatter(issue),
+  },
+})
+```
+
+- `locale: 'en'` 使用 `DEFAULT_LABELS_EN`；`labels` 仍可覆盖单个键；
+- `diagnostics` 支持 `formatNamingIssue` / `formatStructureIssue` / `formatValidationIssue` /
+  `formatImportWarning` / `formatVariableResult`，未提供的项回退中文；
+- `DEFAULT_LABELS_EN` 可单独 import，用于 SSR 或宿主自己的标签组合。
+
+诊断 code 的稳定目录从 core 导出：
+
+```ts
+import {
+  STRUCTURE_ISSUE_CODES,
+  IMPORT_WARNING_CODES,
+  VALIDATION_ISSUE_CODES,
+} from 'statechart-kit'
+```
+
 ## `EditorAdapter` 契约
 
 | 方法/字段 | 缺失时行为 |

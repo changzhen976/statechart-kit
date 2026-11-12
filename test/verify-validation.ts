@@ -17,6 +17,14 @@ import { emptyDoc, newUid, type ProjectDoc, type StateNode } from '../src/core/m
 import { validateStructure } from '../src/core/validate-structure'
 import { DocumentStructureError, serializeChecked } from '../src/core/serialize-checked'
 import { ScxmlImportError, scxmlToDoc } from '../src/core/scxml-import'
+import {
+  DOCUMENT_STRUCTURE_ERROR_CODES,
+  IMPORT_WARNING_CODES,
+  NAMING_ISSUE_CODES,
+  STRUCTURE_ISSUE_CODES,
+  VALIDATION_ISSUE_CODES,
+  VARIABLE_WRITE_CODES,
+} from '../src/core/codes'
 import { serializeToScxml } from '../src/core/serializer'
 import { scanScriptActions } from '../src/core/action-parse'
 import { SERVER_POLICY } from './fixtures/server-policy'
@@ -281,7 +289,26 @@ console.log('── D) 严格序列化与解析器前置条件 ──')
   }
 }
 
-console.log('── E) 静态守卫：core 不依赖引擎 ──')
+console.log('── E) 诊断 code 目录与文档一致 ──')
+{
+  const docs = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../docs/messages.md'), 'utf8')
+  const catalogs = {
+    naming: NAMING_ISSUE_CODES,
+    structure: STRUCTURE_ISSUE_CODES,
+    import: IMPORT_WARNING_CODES,
+    validation: VALIDATION_ISSUE_CODES,
+    variable: VARIABLE_WRITE_CODES,
+    document: DOCUMENT_STRUCTURE_ERROR_CODES,
+  }
+  for (const [name, codes] of Object.entries(catalogs)) {
+    assert(new Set(codes).size === codes.length, `${name} code 目录无重复`)
+    for (const code of codes) {
+      assert(docs.includes(`\`${code}\``), `${name} code 已写入 docs/messages.md：${code}`)
+    }
+  }
+}
+
+console.log('── F) 静态守卫：core 不依赖引擎 ──')
 {
   const here = dirname(fileURLToPath(import.meta.url))
   const coreDir = resolve(here, '../src/core')

@@ -20,14 +20,14 @@
 import './styles.css'
 import { createApp, type App } from 'vue'
 import EditorHost from './EditorHost.vue'
-import { createEditor, type CreateEditorOptions, type EditorStore } from './editor-store'
+import { createEditor, type CreateEditorOptions, type EditorDiagnostics, type EditorStore } from './editor-store'
 import { EDITOR_KEY } from './use-editor'
 
 export { EditorHost }
-export { createEditor, type CreateEditorOptions, type EditorStore }
+export { createEditor, type CreateEditorOptions, type EditorDiagnostics, type EditorStore }
 export { EDITOR_KEY, useEditor } from './use-editor'
 export { DEFAULT_FEATURES, resolveFeatures, type EditorFeatures } from './features'
-export { DEFAULT_LABELS, type EditorLabels } from './labels'
+export { DEFAULT_LABELS, DEFAULT_LABELS_EN, type EditorLabels } from './labels'
 export { createBrowserAdapter, type BrowserAdapterOptions } from './browser-adapter'
 export type {
   EditorAdapter,

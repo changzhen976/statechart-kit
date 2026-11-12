@@ -18,11 +18,11 @@
 | KIT-003 | `statechart-kit` SCXML 导入 | P2 | `scxmlToDoc` 不支持 `<donedata>`，导入时告警并丢弃该元素 | 已支持（0.9.0） |
 | KIT-004 | `statechart-kit` SCXML 导入 | P2 | `scxmlToDoc` 不支持无 target 的内部转移，导入告警且 ProjectDoc 无法表达 | 已支持（0.9.0） |
 | KIT-005 | `@tinyactors/scxmljs` 渲染器 | P2 | 复杂图中同源/同目标的多条条件转移共享走廊，线条近重合、视觉上像重复 | 已记录最小证据与修复方案；待上游修复 |
-| KIT-006 | `statechart-kit` engine | P1 | `done` 不携带终态配置，且 done 后仍发一次空 `active`，宿主必须自行保存最后 `fired` 目标 | 待实现（建议 0.11） |
-| KIT-007 | `statechart-kit` engine | P1 | `error` 事件只有 `kind` / `message`，丢弃引擎已有的出错 element，宿主无法定位到状态/转移/动作 | 待实现（建议 0.11） |
-| KIT-008 | `statechart-kit` 编辑器 | P2 | `formatValidationIssue` / `formatStructureIssue` / `formatImportWarning` 等硬编码中文，英文宿主的全页编辑器仍显示中文诊断 | 待实现（建议 0.11） |
-| KIT-009 | `statechart-kit` 编辑器 | P2 | `EditorLabels` 默认中文且约 140 个键，英文宿主只能整份复制；缺少 `labels/en` 或 `locale` 预设 | 待实现（建议 0.11） |
-| KIT-010 | `statechart-kit` 诊断 | P2 | 没有导出诊断 code 目录，宿主只能手工维护映射；kit 新增 code 时容易漏翻并显示原始 code | 待实现（建议 0.11） |
+| KIT-006 | `statechart-kit` engine | P1 | `done` 不携带终态配置，且 done 后仍发一次空 `active`，宿主必须自行保存最后 `fired` 目标 | 已实现（0.11.0） |
+| KIT-007 | `statechart-kit` engine | P1 | `error` 事件只有 `kind` / `message`，丢弃引擎已有的出错 element，宿主无法定位到状态/转移/动作 | 已实现（0.11.0） |
+| KIT-008 | `statechart-kit` 编辑器 | P2 | `formatValidationIssue` / `formatStructureIssue` / `formatImportWarning` 等硬编码中文，英文宿主的全页编辑器仍显示中文诊断 | 已实现（0.11.0） |
+| KIT-009 | `statechart-kit` 编辑器 | P2 | `EditorLabels` 默认中文且约 140 个键，英文宿主只能整份复制；缺少 `labels/en` 或 `locale` 预设 | 已实现（0.11.0） |
+| KIT-010 | `statechart-kit` 诊断 | P2 | 没有导出诊断 code 目录，宿主只能手工维护映射；kit 新增 code 时容易漏翻并显示原始 code | 已实现（0.11.0） |
 | KIT-011 | `statechart-kit` engine | P3 | `send()` 只返回 boolean，done / not-running / queue-full 都表现为 `false`，宿主无法给出准确错误 | 可选（宿主可先检查 false） |
 
 ---
@@ -775,6 +775,19 @@ CASCADE_BASE=http://homeassistant:1880 npm run test:cascade
 - KIT-002 属于上游 `@tinyactors/scxmljs` 渲染器修复；在修复前，文档和示例应避免 parallel 直接挂 history。
 - KIT-003 / KIT-004 已在 0.9.0 完成模型、导入器、序列化器、校验与编辑器支持。
 - KIT-005 属于上游布线能力增强；建议先做最小边组偏移，再评估 bundle/折叠交互。
-- KIT-006 / KIT-007 建议进入 0.11，优先消除宿主终态与错误定位的 workaround。
-- KIT-008 / KIT-009 / KIT-010 建议随后进入 0.11，补齐编辑器本地化与诊断目录。
+- KIT-006 / KIT-007 已在 0.11.0 实现：done.states、抑制空 active、error 定位字段。
+- KIT-008 / KIT-009 / KIT-010 已在 0.11.0 实现：diagnostics 注入、locale=en / DEFAULT_LABELS_EN、诊断 code 目录。
 - KIT-011 为可选增强；宿主可先检查 `send()` 返回值自行报错。
+
+## 0.11.0 实现记录
+
+- KIT-006：`RunnerDoneEvent.states` 由最后一次 microstep 的 `entered` 推导；`done` 前发终态
+  `active`，`done` 后抑制空 `active`；
+- KIT-007：`RunnerErrorEvent` 增加 `stateId` / `transitionId` / `slot` / `actionIndex` /
+  `element`；序列化器写 `data-kit-transition-id`，导入器保留，保证 round-trip；
+- KIT-008：`CreateEditorOptions.diagnostics` 注入 5 个 formatter；默认仍为中文；
+- KIT-009：`locale: 'en'` + `DEFAULT_LABELS_EN`；`labels` 仍可覆盖单个键；
+- KIT-010：核心导出 `NAMING_ISSUE_CODES` / `STRUCTURE_ISSUE_CODES` /
+  `IMPORT_WARNING_CODES` / `VALIDATION_ISSUE_CODES` / `VARIABLE_WRITE_CODES` /
+  `DOCUMENT_STRUCTURE_ERROR_CODES`；`verify-validation` 校验目录与 `docs/messages.md` 一致；
+- KIT-011：仍未实现；继续保留 `send(): boolean`，等宿主需要时再加 `trySend`。

@@ -338,8 +338,9 @@ function transitionFromEl(
     if (rawType === 'internal' || rawType === 'external') transitionType = rawType
     else warn(ctx, 'import.transition.type-invalid', { at, type: rawType })
   }
+  const kitTransitionId = el.getAttribute('data-kit-transition-id')?.trim()
   return {
-    id: newTransitionId(),
+    id: kitTransitionId || newTransitionId(),
     source: sourceUid,
     target,
     ...(transitionType ? { transitionType } : {}),

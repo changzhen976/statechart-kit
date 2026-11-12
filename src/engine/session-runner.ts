@@ -68,6 +68,8 @@ export interface RunnerDoneEvent {
   type: 'done'
   /** 顶层 final 的 <donedata>；cancel 后恒为 undefined */
   data: unknown
+  /** 进入终态前的最后一批 entered 状态（至少包含顶层 final 的 id） */
+  states: string[]
 }
 
 /** 会话抛出 SCXML 错误事件（不一定是致命错误，图表仍可 transition on error.*）。 */
@@ -77,6 +79,45 @@ export interface RunnerErrorEvent {
   kind: SCXMLErrorKind
   /** 人读信息，格式不承诺稳定 */
   message: string
+  /** 出错元素最近的 state/parallel/final/history id（能定位时） */
+  stateId?: string
+  /** 转移动作出错时的 transition id（依赖 SCXML 的 data-kit-transition-id） */
+  transitionId?: string
+  /** 出错动作所在槽位 */
+  slot?: 'entry' | 'exit' | 'transition'
+  /** 动作在所在容器中的序号 */
+  actionIndex?: number
+  /** 出错元素的可序列化描述；宿主无需依赖 DOM */
+  element?: { localName: string; id?: string }
+}
+
+/** 从引擎错误元素提取文档定位信息；找不到就不填可选字段。 */
+function errorElementInfo(element: Element | null): Partial<RunnerErrorEvent> {
+  if (!element) return {}
+  const info: Partial<RunnerErrorEvent> = {
+    element: {
+      localName: element.localName,
+      ...(element.getAttribute('id') ? { id: element.getAttribute('id')! } : {}),
+    },
+  }
+  const stateEl = element.closest('state,parallel,final,history')
+  const stateId = stateEl?.getAttribute('id')
+  if (stateId) info.stateId = stateId
+  const slotEl = element.closest('onentry,onexit,transition')
+  const slotTag = slotEl?.tagName.toLowerCase()
+  if (slotTag === 'onentry') info.slot = 'entry'
+  else if (slotTag === 'onexit') info.slot = 'exit'
+  else if (slotTag === 'transition' && slotEl) {
+    info.slot = 'transition'
+    const transitionId = slotEl.getAttribute('data-kit-transition-id')
+    if (transitionId) info.transitionId = transitionId
+  }
+  const parent = element.parentElement
+  if (parent) {
+    const index = Array.from(parent.children).indexOf(element)
+    if (index >= 0) info.actionIndex = index
+  }
+  return info
 }
 
 export interface RunnerLogEvent {
@@ -264,11 +305,13 @@ export class SessionRunner {
     }
 
     let sawMacrostep = false
+    let doneSeen = false
+    let lastEntered: string[] = []
     const current = (): boolean =>
       this.session === session && generation === this.generation
 
     const onMacro = (): void => {
-      if (!current()) return
+      if (!current() || doneSeen) return
       sawMacrostep = true
       this.emit({ type: 'active', ids: session.activeStateIds() })
     }
@@ -280,6 +323,8 @@ export class SessionRunner {
           pairs.push({ sourceId: t.source.id || '?', targetId: target.id })
         }
       }
+      const entered = e.entered.map((state) => state.id).filter(Boolean)
+      if (entered.length) lastEntered = entered
       if (pairs.length) this.emit({ type: 'fired', pairs })
     }
     const onLog = (e: LogEvent): void => {
@@ -291,12 +336,15 @@ export class SessionRunner {
     const onError = (e: SCXMLErrorEvent): void => {
       if (!current()) return
       this.log('error', `${e.kind}: ${e.message}`)
-      this.emit({ type: 'error', kind: e.kind, message: e.message })
+      this.emit({ type: 'error', kind: e.kind, message: e.message, ...errorElementInfo(e.element) })
     }
     const onDone = (e: DoneEvent): void => {
       if (!current()) return
+      const states = lastEntered.length ? [...lastEntered] : session.activeStateIds()
+      doneSeen = true
+      if (states.length) this.emit({ type: 'active', ids: states })
       this.log('lifecycle', '会话已到达终态结束')
-      this.emit({ type: 'done', data: e.data })
+      this.emit({ type: 'done', data: e.data, states })
     }
     const onSendEv = (e: SendEvent): void => {
       if (!current()) return
@@ -346,7 +394,7 @@ export class SessionRunner {
     // 宿主监听器可能在初始 macrostep 里同步 stop/start；此时不再写“已启动”
     if (!current()) return
     // start() 正常会同步派发一次 macrostep；空图等边界情况兜底一次 active
-    if (!sawMacrostep) {
+    if (!sawMacrostep && !doneSeen) {
       this.emit({ type: 'active', ids: session.activeStateIds() })
     }
     this.log(

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted } from 'vue'
 import { useEditor } from './use-editor'
-import { formatValidationIssue } from './format'
 
 const editor = useEditor()
 
@@ -26,7 +25,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
       <ul class="sce-issues issues">
         <li v-for="(issue, i) in editor.validationDialog.issues" :key="i">
           <span class="sce-issue-kind">{{ issue.kind }}</span>
-          <span>{{ formatValidationIssue(issue) }}</span>
+          <span>{{ editor.diagnostics.formatValidationIssue(issue) }}</span>
           <button v-if="canLocate(issue)" class="mini" @click="editor.locateIssue(issue)">定位</button>
         </li>
       </ul>
