@@ -58,6 +58,59 @@ const showRight = computed(
     moduleTabs.value.length > 0,
 )
 
+const resizablePanes = computed(() => editor.features.resizablePanes === true)
+const leftWidth = ref(300)
+const rightWidth = ref(340)
+const leftCollapsed = ref(false)
+const rightCollapsed = ref(false)
+const PANE_MIN = 220
+const PANE_MAX = 640
+let stopPaneResize: (() => void) | null = null
+
+function clampPane(width: number): number {
+  return Math.min(PANE_MAX, Math.max(PANE_MIN, Math.round(width)))
+}
+
+function startPaneResize(side: 'left' | 'right', event: PointerEvent): void {
+  if (!resizablePanes.value || event.button !== 0) return
+  event.preventDefault()
+  stopPaneResize?.()
+  const startX = event.clientX
+  const startWidth = side === 'left' ? leftWidth.value : rightWidth.value
+  const onMove = (e: PointerEvent): void => {
+    const dx = e.clientX - startX
+    const next = clampPane(side === 'left' ? startWidth + dx : startWidth - dx)
+    if (side === 'left') leftWidth.value = next
+    else rightWidth.value = next
+  }
+  const onUp = (): void => stopPaneResize?.()
+  document.body.style.cursor = 'col-resize'
+  document.body.style.userSelect = 'none'
+  window.addEventListener('pointermove', onMove)
+  window.addEventListener('pointerup', onUp)
+  window.addEventListener('pointercancel', onUp)
+  stopPaneResize = () => {
+    window.removeEventListener('pointermove', onMove)
+    window.removeEventListener('pointerup', onUp)
+    window.removeEventListener('pointercancel', onUp)
+    document.body.style.cursor = ''
+    document.body.style.userSelect = ''
+    stopPaneResize = null
+  }
+}
+
+function resetPaneWidth(side: 'left' | 'right'): void {
+  if (side === 'left') leftWidth.value = 300
+  else rightWidth.value = 340
+}
+
+function togglePane(side: 'left' | 'right'): void {
+  if (side === 'left') leftCollapsed.value = !leftCollapsed.value
+  else rightCollapsed.value = !rightCollapsed.value
+}
+
+onBeforeUnmount(() => stopPaneResize?.())
+
 const root = ref<HTMLElement | null>(null)
 
 /** 编辑器内快捷键：只在本组件子树内生效，避免抢宿主页面的 Ctrl+Z。 */
@@ -94,14 +147,57 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
     <Toolbar v-if="editor.features.toolbar" />
 
     <div class="sce-main">
-      <aside v-if="editor.features.structure" class="sce-side sce-side-left">
-        <StructurePanel />
+      <aside
+        v-if="editor.features.structure"
+        class="sce-side sce-side-left"
+        :class="{ collapsed: resizablePanes && leftCollapsed }"
+        :style="resizablePanes && !leftCollapsed ? { width: leftWidth + 'px' } : undefined"
+      >
+        <button
+          v-if="resizablePanes"
+          class="sce-pane-toggle"
+          type="button"
+          :title="leftCollapsed ? editor.labels.expand + editor.labels.structure : editor.labels.collapse + editor.labels.structure"
+          @click="togglePane('left')"
+        >{{ leftCollapsed ? '›' : '‹' }}</button>
+        <StructurePanel v-if="!resizablePanes || !leftCollapsed" />
       </aside>
+      <div
+        v-if="resizablePanes && !leftCollapsed"
+        class="sce-pane-resizer"
+        role="separator"
+        aria-orientation="vertical"
+        title="拖拽调整宽度，双击复位"
+        @pointerdown="startPaneResize('left', $event)"
+        @dblclick="resetPaneWidth('left')"
+      ></div>
 
       <ChartCanvas v-if="editor.features.canvas" class="sce-center" />
       <div v-else class="sce-center sce-center-empty" />
 
-      <aside v-if="showRight" class="sce-side sce-side-right">
+      <div
+        v-if="resizablePanes && showRight && !rightCollapsed"
+        class="sce-pane-resizer"
+        role="separator"
+        aria-orientation="vertical"
+        title="拖拽调整宽度，双击复位"
+        @pointerdown="startPaneResize('right', $event)"
+        @dblclick="resetPaneWidth('right')"
+      ></div>
+      <aside
+        v-if="showRight"
+        class="sce-side sce-side-right"
+        :class="{ collapsed: resizablePanes && rightCollapsed }"
+        :style="resizablePanes && !rightCollapsed ? { width: rightWidth + 'px' } : undefined"
+      >
+        <button
+          v-if="resizablePanes"
+          class="sce-pane-toggle"
+          type="button"
+          :title="rightCollapsed ? editor.labels.expand + editor.labels.properties : editor.labels.collapse + editor.labels.properties"
+          @click="togglePane('right')"
+        >{{ rightCollapsed ? '‹' : '›' }}</button>
+        <template v-if="!resizablePanes || !rightCollapsed">
         <nav class="sce-tabs" role="tablist">
           <button
             v-if="editor.features.properties"
@@ -151,6 +247,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
             v-if="activeModule"
           />
         </div>
+        </template>
       </aside>
     </div>
 

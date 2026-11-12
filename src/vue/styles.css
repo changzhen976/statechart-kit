@@ -90,6 +90,31 @@
    否则结构树与转移列表会被直接裁掉（右栏由 .sce-tab-body 负责滚动）。 */
 .sce-side-left { width: 300px; border-right: 1px solid var(--scxml-border); overflow-y: auto; }
 .sce-side-right { width: 340px; border-left: 1px solid var(--scxml-border); }
+.sce-side.collapsed { width: 28px; overflow: hidden; }
+.sce-pane-toggle {
+  flex: none;
+  align-self: flex-start;
+  width: 22px;
+  height: 22px;
+  margin: 4px 3px;
+  padding: 0;
+  border: 1px solid var(--scxml-border-2);
+  border-radius: 5px;
+  background: var(--scxml-surface-2);
+  color: var(--scxml-fg-muted);
+  font: 12px var(--scxml-font-sans);
+  line-height: 1;
+  cursor: pointer;
+}
+.sce-side.collapsed .sce-pane-toggle { align-self: center; margin: 4px 2px; }
+.sce-pane-resizer {
+  flex: 0 0 4px;
+  cursor: col-resize;
+  background: transparent;
+  border-left: 1px solid transparent;
+  border-right: 1px solid transparent;
+}
+.sce-pane-resizer:hover { background: var(--scxml-accent-subtle); }
 .sce-center { flex: 1; min-width: 0; }
 .sce-center-empty { background: var(--scxml-bg); }
 

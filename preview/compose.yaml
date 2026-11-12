@@ -20,6 +20,7 @@ services:
     environment:
       TZ: ${TZ:-Asia/Shanghai}
       DATA_DIR: /data
+      PREVIEW_TOKEN: ${PREVIEW_TOKEN:-}
     volumes:
       - /opt/statechart-preview/data:/data:ro
     init: true

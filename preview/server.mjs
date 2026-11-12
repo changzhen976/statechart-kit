@@ -18,6 +18,7 @@ const distDir = process.env.DIST_DIR || join(here, 'dist')
 const dataDir = process.env.DATA_DIR || join(here, 'data')
 const port = Number(process.env.PORT || 5182)
 const host = process.env.HOST || '0.0.0.0'
+const previewToken = process.env.PREVIEW_TOKEN || ''
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -81,7 +82,19 @@ function sendJson(res, status, body) {
   res.end(JSON.stringify(body))
 }
 
-async function handleLatest(res) {
+function isAuthorized(req, url) {
+  if (!previewToken) return true
+  const supplied = req.headers['x-preview-token'] || url.searchParams.get('token') || ''
+  const auth = String(req.headers.authorization || '')
+  const bearer = auth.startsWith('Bearer ') ? auth.slice(7) : ''
+  return supplied === previewToken || bearer === previewToken
+}
+
+async function handleLatest(req, res, url) {
+  if (!isAuthorized(req, url)) {
+    sendJson(res, 401, { error: 'preview token required' })
+    return
+  }
   const latest = await pickLatest()
   if (!latest) {
     sendJson(res, 404, {
@@ -136,7 +149,7 @@ const server = createServer(async (req, res) => {
       return
     }
     if (pathname === '/api/latest') {
-      await handleLatest(res)
+      await handleLatest(req, res, new URL(req.url || '/', 'http://localhost'))
       return
     }
     await handleStatic(req, res)

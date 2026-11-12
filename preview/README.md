@@ -52,7 +52,22 @@ docker build -f preview/Dockerfile \
 ## 刷新
 
 页面顶部「刷新最新」重新读取 `/api/latest`，不会重启容器。
-更新 `latest.scxml` 后点刷新即可看到新图。
+默认每 3 秒检查一次文件 mtime，变化时自动刷新；可在页头取消「自动刷新」。
+仿真运行中检测到新版本会提示，停止仿真后自动刷新。
+
+如果设置了 `PREVIEW_TOKEN`，页面 URL 需要带 `?token=...`：
+
+```bash
+docker run -d --name statechart-preview -p 5182:5182 \
+  -e PREVIEW_TOKEN=your-token \
+  -v /opt/statechart-preview/data:/data:ro statechart-preview
+```
+
+```text
+http://host:5182/?token=your-token
+```
+
+`/api/latest` 同时接受 `x-preview-token` 和 `Authorization: Bearer`。
 
 ## 说明
 

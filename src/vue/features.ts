@@ -37,6 +37,8 @@ export interface EditorFeatures {
   deploy: boolean
   /** 退出编辑按钮（adapter.exit） */
   exit: boolean
+  /** 左右栏可拖拽调宽/折叠（默认关闭，保持现有布局） */
+  resizablePanes?: boolean
 }
 
 export const DEFAULT_FEATURES: EditorFeatures = {
@@ -56,6 +58,7 @@ export const DEFAULT_FEATURES: EditorFeatures = {
   undoRedo: true,
   deploy: false,
   exit: false,
+  resizablePanes: false,
 }
 
 export function resolveFeatures(partial?: Partial<EditorFeatures>): EditorFeatures {

@@ -63,6 +63,8 @@ export interface EditorLabels {
   simulation: string
   explorer: string
   explorerTransitions: string
+  collapse: string
+  expand: string
   explorerNoState: string
   explorerNoTransitions: string
   stateId: string
@@ -184,6 +186,8 @@ export const DEFAULT_LABELS: EditorLabels = {
   simulation: '仿真',
   explorer: 'Explorer',
   explorerTransitions: '状态转移',
+  collapse: '收起',
+  expand: '展开',
   explorerNoState: '在 Explorer 中选择一个状态',
   explorerNoTransitions: '该状态没有出边',
   stateId: 'SCXML id',

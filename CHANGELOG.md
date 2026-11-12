@@ -2,7 +2,12 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
-## [Unreleased]
+## [0.10.1] - 2026-11-12
+
+### Added
+
+- `features.resizablePanes`：左右栏可拖拽调宽（双击复位）、可折叠；默认关闭，保持现有布局
+- preview 容器：默认每 3 秒检查文件 mtime 自动刷新；支持 `PREVIEW_TOKEN` 访问保护
 
 ### Changed
 

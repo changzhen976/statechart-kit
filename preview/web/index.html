@@ -17,6 +17,8 @@
       #bar button { font: 12px system-ui; padding: 4px 10px; border: 1px solid #35404c;
                     border-radius: 6px; background: #20262d; color: #e8edf2; cursor: pointer; }
       #bar button:hover { background: #2a323b; }
+      #bar .auto { display: inline-flex; align-items: center; gap: 4px; color: #8f9aa8; font-size: 11px; cursor: pointer; }
+      #bar .auto input { accent-color: #4c9aff; }
       #app { height: calc(100% - 43px); }
     </style>
   </head>
@@ -25,6 +27,7 @@
       <strong>statechart-kit preview</strong>
       <span class="status" id="status">加载中…</span>
       <span class="spacer"></span>
+      <label class="auto"><input id="auto" type="checkbox" checked /> 自动刷新</label>
       <button id="refresh" type="button">刷新最新</button>
     </div>
     <div id="app"></div>
