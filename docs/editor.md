@@ -56,7 +56,7 @@ statechart-kit/vue
   browser-adapter.ts  浏览器默认 adapter
   format.ts           诊断 code → 中文展示
   events.ts           事件候选（展示层）
-  labels.ts           默认中文文案
+  labels.ts           默认中文 + DEFAULT_LABELS_EN
   styles.css          全部编辑器样式
   DoneDataEditor.vue  doneData 的 content/expr/param 编辑器
   canvas-select.ts    画布标签 → 转移匹配（纯函数）
