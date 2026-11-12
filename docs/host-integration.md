@@ -82,9 +82,10 @@ runner.on((event) => {
       break
     case 'done':
       // event.data = 顶层 final 的 donedata
+      // event.states = 进入终态的最后一批状态（至少含 final id）
       break
     case 'error':
-      // event.kind / event.message
+      // event.stateId / transitionId / slot / actionIndex / element 可定位出错动作
       break
   }
 })
@@ -136,6 +137,16 @@ const mounted = mountEditor('#editor', {
 })
 
 await mounted.ready
+```
+
+英文宿主可用 `locale: 'en'` 和 `diagnostics` 覆盖诊断文案：
+
+```ts
+mountEditor('#editor', {
+  locale: 'en',
+  diagnostics: { formatValidationIssue: myEnglishFormatter },
+  adapter,
+})
 ```
 
 编辑器挂载后：

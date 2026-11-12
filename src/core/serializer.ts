@@ -75,6 +75,7 @@ function transitionXml(t: TransitionEdge, idOf: (uid: string) => string, pad: st
   if (t.event) attrs.push(`event="${esc(t.event)}"`)
   if (t.target !== null) attrs.push(`target="${esc(idOf(t.target))}"`)
   if (t.transitionType) attrs.push(`type="${esc(t.transitionType)}"`)
+  attrs.push(`data-kit-transition-id="${esc(t.id)}"`)
   if (t.cond) attrs.push(`cond="${esc(t.cond)}"`)
   const open = `${pad}<transition ${attrs.join(' ')}`
   const body = actionsBlock(t.actions, pad + '  ')

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useEditor } from './use-editor'
-import { formatVariableResult } from './format'
 
 const editor = useEditor()
 const customName = ref('')
@@ -46,7 +45,7 @@ function assign(): void {
     return
   }
   const result = editor.assignVariable(setVarId.value, expr)
-  if (!result.ok) setErr.value = formatVariableResult(result)
+  if (!result.ok) setErr.value = editor.diagnostics.formatVariableResult(result)
 }
 </script>
 

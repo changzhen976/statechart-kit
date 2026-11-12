@@ -7,6 +7,18 @@ core 与 engine 的诊断统一返回 `{ code, params }`，宿主按 `code` 查�
 `naming.mqtt-var.requires-machine`）由宿主在自己的 formatter 中扩展；其他语言/宿主可整体替换。
 本文是公开契约：新增 code 属于向后兼容；修改/删除 code 视为破坏性变更。
 
+宿主可用稳定目录做 i18n 覆盖率测试（从 `statechart-kit` 导出）：
+
+```ts
+import {
+  NAMING_ISSUE_CODES,
+  STRUCTURE_ISSUE_CODES,
+  IMPORT_WARNING_CODES,
+  VALIDATION_ISSUE_CODES,
+  VARIABLE_WRITE_CODES,
+} from 'statechart-kit'
+```
+
 约定：
 
 - `params` 中的字段可直接插值；缺失可选字段时宿主应回退到通用文案。
@@ -37,12 +49,12 @@ core 与 engine 的诊断统一返回 `{ code, params }`，宿主按 `code` 查�
 
 | code | 级别 | 含义 |
 | --- | --- | --- |
-| `structure.state.missing-uid` / `duplicate-uid` | error | 内部 uid 缺失/重复（引用键不可靠） |
-| `structure.state.missing-id` / `invalid-id` / `duplicate-id` | error | SCXML id 缺失/非 NCName/重复 |
-| `structure.state.self-parent` / `missing-parent` / `parent-cycle` | error | 父子引用非法/悬空/成环 |
-| `structure.state.history-root` / `history-children` | error | history 伪态必须有父、不能有子 |
+| `structure.state.missing-uid` / `structure.state.duplicate-uid` | error | 内部 uid 缺失/重复（引用键不可靠） |
+| `structure.state.missing-id` / `structure.state.invalid-id` / `structure.state.duplicate-id` | error | SCXML id 缺失/非 NCName/重复 |
+| `structure.state.self-parent` / `structure.state.missing-parent` / `structure.state.parent-cycle` | error | 父子引用非法/悬空/成环 |
+| `structure.state.history-root` / `structure.state.history-children` | error | history 伪态必须有父、不能有子 |
 | `structure.state.history-actions` | warning | history 的 entry/exit 会被序列化器丢弃 |
-| `structure.state.final-children` / `atomic-children` | error | final/atomic 不能有子状态 |
+| `structure.state.final-children` / `structure.state.atomic-children` | error | final/atomic 不能有子状态 |
 | `structure.state.final-transition` | error | final 不能有出边 |
 | `structure.state.donedata-not-final` | error | donedata 只允许出现在 final 状态 |
 | `structure.state.donedata-empty` | error | donedata 的 content/expr 为空，或没有任何形态 |
@@ -53,12 +65,12 @@ core 与 engine 的诊断统一返回 `{ code, params }`，宿主按 `code` 查�
 | `structure.state.parallel-initial` | warning | parallel 的 initial 会被忽略 |
 | `structure.state.initial-ignored` | warning | 非 compound 状态的 initial 会被忽略 |
 | `structure.state.initial-fallback` | warning | 未指定 initial，序列化器回退第一个子状态 |
-| `structure.state.initial-missing` / `initial-not-child` | error | initial 指向不存在/非直接子状态 |
+| `structure.state.initial-missing` / `structure.state.initial-not-child` | error | initial 指向不存在/非直接子状态 |
 | `structure.state.initial-history` | warning | initial 指向 history，序列化时回退 |
-| `structure.root.initial-missing` / `initial-not-top` | error | 根 initial 不存在/不是顶层状态 |
-| `structure.variable.missing-id` / `invalid-id` / `duplicate-id` | error | datamodel 变量 id 非法 |
-| `structure.transition.missing-id` / `duplicate-id` | warning | 内部转移 id 缺失/重复 |
-| `structure.transition.missing-source` / `missing-target` | error | 转移端点悬空（`missing-target` 仅检查非 null target） |
+| `structure.root.initial-missing` / `structure.root.initial-not-top` | error | 根 initial 不存在/不是顶层状态 |
+| `structure.variable.missing-id` / `structure.variable.invalid-id` / `structure.variable.duplicate-id` | error | datamodel 变量 id 非法 |
+| `structure.transition.missing-id` / `structure.transition.duplicate-id` | warning | 内部转移 id 缺失/重复 |
+| `structure.transition.missing-source` / `structure.transition.missing-target` | error | 转移端点悬空（`missing-target` 仅检查非 null target） |
 | `structure.transition.history-targetless` | error | history 的默认转移必须有 target |
 | `structure.transition.internal-eventless` | warning | 无 target 且无事件，可能形成自激循环 |
 | `structure.transition.delay-invalid` | error | `delayMs` 非有限值或 < 10 |
@@ -71,17 +83,17 @@ core 与 engine 的诊断统一返回 `{ code, params }`，宿主按 `code` 查�
 | `import.action.missing-event` | `at`, `tag` | `<send>/<raise>` 缺 event，已跳过 |
 | `import.send.external-target` | `at`, `tag`, `event` | 外部 target 按本机 send 处理 |
 | `import.send.params-ignored` | `at`, `tag`, `event` | `<param>` 映射被忽略 |
-| `import.action.missing-sendid` / `missing-location` | `at` | cancel/assign 缺属性，已跳过 |
+| `import.action.missing-sendid` / `import.action.missing-location` | `at` | cancel/assign 缺属性，已跳过 |
 | `import.action.unsupported` | `at`, `tag` | if/elseif/else/foreach 暂不支持 |
 | `import.action.unknown` | `at`, `tag` | 未知可执行元素，已跳过 |
 | `import.state.missing-id` | `id` | 状态缺 id，自动命名 |
 | `import.state.duplicate-id` | `id`, `renamed` | 状态 id 重复，已改名 |
 | `import.element.unsupported` | `at`, `tag` | invoke 等暂不支持 |
-| `import.donedata.empty-expr` / `empty-content` | `at` | donedata 的 content/expr 为空 |
+| `import.donedata.empty-expr` / `import.donedata.empty-content` | `at` | donedata 的 content/expr 为空 |
 | `import.donedata.param-invalid` | `at`, `index`, `name?` | param 缺 name 或 expr |
 | `import.donedata.ambiguous` | `at`, `forms` | content/expr/param 多形态并存，已尽力保留 |
 | `import.donedata.unsupported-child` | `at`, `tag` | donedata 内未知子元素，已忽略 |
-| `import.initial.not-child` / `missing-target` | `at`, `initial` | initial 指向非子状态/不存在 |
+| `import.initial.not-child` / `import.initial.missing-target` | `at`, `initial` | initial 指向非子状态/不存在 |
 | `import.transition.multi-target` | `at`, `target`, `taken` | fork 多 target，取第一个 |
 | `import.transition.missing-target` | `at`, `target` | target 不存在，已跳过 |
 | `import.transition.type-invalid` | `at`, `type` | type 不是 internal/external，已忽略 |

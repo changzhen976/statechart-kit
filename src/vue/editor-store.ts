@@ -32,10 +32,16 @@ import { checkEventName, checkVarName } from '../core/naming'
 import { scanScriptActions } from '../core/action-parse'
 import { scriptHitsToIssues, validateDocument, type ValidationIssue } from '../engine/validator'
 import { SessionRunner, type SimLogEntry, type VariableWriteResult } from '../engine/session-runner'
-import { DEFAULT_LABELS, type EditorLabels } from './labels'
+import { DEFAULT_LABELS, DEFAULT_LABELS_EN, type EditorLabels } from './labels'
 import { resolveFeatures, type EditorFeatures } from './features'
 import { buildEditorEventOptions, type EditorEventOption } from './events'
-import { formatNamingIssue, formatValidationIssue, formatVariableResult } from './format'
+import {
+  formatImportWarning,
+  formatNamingIssue,
+  formatStructureIssue,
+  formatValidationIssue,
+  formatVariableResult,
+} from './format'
 import { createBrowserAdapter } from './browser-adapter'
 import type { EditorAdapter } from './types'
 import type {
@@ -100,12 +106,23 @@ export interface EditorState {
   moduleEventFields: EditorAttributeField[]
 }
 
+export interface EditorDiagnostics {
+  formatNamingIssue: typeof formatNamingIssue
+  formatStructureIssue: typeof formatStructureIssue
+  formatValidationIssue: typeof formatValidationIssue
+  formatImportWarning: typeof formatImportWarning
+  formatVariableResult: typeof formatVariableResult
+}
+
 export interface CreateEditorOptions {
   initialDoc?: ProjectDoc
   adapter?: EditorAdapter
   features?: Partial<EditorFeatures>
   policy?: NamingPolicy
+  locale?: 'zh' | 'en'
   labels?: Partial<EditorLabels>
+  /** 诊断文案格式化；默认中文，宿主可整体替换为英文/其他语言 */
+  diagnostics?: Partial<EditorDiagnostics>
   /** Node 环境的 DOMParser（浏览器可省略；优先于 adapter.domParser） */
   domParser?: DOMParserLike
   /** false = 不从 adapter.load 读取（默认 true） */
@@ -165,6 +182,7 @@ function toValidationIssue(issue: EditorModuleIssue): ValidationIssue {
 export interface EditorStore {
   readonly state: EditorState
   readonly labels: EditorLabels
+  readonly diagnostics: EditorDiagnostics
   readonly features: EditorFeatures
   readonly policy: NamingPolicy
   readonly adapter: EditorAdapter
@@ -259,9 +277,25 @@ export interface EditorStore {
 }
 
 export function createEditor(options: CreateEditorOptions = {}): EditorStore {
-  const adapter = options.adapter ?? createBrowserAdapter({ policy: options.policy })
+  const diagnostics: EditorDiagnostics = {
+    formatNamingIssue,
+    formatStructureIssue,
+    formatValidationIssue,
+    formatImportWarning,
+    formatVariableResult,
+    ...(options.diagnostics ?? {}),
+  }
+  const adapter =
+    options.adapter ??
+    createBrowserAdapter({
+      policy: options.policy,
+      formatImportWarning: diagnostics.formatImportWarning,
+    })
   const policy = options.policy ?? adapter.policy ?? BASE_POLICY
-  const labels: EditorLabels = { ...DEFAULT_LABELS, ...(options.labels ?? {}) }
+  const labels: EditorLabels = {
+    ...(options.locale === 'en' ? DEFAULT_LABELS_EN : DEFAULT_LABELS),
+    ...(options.labels ?? {}),
+  }
   const features = resolveFeatures(options.features)
   const domParser = options.domParser ?? adapter.domParser
   const runner = new SessionRunner({
@@ -833,7 +867,7 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
 
   function validateEventName(name: string, transitionId?: string): string | null {
     const issue = checkEventName(policy, name, { doc: state.doc })
-    if (issue?.level === 'block') return formatNamingIssue(issue)
+    if (issue?.level === 'block') return diagnostics.formatNamingIssue(issue)
     if (transitionId && state.doc.transitions.some((t) => t.id !== transitionId && t.event === name)) {
       // 同名事件允许多条转移；这里只做提示，不阻断
     }
@@ -999,7 +1033,7 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     if (!NCNAME_RE.test(id)) return '变量名非法'
     if (state.doc.datamodel.some((d, i) => i !== index && d.id === id)) return '变量名重复'
     const issue = checkVarName(policy, id)
-    if (issue?.level === 'block') return formatNamingIssue(issue)
+    if (issue?.level === 'block') return diagnostics.formatNamingIssue(issue)
     return null
   }
 
@@ -1206,7 +1240,7 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
 
   function assignVariable(id: string, expr: string): VariableWriteResult {
     const result = runner.assignVariable(id, expr)
-    pushLog(result.ok ? 'send' : 'error', formatVariableResult(result))
+    pushLog(result.ok ? 'send' : 'error', diagnostics.formatVariableResult(result))
     refreshVariables()
     return result
   }
@@ -1235,6 +1269,7 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
   const editor: EditorStore = {
     state,
     labels,
+    diagnostics,
     features,
     policy,
     adapter,

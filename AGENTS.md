@@ -23,7 +23,7 @@ Node-RED 节点与总线、部署与草稿锁都不在本包范围内。
 
 | 项 | 值 |
 | --- | --- |
-| 版本 | `0.10.1` |
+| 版本 | `0.11.0` |
 | 分支 | `main` |
 | 入口 | `.` / `./engine` / `./vue` / `./diagnostics/zh` |
 | Node | `>=20` |
@@ -76,6 +76,7 @@ src/core/                零运行时依赖；禁止 import 引擎/Vue/浏览器
   event-catalog.ts       事件事实/三方向目录
   active-tree.ts         激活状态层级树
   validate-structure.ts  纯结构校验（零依赖）
+  codes.ts               公开诊断 code 目录
   examples.ts            内置示例（测试依赖）
 
 src/engine/              依赖 @tinyactors/scxmljs；入口不静态 import 实现
@@ -88,12 +89,12 @@ src/diagnostics/zh.ts    诊断 code → 中文展示（宿主可替换）
 
 src/vue/                 Vue 3 编辑器（Vite 构建，vue 为 optional peer）
   index.ts               mountEditor / createEditor / EditorHost
-  editor-store.ts        reactive store：文档 CRUD/undo/保存/校验/仿真
+  editor-store.ts        reactive store：文档 CRUD/undo/保存/校验/仿真；EditorDiagnostics + locale
   types.ts               EditorAdapter（宿主能力注入）
   modules.ts             EditorModule 契约
   features.ts            EditorFeatures 能力开关（含 explorer）
   browser-adapter.ts     浏览器默认 adapter
-  events.ts / labels.ts / format.ts / styles.css
+  events.ts / labels.ts / format.ts / styles.css（含 DEFAULT_LABELS_EN）
   DoneDataEditor.vue     doneData 的 content/expr/param 编辑器
   canvas-select.ts       画布标签 → 转移匹配（纯函数）
   *.vue                  EditorHost/Toolbar/Structure/Canvas/Property/Variables/Sim
@@ -150,8 +151,8 @@ const runner = new SessionRunner({ engine: 'sandboxed', domParser })
 | `test/verify-events.ts` | 事件事实/方向目录/激活树 |
 | `test/verify-validation.ts` | 结构/引擎校验、严格序列化、CDATA |
 | `test/verify-engine.ts` | 懒加载、两种数据模型、生命周期竞态 |
-| `test/verify-host-events.ts` | typed send/done/error、done data |
-| `test/verify-editor.ts` | adapter、CRUD/undo、Explorer 匹配、doneData |
+| `test/verify-host-events.ts` | typed send/done/error、done.states、error 定位 |
+| `test/verify-editor.ts` | adapter、CRUD/undo、Explorer 匹配、doneData、locale/diagnostics |
 
 发布前必须 `npm run verify:all` 全绿。`check:baseline -- --donor` 需要本地
 `../scxml-creator` donor 工作区，仅开发机可用。
@@ -176,7 +177,7 @@ const runner = new SessionRunner({ engine: 'sandboxed', domParser })
 
 - [`docs/internal/roadmap.md`](docs/internal/roadmap.md)：阶段历史与迁移清单；
 - [`docs/internal/architecture-review.md`](docs/internal/architecture-review.md)：历史架构分层与风险；
-- [`docs/internal/kit-requirements.md`](docs/internal/kit-requirements.md)：KIT-001–005 需求记录；
+- [`docs/internal/kit-requirements.md`](docs/internal/kit-requirements.md)：KIT-001–011 需求记录；
 - [`docs/internal/releasing.md`](docs/internal/releasing.md)：npm 发布与 creator 切换；
 - [`docs/internal/work-items/`](docs/internal/work-items/)：历史工作项。
 

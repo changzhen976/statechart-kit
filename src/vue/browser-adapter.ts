@@ -8,6 +8,7 @@ import type { NamingPolicy } from '../core/naming-policy'
 import { migrateDoc } from '../core/migrate'
 import { scxmlToDoc } from '../core/scxml-import'
 import { formatImportWarning } from './format'
+import type { ImportWarning } from '../core/scxml-import'
 import type { EditorAdapter, EditorImportResult } from './types'
 
 export interface BrowserAdapterOptions {
@@ -17,6 +18,8 @@ export interface BrowserAdapterOptions {
   policy?: NamingPolicy
   /** 是否使用内置示例（默认 true） */
   examples?: boolean
+  /** 导入警告的本地化；默认中文 */
+  formatImportWarning?: (warning: ImportWarning) => string
 }
 
 function hasLocalStorage(): boolean {
@@ -33,7 +36,7 @@ function download(filename: string, content: string, mime: string): void {
   URL.revokeObjectURL(url)
 }
 
-function importFile(): Promise<EditorImportResult> {
+function importFile(formatWarning: (warning: ImportWarning) => string): Promise<EditorImportResult> {
   return new Promise((resolve, reject) => {
     const input = document.createElement('input')
     input.type = 'file'
@@ -63,7 +66,7 @@ function importFile(): Promise<EditorImportResult> {
           resolve({
             doc: r.doc,
             source: 'scxml',
-            warnings: r.warnings.map(formatImportWarning),
+            warnings: r.warnings.map(formatWarning),
           })
         })
         .catch((e) => reject(e instanceof Error ? e : new Error(String(e))))
@@ -75,6 +78,7 @@ function importFile(): Promise<EditorImportResult> {
 /** 创建浏览器默认适配器（Node/SSR 环境调用 load/save 会安全地 no-op/返回 null） */
 export function createBrowserAdapter(opts: BrowserAdapterOptions = {}): EditorAdapter {
   const key = opts.storageKey ?? 'statechart-kit:doc'
+  const formatWarning = opts.formatImportWarning ?? formatImportWarning
   return {
     load(): ProjectDoc | null {
       if (!hasLocalStorage()) return null
@@ -97,7 +101,7 @@ export function createBrowserAdapter(opts: BrowserAdapterOptions = {}): EditorAd
         /* 存储满/隐私模式：静默失败，编辑器仍有内存状态 */
       }
     },
-    importProject: importFile,
+    importProject: () => importFile(formatWarning),
     exportProject(doc: ProjectDoc): void {
       download(
         `${doc.name || 'project'}.statechart.json`,

@@ -2,6 +2,37 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.11.0] - 2026-11-12
+
+### Added
+
+- `RunnerDoneEvent.states`：携带进入终态前的最后一批状态（至少包含顶层 final id）；
+- `SessionRunner` 在 `done` 前发一次终态 `active`，`done` 后不再发空 `active: []`；
+- `RunnerErrorEvent` 增加可选 `stateId` / `transitionId` / `slot` / `actionIndex` /
+  `element`，可从运行时错误定位到状态、动作或转移；
+- 序列化器为转移写 `data-kit-transition-id`，导入器保留该属性，保证自产 SCXML
+  round-trip 与错误定位稳定；
+- `CreateEditorOptions.diagnostics`：可注入 `formatNamingIssue` /
+  `formatStructureIssue` / `formatValidationIssue` / `formatImportWarning` /
+  `formatVariableResult`；
+- `CreateEditorOptions.locale: 'en'` 与 `DEFAULT_LABELS_EN`；
+- 公开诊断 code 目录：`NAMING_ISSUE_CODES`、`STRUCTURE_ISSUE_CODES`、
+  `IMPORT_WARNING_CODES`、`VALIDATION_ISSUE_CODES`、`VARIABLE_WRITE_CODES`、
+  `DOCUMENT_STRUCTURE_ERROR_CODES`。
+
+### Changed
+
+- `done` 后不再发送空 `active`，宿主可删除 `status === 'done'` 过滤；
+- 自产 SCXML 的 `<transition>` 新增 `data-kit-transition-id` 属性；
+- 编辑器英文 labels/诊断文案可通过预设和注入完成，不再需要整份覆盖中文表。
+
+### Tests
+
+- `verify-host-events` 增加 done.states、终态 active、entry/transition error 定位、
+  serializer transition id 用例；
+- `verify-validation` 增加诊断 code 目录与 `docs/messages.md` 一致性检查；
+- `verify-editor` 增加 locale=en 与 diagnostics 注入用例。
+
 ## [0.10.1] - 2026-11-12
 
 ### Added

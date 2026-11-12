@@ -203,15 +203,28 @@ core/engine 只返回 `{code, params}`，不返回中文文案。宿主可以：
 - 或按 `code` 接入自己的 i18n；
 - 用 `issue.stateId` / `event` / `transitionId` / `actionIndex` 定位到编辑器控件。
 
-完整 code 表见 [`docs/messages.md`](docs/messages.md)。
+编辑器支持 `locale: 'en'` / `DEFAULT_LABELS_EN`，并可通过 `diagnostics` 注入
+`formatValidationIssue` 等 formatter。完整 code 表见 [`docs/messages.md`](docs/messages.md)，
+可枚举目录从 core 导出：
+
+```ts
+import {
+  STRUCTURE_ISSUE_CODES,
+  IMPORT_WARNING_CODES,
+  VALIDATION_ISSUE_CODES,
+  VARIABLE_WRITE_CODES,
+} from 'statechart-kit'
+```
 
 ## 兼容性
 
-- 版本 `0.10.0`，Node.js >= 20，ESM only；
+- 版本 `0.11.0`，Node.js >= 20，ESM only；
 - `vue` 是 optional peer；
-- `ProjectDoc` / SCXML 输出在 0.10 线保持稳定；
+- `ProjectDoc` / SCXML 输出在 0.11 线保持稳定；
 - `TransitionEdge.target` 可为 `null`，`ListenEdge.target` / `EventOrigin.target` 同步可空；
-- `features.explorer` 默认 `false`，不改变现有宿主行为。
+- `done` 事件新增 `states`；`error` 事件新增可选定位字段（见[会话事件](docs/session-events.md)）；
+- 序列化器会给转移写 `data-kit-transition-id`，导入器会保留；
+- `features.explorer` / `resizablePanes` 默认 `false`，不改变现有宿主行为。
 
 ## 文档
 

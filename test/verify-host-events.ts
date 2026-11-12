@@ -173,6 +173,93 @@ console.log('── 4d) donedata content/param 形状 ──')
   }
 }
 
+
+console.log('── 4e) done.states 与终态 active ──')
+{
+  const runner = new SessionRunner({ domParser })
+  const events = collect(runner)
+  await runner.start(
+    xmlOpen(`<state id="a"><transition event="finish" target="done"/></state><final id="done"/>`),
+  )
+  runner.send('finish')
+  await runner.settled()
+  const done = events.find((e) => e.type === 'done')
+  assert(done?.type === 'done' && done.states.includes('done'), `done.states 包含终态（${JSON.stringify(done?.states)}）`)
+  const doneAt = events.indexOf(done!)
+  const after = events.slice(doneAt + 1)
+  assert(!after.some((e) => e.type === 'active' && e.ids.length === 0), 'done 后不再发送空 active')
+  assert(events.some((e) => e.type === 'active' && e.ids.includes('done')), '终态 active 仍可在 done 前观察到')
+  await runner.stop()
+}
+
+console.log('── 4f) error 角标：state/slot/action/transition ──')
+{
+  const runner = new SessionRunner({ domParser, engine: 'trusted' })
+  const events = collect(runner)
+  await runner.start(
+    xmlOpen(`
+      <state id="a">
+        <onentry><script>throw new Error('entry boom')</script></onentry>
+        <transition event="go" target="b" data-kit-transition-id="t-test">
+          <script>throw new Error('transition boom')</script>
+        </transition>
+      </state>
+      <state id="b"/>
+    `),
+  )
+  await runner.settled()
+  const entryError = events.find((e) => e.type === 'error')
+  assert(
+    entryError?.type === 'error' &&
+      entryError.stateId === 'a' &&
+      entryError.slot === 'entry' &&
+      entryError.actionIndex === 0 &&
+      entryError.element?.localName === 'script',
+    `entry 错误定位（${JSON.stringify(entryError)}）`,
+  )
+  events.length = 0
+  runner.send('go')
+  await runner.settled()
+  const transitionError = events.find((e) => e.type === 'error')
+  assert(
+    transitionError?.type === 'error' &&
+      transitionError.stateId === 'a' &&
+      transitionError.slot === 'transition' &&
+      transitionError.transitionId === 't-test',
+    `transition 错误定位（${JSON.stringify(transitionError)}）`,
+  )
+  await runner.stop()
+}
+
+console.log('── 4g) serializer 保留 transition 定位 id ──')
+{
+  const doc = emptyDoc('err')
+  const a = { uid: newUid(), id: 'a', label: 'a', kind: 'atomic' as const, parent: null, entryActions: [], exitActions: [] }
+  const b = { uid: newUid(), id: 'b', label: 'b', kind: 'atomic' as const, parent: null, entryActions: [], exitActions: [] }
+  doc.states.push(a, b)
+  doc.initial = a.uid
+  const transitionId = newUid()
+  doc.transitions.push({
+    id: transitionId,
+    source: a.uid,
+    target: b.uid,
+    event: 'go',
+    cond: '',
+    actions: ["throw new Error('serialized transition boom')"],
+  })
+  const runner = new SessionRunner({ domParser, engine: 'trusted' })
+  const events = collect(runner)
+  await runner.start(serializeToScxml(doc))
+  runner.send('go')
+  await runner.settled()
+  const error = events.find((e) => e.type === 'error')
+  assert(
+    error?.type === 'error' && error.transitionId === transitionId && error.stateId === 'a',
+    `serializer 产出的 transition id 可用于错误定位（${JSON.stringify(error)}）`,
+  )
+  await runner.stop()
+}
+
 console.log('── 5) error：kind/message 结构化 ──')
 {
   const runner = new SessionRunner({ domParser, engine: 'trusted' })
