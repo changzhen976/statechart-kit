@@ -44,6 +44,7 @@ const mounted = mountEditor(host, {
   features: {
     canvas: false,
     simulation: false,
+    resizablePanes: true,
     simBar: false,
     validation: false,
     examples: false,
@@ -92,6 +93,14 @@ if (!tabTexts.includes('事件')) throw new Error(`事件标签页未渲染：${
 if (!host.textContent.includes('ProbeGlobal') || !host.textContent.includes('ProbeBroadcast')) {
   throw new Error('变量/事件字段未渲染')
 }
+const leftToggle = host.querySelector('.sce-side-left .sce-pane-toggle')
+if (!leftToggle) throw new Error('可调宽侧栏的折叠按钮未渲染')
+leftToggle.click()
+await new Promise((r) => setTimeout(r, 20))
+if (!host.querySelector('.sce-side-left.collapsed')) throw new Error('左侧栏折叠未生效')
+leftToggle.click()
+await new Promise((r) => setTimeout(r, 20))
+if (host.querySelector('.sce-side-left.collapsed')) throw new Error('左侧栏展开未生效')
 mounted.unmount()
 
 // Explorer：编辑态预览 session + 状态/转移选中桥接。官方 explorer 依赖

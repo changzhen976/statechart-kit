@@ -85,8 +85,9 @@ statechart-kit/vue
 | `undoRedo` | 撤销/重做 |
 | `deploy` / `exit` | 宿主部署/退出 |
 | `explorer` | 官方 `<scxml-explorer>` 覆盖层 |
+| `resizablePanes` | 左右栏可拖拽调宽/折叠 |
 
-`deploy` / `exit` / `explorer` 默认关闭；其余默认开启。宿主可以只打开表单 + 画布，
+`deploy` / `exit` / `explorer` / `resizablePanes` 默认关闭；其余默认开启。宿主可以只打开表单 + 画布，
 也可以全开并接部署/退出。
 
 ## `EditorAdapter` 契约

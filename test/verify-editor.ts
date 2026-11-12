@@ -158,6 +158,8 @@ console.log('── B3) 画布转移标签匹配 ──')
 {
   assert(resolveFeatures({}).explorer === false, 'Explorer 默认关闭')
   assert(resolveFeatures({ explorer: true }).explorer === true, 'Explorer 可由 feature flag 打开')
+  assert(resolveFeatures({}).resizablePanes === false, '可调宽侧栏默认关闭')
+  assert(resolveFeatures({ resizablePanes: true }).resizablePanes === true, '可调宽侧栏可由 feature flag 打开')
   const doc = emptyDoc('canvas-select')
   const a = { uid: 'a1', id: 'a', label: 'a', kind: 'atomic' as const, parent: null, initial: null, entryActions: [], exitActions: [] }
   const b = { uid: 'b1', id: 'b', label: 'b', kind: 'atomic' as const, parent: null, initial: null, entryActions: [], exitActions: [] }
