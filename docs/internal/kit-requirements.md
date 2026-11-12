@@ -1,8 +1,13 @@
 # statechart-kit / scxmljs 需求记录
 
-> 记录时间：2026-11-11  
-> 本仓库依赖：`statechart-kit@0.8.0`、`@tinyactors/scxmljs@0.2.0-dev.0`  
+> 记录时间：2026-11-11；2026-11-12 追加 Node-RED 宿主 0.7 反哺（KIT-006–011）
+>
+> 本仓库依赖：`statechart-kit@0.10.0`、`@tinyactors/scxmljs@0.2.0-dev.0`
+>
 > 目的：把本轮测试中遇到、但**不应该在 flow 层反复绕过**的问题固定下来，供 kit / scxmljs 后续版本修复。
+>
+> 来源：Node-RED 宿主 `@changzhen976/node-red-contrib-statechart@0.7.0-dev.0`
+> （宿主仓库 `node-red-contrib-scxmljs`，gitHead `e07e001`）。
 
 ## 需求总表
 
@@ -13,6 +18,29 @@
 | KIT-003 | `statechart-kit` SCXML 导入 | P2 | `scxmlToDoc` 不支持 `<donedata>`，导入时告警并丢弃该元素 | 已支持（0.9.0） |
 | KIT-004 | `statechart-kit` SCXML 导入 | P2 | `scxmlToDoc` 不支持无 target 的内部转移，导入告警且 ProjectDoc 无法表达 | 已支持（0.9.0） |
 | KIT-005 | `@tinyactors/scxmljs` 渲染器 | P2 | 复杂图中同源/同目标的多条条件转移共享走廊，线条近重合、视觉上像重复 | 已记录最小证据与修复方案；待上游修复 |
+| KIT-006 | `statechart-kit` engine | P1 | `done` 不携带终态配置，且 done 后仍发一次空 `active`，宿主必须自行保存最后 `fired` 目标 | 待实现（建议 0.11） |
+| KIT-007 | `statechart-kit` engine | P1 | `error` 事件只有 `kind` / `message`，丢弃引擎已有的出错 element，宿主无法定位到状态/转移/动作 | 待实现（建议 0.11） |
+| KIT-008 | `statechart-kit` 编辑器 | P2 | `formatValidationIssue` / `formatStructureIssue` / `formatImportWarning` 等硬编码中文，英文宿主的全页编辑器仍显示中文诊断 | 待实现（建议 0.11） |
+| KIT-009 | `statechart-kit` 编辑器 | P2 | `EditorLabels` 默认中文且约 140 个键，英文宿主只能整份复制；缺少 `labels/en` 或 `locale` 预设 | 待实现（建议 0.11） |
+| KIT-010 | `statechart-kit` 诊断 | P2 | 没有导出诊断 code 目录，宿主只能手工维护映射；kit 新增 code 时容易漏翻并显示原始 code | 待实现（建议 0.11） |
+| KIT-011 | `statechart-kit` engine | P3 | `send()` 只返回 boolean，done / not-running / queue-full 都表现为 `false`，宿主无法给出准确错误 | 可选（宿主可先检查 false） |
+
+---
+
+## Node-RED 宿主 0.7 反哺（2026-11-12）
+
+Node-RED 宿主 0.7 的稳定性轮没有新增节点，但在终态、运行时错误定位和编辑器
+本地化上留下了宿主侧 workaround。下面只记录 **kit 应提供的通用能力**；
+Hub 单占用、Node-RED 路由/token、变量持久化仍属宿主职责。
+
+| 宿主现象 | 当前 workaround | 对应需求 |
+| --- | --- | --- |
+| done 后收到空 `active`，终态需要从最后一次 `fired` 反推 | `machine.ts` 检查 `status === 'done'` 并保存 `lastFiredTargets` | KIT-006 |
+| 输出 3 只有一句错误文本，无法定位出错状态/转移/动作 | 宿主只透传 `kind` + `message` | KIT-007 |
+| en-US 全页编辑器的校验/导入/变量提示仍是中文 | 宿主只能为 tray 表单维护 code → 文案映射 | KIT-008 |
+| 英文编辑器需要复制约 140 个 label 键 | 宿主只覆盖 `appTitle` / `save` / `exit` | KIT-009 |
+| kit 新增校验 code 时宿主映射可能滞后 | `CODE_MAP` 未命中时直接显示原始 code | KIT-010 |
+| done 后发事件被引擎丢弃，Hub 仍显示成功 | 宿主未检查 `send()` 的 boolean | KIT-011 |
 
 ---
 
@@ -464,6 +492,269 @@ should overlap exactly.
 - 如果只是展示用途，可把同源同目标的多条转移合并为一条，用 `<if cond="_event.name === ...">` 区分动作；
 - 或在 flow 中避免多个条件转移落在同一对状态上。
 
+
+---
+
+## KIT-006：done 事件携带终态配置，并抑制 done 后的空 active
+
+### 现象
+
+Node-RED 宿主在机器到达顶层 final 后，需要自己保存最后一次 `fired` 的目标，
+才能把终态显示出来；同时引擎在 `done` 之后还会再发一次 `active: []`，宿主
+必须判断 `status === 'done'` 来丢弃它。
+
+宿主当前实现：
+
+```ts
+// src/nodes/machine.ts
+case 'active':
+  // The engine emits one empty active after done; keep the done state.
+  if (created.status === 'done') return
+  publishState(created)
+  break
+case 'done':
+  if (lastFiredTargets.length) {
+    publishState(created, lastFiredTargets)
+    lastFiredTargets = []
+  }
+```
+
+这是所有宿主都会遇到的通用问题，不应由每个宿主重复实现。
+
+### 证据
+
+- `RunnerDoneEvent` 当前只有 `{ type: 'done', data }`，没有终态 id；
+- 引擎在进入顶层 final 后会清空 configuration；
+- kit 的 `onMacro` 仍会转发一次 `active: []`，宿主只能靠 runner 的 `status`
+  过滤。
+
+### 期望
+
+```ts
+interface RunnerDoneEvent {
+  type: 'done'
+  /** 顶层 final 的 donedata，保持现状 */
+  data: unknown
+  /** 进入终态前的最后活跃配置；至少包含顶层 final 的 id */
+  states: string[]
+}
+```
+
+同时：`status === 'done'` 后不再向宿主发 `active: []`。
+
+建议 kit 在最后一次 macrostep / 进入顶层 final 的 microstep 记录 configuration，
+在 `done` 事件中一并发出。
+
+### 验收
+
+- 顶层 final 机器：状态输出只出现一次 `['done']`，随后只有 `done` 事件；
+- `RunnerDoneEvent.states` 包含 final id；
+- 宿主删除 `lastFiredTargets` 与 `status === 'done'` 两处 workaround 后行为不变；
+- parallel / nested final 场景仍按现有语义工作。
+
+### 兼容性
+
+- 给 `RunnerDoneEvent` 增加字段是向后兼容的；
+- 不再发空 `active` 属于行为修正，写入 `CHANGELOG` 的 Changed/Fixed；
+- 公开契约文档 `docs/session-events.md` 同步更新。
+
+---
+
+## KIT-007：error 事件携带出错位置
+
+### 现象
+
+Node-RED 宿主把运行时错误送到 Hub 输出 3 时，只能得到：
+
+```ts
+{ type: 'error', kind: 'error.execution', message: '...' }
+```
+
+用户无法知道是哪个状态、哪条转移、entry/exit/transition 的哪个动作出错，
+只能把整张图打开逐个排查。
+
+### 证据
+
+- 引擎的 `SCXMLErrorEvent` 已包含 `element: Element | null`（出错的 `<assign>` /
+  `<script>` 等）；
+- kit 的 `RunnerErrorEvent` 只保留 `kind` / `message`，丢掉了 `element`；
+- kit 已有 `locateIssues` 等从 element / code 定位文档对象的能力，可复用到运行时错误。
+
+### 期望
+
+保持现有字段，增加可选定位信息（命名可再讨论）：
+
+```ts
+interface RunnerErrorEvent {
+  type: 'error'
+  kind: SCXMLErrorKind
+  message: string
+  stateId?: string
+  transitionId?: string
+  slot?: 'entry' | 'exit' | 'transition'
+  actionIndex?: number
+  /** 或透传一个可序列化的 element 描述，避免宿主直接依赖 DOM */
+  element?: { localName: string; id?: string }
+}
+```
+
+### 验收
+
+- 在 entry、exit、transition action 中分别抛错，事件能带上对应 `stateId` /
+  `transitionId` / `slot` / `actionIndex`；
+- 无法定位时不强行填字段，保持向后兼容；
+- 宿主输出 3 可展示“哪个状态/动作出错”，不再只有一句话。
+
+### 兼容性
+
+- 全部为可选字段，向后兼容；
+- `docs/session-events.md` 的“error.element 暂不在公共契约中”说明需同步更新。
+
+---
+
+## KIT-008：诊断格式化可本地化
+
+### 现象
+
+`EditorLabels` 覆盖了工具栏、结构、属性、仿真等 UI 文案，但编辑器校验面板、
+导入警告和变量写入结果仍由 kit 的 `format*` 函数输出硬编码中文：
+
+- `formatValidationIssue`
+- `formatStructureIssue`
+- `formatImportWarning`
+- `formatVariableResult`
+
+Node-RED 宿主当前只能为 tray 三表维护 code → 中英文映射；en-US 用户打开全页
+编辑器时，校验/导入/变量提示仍是中文。
+
+### 证据
+
+- `src/vue/format.ts` 的展示文案是中文；
+- kit 只发布 `diagnostics/zh`，没有 `diagnostics/en`；
+- `CreateEditorOptions` 已有 `labels`，但没有诊断 formatter / messages 注入点。
+
+### 期望
+
+二选一（或同时提供）：
+
+1. `CreateEditorOptions` 增加 `formatIssue` / `formatWarning` / `formatVariableResult`
+   之类的注入点；
+2. 发布 `statechart-kit/diagnostics/en`，并提供与 `diagnostics/zh` 对称的入口。
+
+宿主应能整体替换诊断文案，而不是复制 kit 内部格式化逻辑。
+
+### 验收
+
+- 以 en formatter 挂载编辑器，校验失败、导入警告、变量写入错误均为英文；
+- 默认不传 formatter 时保持现有中文行为；
+- 新增诊断 code 时，formatter 未覆盖的 code 有明确的 fallback。
+
+### 兼容性
+
+- 新增可选选项/新入口，默认行为不变；
+- 如果新增 `diagnostics/en`，属于向后兼容的新导出。
+
+---
+
+## KIT-009：英文 EditorLabels 预设 / locale
+
+### 现象
+
+`EditorLabels` 已支持任意键覆盖，但默认值全是中文，约 140 个键。英文宿主
+必须整份复制并翻译，维护成本高，且 kit 后续新增 label 时容易漏。
+
+### 期望
+
+提供以下任一能力：
+
+- `statechart-kit/vue` 导出 `DEFAULT_LABELS_EN`；
+- `createEditor({ locale: 'en' })`，内部使用英文预设；
+- 或发布可单独 import 的 `labels/en`。
+
+宿主只需覆盖应用特有的 `appTitle` / `save` / `exit` 等少量键。
+
+### 验收
+
+- 以英文预设挂载编辑器，工具栏、结构、属性、变量、仿真、校验、确认框均为英文；
+- 不传 locale 时保持中文默认；
+- 新增 label 键时，英文预设同步补齐（类型检查可发现）。
+
+### 兼容性
+
+- 纯新增预设/选项，向后兼容；
+- 这是便利性需求；宿主当前也可以通过完整覆盖 `labels` 实现，只是维护成本高。
+
+---
+
+## KIT-010：导出诊断 code 目录
+
+### 现象
+
+Node-RED 宿主的 tray 表单用 `CODE_MAP` 把 `StructureIssue.code` 映射到本地化
+文案；未命中的 code 会原样显示，例如 `structure.state.some-new-rule`。
+
+kit 每次新增结构校验 code，宿主都可能漏翻或漏测。
+
+### 期望
+
+导出稳定的 code 目录，例如：
+
+```ts
+export const STRUCTURE_ISSUE_CODES: readonly string[]
+export const IMPORT_WARNING_CODES: readonly string[]
+```
+
+或提供等价的 JSON 元数据。宿主可据此做覆盖率测试。
+
+### 验收
+
+- 宿主测试 import 目录，断言每个 code 都有本地化文案；
+- kit 新增 code 时，宿主 CI 能明确失败而不是运行时显示原始 code；
+- 目录中的 code 与 `docs/messages.md` 保持一致。
+
+### 兼容性
+
+- 纯新增导出，向后兼容；
+- 不要求 kit 保证 code 永不变更；变更仍按现有语义版本约定处理。
+
+---
+
+## KIT-011：send() 返回失败原因（可选）
+
+### 现象
+
+`SessionRunner.send()` 返回 boolean。机器到达 done、runner 未启动、队列满等
+情况都表现为 `false`，宿主无法区分原因。Node-RED 宿主当前没有检查返回值，
+因此 done 后的事件仍会显示为成功。
+
+### 期望
+
+优先保持 `send()` 的 boolean 签名，新增一个可选方法：
+
+```ts
+trySend(name, data?, logText?, logKind?, source?): {
+  ok: boolean
+  code?: 'not-running' | 'done' | 'queue-full' | 'invalid-event'
+}
+```
+
+或在下一 minor 中把 `send()` 改为返回结构化结果（需明确破坏性变更）。
+
+### 验收
+
+- done 后发送返回 `code: 'done'`；
+- runner 未启动返回 `code: 'not-running'`；
+- 宿主可据此在 Hub 输出 3 报错，而不是显示绿色成功。
+
+### 兼容性
+
+- 新增 `trySend` 为向后兼容；
+- 直接改 `send()` 返回类型属于破坏性变更，必须写入 `CHANGELOG`。
+
+### 备注
+
+宿主可先检查现有 `send()` 的 boolean 并报错；本项是改善错误原因，不阻塞 0.7。
+
 ---
 
 ## 回归资产
@@ -484,3 +775,6 @@ CASCADE_BASE=http://homeassistant:1880 npm run test:cascade
 - KIT-002 属于上游 `@tinyactors/scxmljs` 渲染器修复；在修复前，文档和示例应避免 parallel 直接挂 history。
 - KIT-003 / KIT-004 已在 0.9.0 完成模型、导入器、序列化器、校验与编辑器支持。
 - KIT-005 属于上游布线能力增强；建议先做最小边组偏移，再评估 bundle/折叠交互。
+- KIT-006 / KIT-007 建议进入 0.11，优先消除宿主终态与错误定位的 workaround。
+- KIT-008 / KIT-009 / KIT-010 建议随后进入 0.11，补齐编辑器本地化与诊断目录。
+- KIT-011 为可选增强；宿主可先检查 `send()` 返回值自行报错。

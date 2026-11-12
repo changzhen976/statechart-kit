@@ -16,8 +16,9 @@
 | P4.2 | UI 收尾：固定状态位/标签页/事件面板 | 2–3 人日 | ✅ 完成（v0.7.x） |
 | P4.3 | 导入能力补齐：`<donedata>`、无 target / `type="internal"` 转移（KIT-003/004） | 3–4 人日 | ✅ 完成（v0.9.0） |
 | P4.4 | 编辑器完整性：转移 target/type、doneData 编辑器、可选 Explorer、画布匹配回归 | 4–6 人日 | ✅ 完成（v0.10.0） |
-| P5 | `node-red-contrib-scxmljs` 切换（**宿主仓库任务**：删除 vendor 与 17 条构建期替换） | 3–4 人日 | 待开始（不在 kit 发布范围） |
+| P5 | `node-red-contrib-scxmljs` 切换（**宿主仓库任务**：删除 vendor 与 17 条构建期替换） | 3–4 人日 | ✅ 已完成（宿主 0.2.0 起；当前宿主 0.7 使用 kit 0.10.0） |
 | P6 | 发布与治理：版本策略、CHANGELOG、发布流水线 | 1.5–2 人日 | 待开始 |
+| P7 | 宿主集成加固：done 终态、错误定位、编辑器本地化（KIT-006–010） | TBD | 待排期（0.11 候选） |
 
 关键路径：P0 → P1 → P2 → P3 → P5（最短约 14 人日）。P4 与 P5 在 P3 之后可并行。
 
@@ -116,9 +117,23 @@
 - ⏳ `scxml-creator` 的 `statechart-kit` 依赖当前是 `file:../statechart-kit`；发布后改固定版本。
 - ⏳ Explorer 调试视图、侧栏拖拽/折叠等增强未在 kit 编辑器中复刻，可按需作为模块/后续补回。
 
+## 0.11 候选（宿主反哺，2026-11-12）
+
+来自 Node-RED 宿主 0.7 的集成反馈；详细现象、证据、期望与验收见
+[`kit-requirements.md`](kit-requirements.md) 的 KIT-006–011。
+
+- **P1 KIT-006**：`done` 事件携带终态配置，抑制 done 后的空 `active`；
+- **P1 KIT-007**：`error` 事件携带出错状态/转移/动作位置；
+- **P2 KIT-008**：诊断格式化可本地化，或允许宿主注入 formatter；
+- **P2 KIT-009**：英文 `EditorLabels` 预设 / `locale`；
+- **P2 KIT-010**：导出诊断 code 目录；
+- **P3 KIT-011**：`send()` 失败原因（可选，宿主可先检查 boolean）。
+
+KIT-002 / KIT-005 仍属于上游 `@tinyactors/scxmljs`，不在本候选范围内。
+
 ## 消费方同步
 
 | 仓库 | 现状 | 切换点 |
 | --- | --- | --- |
 | `scxml-creator` | 已切 core/engine；编辑器 UI 仍为增强版 | P4 收尾 |
-| `node-red-contrib-scxmljs` | `src/vendor/scxml-core` + 17 条压缩产物替换 | P5（宿主仓库） |
+| `node-red-contrib-scxmljs` | 已切换 core/engine/editor；当前使用 kit 0.10.0，无 vendor 残留 | 已完成（宿主 0.2.0） |
