@@ -1,140 +1,134 @@
 # statechart-kit
 
-状态图（statechart）的建模与运行工具集：文档模型、SCXML 序列化与导入、命名策略、事件目录、结构校验、会话驱动、可嵌入 Vue 编辑器。
+状态图（statechart）的建模、校验与运行工具集：文档模型、SCXML 序列化/导入、结构校验、
+会话驱动，以及可嵌入的 Vue 编辑器。
 
-> **边界声明**：本包**生成并驱动** SCXML，但**不解释** SCXML。
-> 解释器与渲染器是 [`@tinyactors/scxmljs`](https://www.npmjs.com/package/@tinyactors/scxmljs)，本包是它上面的一层。
+> **边界**：本包**生成并驱动** SCXML，但**不解释** SCXML。
+> 解释器与渲染器是 [`@tinyactors/scxmljs`](https://www.npmjs.com/package/@tinyactors/scxmljs)，
+> 本包是它上面的一层。
 
+```text
+你的应用 / Node-RED 节点 / 编辑器宿主
+                 │
+           statechart-kit        ← 文档模型、序列化、导入、校验、会话、编辑器 UI
+                 │  输出 SCXML / 驱动会话
+                 ▼
+      @tinyactors/scxmljs        ← SCXML 1.0 解释器 + <scxml-view> 渲染器
 ```
-        你的应用 / Node-RED 节点 / 编辑器宿主
-                        │
-                  statechart-kit          ← 本包：文档模型、序列化、导入、命名、会话驱动、编辑器 UI
-                        │  输出 SCXML / 驱动会话
-                        ▼
-              @tinyactors/scxmljs         ← 依赖：SCXML 1.0 解释器 + <scxml-view> 渲染器
-```
 
-## 属于本包 vs 不属于本包
+## 适合谁
 
-| 属于本包 | 不属于本包（留在各宿主） |
+- 需要在服务端/Node 程序中生成、导入、校验 SCXML 的宿主；
+- 需要把状态图编辑器嵌入自己的 Vue 应用或管理后台的宿主；
+- 需要在浏览器或 Node 中驱动状态图会话、回放事件、读取变量的宿主；
+- 已经有自己的持久化、事件总线、MCP/MQTT/路由/部署体系，只想复用状态图能力的宿主。
+
+## 包边界
+
+| 属于本包 | 不属于本包（宿主实现） |
 | --- | --- |
-| 状态图文档模型 `ProjectDoc` | 全局变量注册表 |
+| `ProjectDoc` 文档模型 | 全局变量注册表 |
 | SCXML 序列化 / 导入 / 结构校验 | MQTT 桥与规则 |
-| 命名策略 `NamingPolicy`（可注入） | 服务端时钟、事件路由 |
+| `NamingPolicy`（宿主注入） | 服务端时钟、事件路由 |
 | 本地事件目录 / 激活树 | 外部事件来源抓取与展示文案 |
-| 会话运行与回放控制 | REST 接口 / 持久化 |
-| Vue 编辑器（`statechart-kit/vue`） | Node-RED 节点与事件总线 |
-| 命名/校验/编辑能力注入（`EditorAdapter`） | 服务端部署、草稿锁、MQTT/路由来源抓取 |
+| `SessionRunner` 会话驱动 | REST 接口 / 持久化 |
+| Vue 编辑器与 `EditorAdapter` | Node-RED 节点/总线、部署、草稿锁 |
+| 标准诊断 `{code, params}` | 宿主 i18n / 业务文案 |
 
-## 状态：0.10.0 —— 编辑器完整性与可选 Explorer
+## 安装
 
-P0 是 `scxml-creator` 的逐字快照；P1 在保持行为的前提下完成四件事（`0.2.0`）：
-
-1. **命名策略外置**：core 不再硬编码 `gv_`/`ge_`/`t_`/`mqe_`/`mqv_`/`sys.`。
-   `NamingPolicy` 由宿主注入，core 只提供 `BASE_POLICY`。P4 起服务端/MQTT 策略
-   迁回 `scxml-creator/src/policy/server.ts`，kit 不再提供 `./policies/server`。
-2. **校验分层**：`validateStructure(doc)`（core，零依赖）只查文档结构；
-   `validateAgainstEngine(doc)` / `validateScxml(src)`（engine）跑 parse + compile；
-   `validateDocument(doc)` 把结构 → 命名 → 引擎串起来。
-3. **文案 code 化**：命名、导入、校验诊断统一返回 `{ code, params }`，不再返回中文
-   字符串；宿主按 code 本地化（见 [`docs/messages.md`](docs/messages.md)）。`ACTION_KINDS`
-   的 label 也改为消息 code。
-4. **事件模块拆分**：文档事件事实 / 三方向目录 / 激活树进入 core
-   （`event-catalog.ts`、`active-tree.ts`）；时钟/路由/MQTT 来源与展示文案留在宿主。
-
-逐字搬运文件（`examples` 与 P0 的 timers 测试）仍由
-`npm run check:baseline` 保证与 donor 同字节；其余改写文件记录在 `docs/baseline.json`
-的 `diverged` 字段。
-
-P2（`0.3.0`）把 engine 补齐为可独立消费的运行时：
-
-- **引擎选择**：`engine: 'sandboxed' | 'trusted'`，默认 sandboxed；入口不静态 import 任一实现，
-  首次使用才按 mode 动态加载（sandboxed 额外预热 QuickJS）。
-- **选项透传**：`scriptTimeoutMs`、`maxMicrosteps`、`memoryLimitBytes`。
-- **`data` 预置**：启动前覆盖 `<data>` 初始值（持久化变量恢复），`start()` 可再按次覆盖。
-- **生命周期加固**：并发 `start` / 加载中 `stop` 不泄漏会话；监听器逐个隔离；初始 `active`
-  只派发一次；启动失败回到 idle。
-- **结构化变量写入**：`assignVariable` / `assignValue` 返回 `{ ok, code, params }`。
-- **严格序列化**：`serializeChecked(doc)` 在结构 error 时抛 `DocumentStructureError`。
-- 详细梳理与隐患清单见 [`docs/architecture-review-p2.md`](docs/architecture-review-p2.md)。
-
-P3（`0.4.0`）新增可嵌入编辑器 `statechart-kit/vue`：
-
-- **`mountEditor(el, options)`**：命令式挂载；也导出 `createEditor()` + `<EditorHost>` 供 Vue 应用内使用。
-- **`EditorAdapter`**：持久化、文件导入导出、外部事件来源、部署/退出全部由宿主注入；
-  编辑器本身不读 localStorage、不发 HTTP。
-- **`features`**：toolbar / structure / canvas / properties / variables / simulation / simBar /
-  validation / importExport / examples / undoRedo / deploy / exit / explorer 可按场景裁剪。
-- **Explorer（可选）**：`features.explorer` 打开官方 `<scxml-explorer>`；编辑态使用未启动的
-  预览 session，仿真态跟随运行会话。点击状态会同步选中；覆盖层内的转移列表可直接
-  选中转移并打开属性面板。
-- **样式随包**：`statechart-kit/vue/style.css`（显式 import，避免 CSS 注入时序）。
-- 迁移边界与 P4 清单见 [`docs/editor-p3.md`](docs/editor-p3.md)。
-
-**P4 已完成**：`scxml-creator` 已删除本地 `src/core`、`src/engine` 与旧编辑器
-`components/panels/viewhost/stores/project.ts`，改用本包 core/engine + `statechart-kit/vue`。
-宿主命名策略（含 MQTT）迁回 creator，kit 只保留 `BASE_POLICY`。
-编辑器具备画布点击/缩放平移、结构化动作、校验定位；变量/事件的全局/自定义属性
-通过 `EditorModule.variableFields/eventFields` 注册，路由/MQTT/部署通过 `EditorModule` / `EditorAdapter` 注入，详见 [`docs/editor-modules.md`](docs/editor-modules.md)。
-
-## 安装与使用
-
-```sh
+```bash
 npm install statechart-kit
 ```
 
+要求 Node.js >= 20，ESM only。Vue 是 optional peer，只使用 core/engine 的宿主不需要安装 Vue。
+
+## 选择集成方式
+
+| 宿主场景 | 使用入口 | 宿主需要提供 |
+| --- | --- | --- |
+| 只生成/导入/校验 SCXML | `statechart-kit` | 无 |
+| 运行/回放状态图、接收 typed 事件 | `statechart-kit` + `statechart-kit/engine` | `domParser`（Node）、引擎选择、事件来源 |
+| 嵌入 Vue 编辑器 | `statechart-kit/vue` | `EditorAdapter`、样式、可选的 `EditorModule` |
+| 独立查看最新图 | `preview/` 容器 | 挂载 `.scxml` / `.json` 文件 |
+
+更完整的职责矩阵、adapter 样例和生命周期见 [`docs/host-integration.md`](docs/host-integration.md)。
+
+## Core：文档、导入、校验
+
 ```ts
 import {
-  BASE_POLICY,
-  checkEventName,
   emptyDoc,
+  scxmlToDoc,
   serializeToScxml,
   validateStructure,
 } from 'statechart-kit'
 
 const doc = emptyDoc('demo')
-// ... 编辑 doc ...
-const report = validateStructure(doc)        // 纯结构，不依赖引擎
-const xml = serializeToScxml(doc)            // 交给 @tinyactors/scxmljs 运行
 
-// 命名规则由宿主注入；BASE_POLICY 不含任何服务端前缀
-const issue = checkEventName(BASE_POLICY, 'anything')
+const report = validateStructure(doc)   // 纯结构，不依赖引擎
+const xml = serializeToScxml(doc)       // 交给 @tinyactors/scxmljs 运行
+
+const imported = scxmlToDoc(xml)        // SCXML → ProjectDoc
+if (!imported.warnings.length) {
+  // 自产 SCXML 可无损 round-trip
+}
 ```
 
-```ts
-import type { NamingPolicy } from 'statechart-kit'
-import { validateDocument } from 'statechart-kit/engine'
+命名规则由宿主注入，core 只提供 `BASE_POLICY`：
 
-// 宿主自己组合命名空间（服务端/MQTT 语义不在 kit）
+```ts
+import { BASE_POLICY, checkEventName } from 'statechart-kit'
+import type { NamingPolicy } from 'statechart-kit'
+
 const policy: NamingPolicy = {
   key: 'my-host',
   namespaces: [
-    { key: 'globalVar', prefix: 'gv_', event: 'block', variable: 'allow' },
-    { key: 'globalEvent', prefix: 'ge_', event: 'allow', variable: 'block', broadcast: true },
+    { key: 'appVar', prefix: 'av_', event: 'block', variable: 'allow' },
   ],
 }
 
-const result = await validateDocument(doc, {
-  policy,
-  domParser, // Node 环境必须注入（happy-dom / linkedom）
-})
-if (!result.ok) {
-  for (const issue of result.issues) {
-    // issue.code + issue.params → 宿主本地化；issue.kind/stateId/event 用于定位
-  }
-}
+const issue = checkEventName(policy, 'av_count')
 ```
 
-### 入口
+- 结构校验：`validateStructure(doc)`；
+- 严格序列化：`serializeChecked(doc)`（结构错误时抛 `DocumentStructureError`）；
+- 引擎校验：`validateScxml` / `validateAgainstEngine` / `validateDocument`。
 
-| 入口 | 内容 | 运行时依赖 |
+## Engine：会话驱动
+
+```ts
+import { SessionRunner } from 'statechart-kit/engine'
+
+const runner = new SessionRunner({
+  engine: 'sandboxed',   // 默认；用户可编辑图表必须用 sandboxed
+  domParser,             // Node 环境必须注入
+  data: restoredVars,    // 启动前覆盖 <data>
+})
+
+await runner.start(xml, { data: { count: 3 } })
+
+runner.on((event) => {
+  if (event.type === 'send') console.log(event.name, event.data)
+  if (event.type === 'done') console.log(event.data)
+  if (event.type === 'error') console.error(event.kind, event.message)
+})
+
+runner.send('start')
+await runner.settled()
+```
+
+| 选项 | 默认 | 说明 |
 | --- | --- | --- |
-| `statechart-kit` | 文档模型、序列化、导入、命名策略、事件目录、结构校验、日志类型 | 无 |
-| `statechart-kit/engine` | `SessionRunner`、`loadEngine`/`preloadEngine`/`createEngineSession`、`validateScxml`/`validateDocument` | `@tinyactors/scxmljs`（按 mode 动态加载） |
-| `statechart-kit/vue` | `mountEditor` / `EditorHost` / `createEditor` / 编辑器组件 | `vue`（optional peer）、`@tinyactors/scxmljs/view` |
-| `statechart-kit/diagnostics/zh` | 诊断 `{code,params}` → 中文展示（宿主共用） | 无 |
+| `engine` | `sandboxed` | `trusted` 在宿主 JS realm 运行，**不是安全沙箱** |
+| `scriptTimeoutMs` | 引擎 2000ms | 单次脚本/表达式求值上限；trusted 忽略 |
+| `memoryLimitBytes` | 引擎 64MiB | QuickJS 会话内存上限；trusted 忽略 |
+| `maxMicrosteps` | 100000 | 单宏步上限，超出触发 `error.platform` |
+| `data` | 无 | 启动前覆盖 `<data>`，避免 entry 先跑 |
 
-### Vue 编辑器
+typed 事件契约见 [`docs/session-events.md`](docs/session-events.md)。
+
+## Vue 编辑器
 
 ```ts
 import { mountEditor } from 'statechart-kit/vue'
@@ -145,121 +139,55 @@ const mounted = mountEditor('#editor', {
     load: () => fetchDraft(),
     save: (doc) => putDraft(doc),
     importProject: () => openFilePicker(),
-    externalEvents: () => service.extEventSources,
-    deploy: (doc) => service.deployDraft(doc),
+    exportProject: (doc) => downloadJson(doc),
+    exportScxml: (xml) => downloadXml(xml),
+    externalEvents: () => service.eventSources,
+    deploy: (doc) => service.deploy(doc),
     exit: () => router.back(),
+    onDocChange: (doc) => schedulePreview(doc),
   },
-  features: { deploy: true, exit: true },
+  features: {
+    deploy: true,
+    exit: true,
+    explorer: true,
+  },
 })
+
 await mounted.ready
 ```
 
-编辑器状态通过 `mounted.editor` 暴露（`doc` / `select` / `run` / `validate` / `undo` 等）。
-样式必须显式导入 `statechart-kit/vue/style.css`；`vue` 是 optional peer，只用 core/engine
-的宿主不需要安装 Vue。编辑器依赖 DOM 与 `<scxml-view>` 自定义元素，仅浏览器运行；SSR 环境请动态 import。
+编辑器不读 localStorage、不发 HTTP；持久化、文件导入导出、外部事件、部署、退出全部
+通过 `EditorAdapter` 注入。常用字段：
 
-上层能力用 `EditorModule` 注入，不写进 kit：
-
-```ts
-import { globalsModule } from './editor-modules/globals'
-import { mqttModule } from './editor-modules/mqtt'
-
-mountEditor('#editor', { adapter, policy, modules: [globalsModule, mqttModule] })
-```
-
-模块可以贡献右侧标签页、工具栏命令、外部事件来源、额外校验；详见
-[`docs/editor-modules.md`](docs/editor-modules.md)。
-
-### 引擎选择与选项
-
-```ts
-import { preloadEngine } from 'statechart-kit/engine'
-import { SessionRunner } from 'statechart-kit/engine'
-
-await preloadEngine('sandboxed') // 可选：提前加载 QuickJS，首次 start 不再等待
-
-const runner = new SessionRunner({
-  engine: 'sandboxed',        // 用户图表；trusted 只用于完全可信的图表
-  domParser,                  // Node 必须注入
-  scriptTimeoutMs: 500,
-  maxMicrosteps: 10_000,
-  data: restoredVars,         // 启动前覆盖 <data>，避免 entry 先跑
-})
-
-await runner.start(xml, { data: { count: 3 } }) // 本次启动再覆盖
-runner.on((ev) => {
-  if (ev.type === 'log' && ev.entry.kind === 'error') console.error(ev.entry.text)
-})
-await runner.settled()
-```
-
-| 选项 | 作用域 | 默认 | 说明 |
-| --- | --- | --- | --- |
-| `engine` | 两者 | `sandboxed` | trusted 在宿主 JS realm 中运行，**不是安全沙箱** |
-| `scriptTimeoutMs` | sandboxed | 引擎 2000ms | 单次脚本/表达式求值上限；trusted 忽略 |
-| `memoryLimitBytes` | sandboxed | 引擎 64MiB | QuickJS 会话内存上限；trusted 忽略 |
-| `maxMicrosteps` | 两者 | 引擎 100000 | 单个宏步上限，超出触发 `error.platform` 并停止 |
-| `data` | 两者 | 无 | 启动前覆盖 `<data>`；`start()` 的 data 浅合并覆盖构造器 |
-
-> `trusted` 不做隔离：图表脚本可触达宿主环境。只有你能完全信任图表来源时才使用；
-> 用户可编辑/可上传的图表必须用默认的 `sandboxed`。
-
-### 自定义命名策略
-
-```ts
-import type { NamingPolicy } from 'statechart-kit'
-
-const policy: NamingPolicy = {
-  key: 'my-app',
-  namespaces: [
-    { key: 'appVar', prefix: 'av_', event: 'block', variable: 'allow' },
-    { key: 'appEvent', prefix: 'ae_', event: 'allow', variable: 'block', broadcast: true },
-  ],
-}
-```
-
-前缀、允许/拦截/警告、广播与路由保留语义全部由 `NamingNamespace` 描述；core 只做
-最长前缀匹配。`legacy` 命名空间仅在没有匹配到其他前缀时生效，因此 `gv_x` 不会误判为
-`g_`。迁移钩子（`migration.eventName/variableName/expression`）同样由宿主提供。
-
-## 开发
-
-> Agent/自动化工具请先读 [`AGENTS.md`](AGENTS.md)（项目状态、架构不变量、测试与 P4 迁移清单）。
-
-```sh
-npm install
-npm run typecheck     # tsc --noEmit
-npm test              # 9 个验证套件（核心/引擎/编辑器/宿主事件）
-npm run build         # tsup（core/engine/policies）+ Vite（Vue）+ vue-tsc d.ts
-npm run verify:all    # 类型 + 测试 + 构建 + 基线 + 打包冒烟
-```
-
-| 命令 | 作用 |
+| Adapter 字段 | 用途 |
 | --- | --- |
-| `npm run test:naming` | 命名策略、自定义策略注入、部署闸门、迁移、core 前缀守卫 |
-| `npm run test:events` | 事件事实、三方向目录、激活树 |
-| `npm run test:validation` | 结构校验、引擎校验、分层拦截、严格序列化、core 无引擎依赖守卫 |
-| `npm run test:engine` | 懒加载器、两种数据模型、data 预置、生命周期竞态、监听器隔离、timeout/microsteps、变量 code |
-| `npm run test:editor` | adapter 注入、文档 CRUD/撤销、命名校验、校验/运行/停止、确认/保存 |
-| `npm run check:vue` | happy-dom 里真实挂载构建产物 `dist/vue.js` |
-| `npm run freeze:baseline` | 重新冻结受保护文件哈希；仅在有意变更后执行 |
-| `npm run check:baseline` | 校验本仓与基线一致；加 `-- --donor` 只对 `mirrored` 文件逐字节比对 donor |
-| `npm run check:pack` | 打包后在临时目录按 exports map 真实导入一次，验证发布物可用 |
+| `load` / `save` | 加载/自动保存草稿 |
+| `importProject` / `exportProject` / `exportScxml` | 打开、保存、导出 SCXML |
+| `externalEvents` | 时钟/路由/MQTT 等外部事件候选 |
+| `runner` / `domParser` / `policy` | 引擎选项、Node 解析器、宿主命名策略 |
+| `readOnly` | 草稿软锁/冲突 |
+| `deploy` / `exit` | 宿主部署与退出 |
+| `onDirtyChange` / `onDocChange` / `onLog` | 宿主状态同步 |
+| `explorerStrings` | 官方 Explorer 文案覆盖 |
 
-## 版本策略
+完整契约见 [`docs/editor.md`](docs/editor.md)。上层能力（全局变量、路由、MQTT、部署面板）
+用 `EditorModule` 注入，见 [`docs/editor-modules.md`](docs/editor-modules.md)。
 
-- 语义化版本；`0.x` 期间 minor 可含破坏性变更，破坏性变更必须写进 `CHANGELOG.md`。
-- 消费方（`scxml-creator`、`node-red-contrib-scxmljs`）应在同一时间 pin 同一版本，避免快照漂移。
-- 每个阶段的完成点打 tag：`v0.1.0` = P0 快照基线，`v0.2.0` = P1 策略/校验/消息 code，`v0.3.0` = P2 引擎选项，`v0.4.0` = P3 Vue 编辑器，`v0.5.0` = P4 边界收敛 + EditorModule，`v0.6.0` = P4 编辑器核心 + creator 接入，`v0.7.5` = 变量/事件属性 + P4 UI 收尾（含移除广播），
-`v0.8.0` = 宿主运行时 typed 事件契约（send/done/error）。
+### Explorer
 
-## 路线图
+`features.explorer: true` 时：
 
-见 [`docs/roadmap.md`](docs/roadmap.md)。P4 将把 `scxml-creator` 切换到本包并删除本地副本；
-### 只读预览容器
+- 编辑态使用未启动的预览 session，不执行 entry/exit、定时器或脚本；
+- 仿真态跟随运行会话；
+- 点击 Explorer 中的状态会同步选中编辑器状态并滚动结构树；
+- 覆盖层内的转移列表可直接选中转移并打开属性面板。
 
-[`preview/`](preview/README.md) 提供一个极小的只读预览容器：读取挂载目录里最新的
-`.scxml` / `.json`，打开 kit 编辑器做仿真、校验和 Explorer 查看。
+默认关闭。
+
+## 只读预览容器
+
+[`preview/`](preview/README.md) 提供一个小型 Docker 容器，读取挂载目录里最新的
+`.scxml` / `.json`，只读打开编辑器，支持仿真、校验和 Explorer。
 
 ```bash
 docker build -f preview/Dockerfile -t statechart-preview .
@@ -267,16 +195,54 @@ docker run -d --name statechart-preview -p 5182:5182 \
   -v /opt/statechart-preview/data:/data:ro statechart-preview
 ```
 
-编辑器迁移边界见 [`docs/editor-p3.md`](docs/editor-p3.md)，P2 架构梳理见
-[`docs/architecture-review-p2.md`](docs/architecture-review-p2.md)。
+## 诊断与本地化
 
-## 宿主运行时事件
+core/engine 只返回 `{code, params}`，不返回中文文案。宿主可以：
 
-`SessionRunner` 的 typed send/done/error 契约见 [`docs/host-events.md`](docs/host-events.md)。
+- 用 `statechart-kit/diagnostics/zh` 直接格式化；
+- 或按 `code` 接入自己的 i18n；
+- 用 `issue.stateId` / `event` / `transitionId` / `actionIndex` 定位到编辑器控件。
 
-## 发布
+完整 code 表见 [`docs/messages.md`](docs/messages.md)。
 
-NPM 发布前置、认证与发布后验证命令见 [`docs/releasing.md`](docs/releasing.md)。
+## 兼容性
+
+- 版本 `0.10.0`，Node.js >= 20，ESM only；
+- `vue` 是 optional peer；
+- `ProjectDoc` / SCXML 输出在 0.10 线保持稳定；
+- `TransitionEdge.target` 可为 `null`，`ListenEdge.target` / `EventOrigin.target` 同步可空；
+- `features.explorer` 默认 `false`，不改变现有宿主行为。
+
+## 文档
+
+- [宿主集成指南](docs/host-integration.md)
+- [Vue 编辑器](docs/editor.md)
+- [EditorModule 契约](docs/editor-modules.md)
+- [会话 typed 事件](docs/session-events.md)
+- [诊断 code](docs/messages.md)
+- [只读预览容器](preview/README.md)
+- [更新日志](CHANGELOG.md)
+
+维护者内部文档（阶段历史、架构复盘、需求记录、发布）在 [`docs/internal/`](docs/internal/)，
+不作为公开集成入口。
+
+## 开发
+
+```bash
+npm install
+npm run typecheck
+npm test
+npm run build
+npm run verify:all
+```
+
+Agent/自动化工具请先读 [`AGENTS.md`](AGENTS.md)。
+
+## 版本与发布
+
+- 语义化版本；0.x 期间 minor 可含破坏性变更，必须写入 `CHANGELOG.md`；
+- 发布流程见 [`docs/internal/releasing.md`](docs/internal/releasing.md)；
+- 发布前必须 `npm run verify:all`。
 
 ## License
 

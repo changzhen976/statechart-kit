@@ -72,7 +72,7 @@
    - `serializeChecked`（`DocumentStructureError`）替代“容忍序列化 + 事后才发现错误”；
    - `scxmlToDoc` 无 DOMParser 时返回 `import.no-dom-parser`；
    - CDATA 中和抽成 `cdata.ts`，导入/校验/建会话共用，Node 下含 script 的文档不再误判。
-5. **架构梳理**：隐患清单与剩余风险见 [`docs/architecture-review-p2.md`](architecture-review-p2.md)。
+5. **架构梳理**：隐患清单与剩余风险见 [`docs/internal/architecture-review.md`](architecture-review.md)。
 
 **验收**：新增 `verify-engine` 38 条断言；`npm test` 7 个套件全绿；
 `validateDocument` 对含自定义 JS 的示例在 Node 下也能通过；`check:pack` 验证动态加载可解析。
@@ -95,7 +95,7 @@
    - `check:vue` 在 happy-dom 中真实挂载构建产物；`check:pack` 断言 Vue 资源/类型。
 4. **边界（留给 P4）**
    - 画布点击选中/缩放平移/Explorer、结构化动作编辑器、服务端绑定/草稿锁/冲突横幅；
-   - 详见 [`docs/editor-p3.md`](editor-p3.md) §6。
+   - 详见 [`docs/editor.md`](../editor.md) §6。
 
 **验收**：`verify-editor` 含模块契约断言；`npm test` 8 个套件；`npm run typecheck`（tsc + vue-tsc）；
 `check:vue` 挂载/卸载 + 模块标签/命令渲染通过；`check:pack` 覆盖四个入口。
@@ -110,7 +110,7 @@
 - ✅ **Scope cleanup**：`SERVER_POLICY`/MQTT 命名迁回宿主；kit 只保留 `BASE_POLICY`；
   编辑器默认策略改 `BASE_POLICY`；kit 诊断不再内置 MQTT 专属文案。
 - ✅ **EditorModule 契约**：标签页/工具栏/事件来源/额外校验/清理生命周期；上层功能以模块
-  注入核心编辑器（见 [`docs/editor-modules.md`](editor-modules.md)）。
+  注入核心编辑器（见 [`docs/editor-modules.md`](../editor-modules.md)）。
 - ✅ 编辑器 UI 已切到 `statechart-kit/vue`；新增画布点击/缩放、结构化动作、校验定位；
   creator `src/editor-modules/service.ts` 接 service store，本地 `components/panels/viewhost/stores/project.ts` 已删除。
 - ⏳ `scxml-creator` 的 `statechart-kit` 依赖当前是 `file:../statechart-kit`；发布后改固定版本。

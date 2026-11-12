@@ -468,8 +468,8 @@ should overlap exactly.
 
 ## 回归资产
 
-- 示例：[`examples/cascade-test.json`](../examples/cascade-test.json)
-- 测试：[`scripts/test-cascade.mjs`](../scripts/test-cascade.mjs)
+- 示例：`node-red-contrib-scxmljs/examples/cascade-test.json`
+- 测试：`node-red-contrib-scxmljs/scripts/test-cascade.mjs`
 - 命令：
 
 ```sh

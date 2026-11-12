@@ -1,11 +1,11 @@
-# 诊断消息 code（P1）
+# 诊断消息 code
 
 core 与 engine 的诊断统一返回 `{ code, params }`，宿主按 `code` 查表本地化，不再对中文字符串做手术。
 
 `statechart-kit/diagnostics/zh` 提供**通用** code 的默认中文格式化（`formatValidationIssue` 等），
 `statechart-kit/vue` 与 `scxml-creator` 共用。服务端/MQTT 专属 code（如
 `naming.mqtt-var.requires-machine`）由宿主在自己的 formatter 中扩展；其他语言/宿主可整体替换。
-本文是 P1 的公开契约：新增 code 属于向后兼容；修改/删除 code 视为破坏性变更。
+本文是公开契约：新增 code 属于向后兼容；修改/删除 code 视为破坏性变更。
 
 约定：
 

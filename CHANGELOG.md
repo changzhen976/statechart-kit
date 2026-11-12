@@ -2,6 +2,17 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [Unreleased]
+
+### Changed
+
+- 文档信息架构改为宿主集成优先：README 重新组织为安装、入口选择、core/engine/editor 快速开始；
+  新增 `docs/host-integration.md` 与 `docs/README.md`
+- `AGENTS.md` 改为维护者/Agent 入口，移除阶段表；阶段历史、架构复盘、需求记录、发布流程
+  移入 `docs/internal/`
+- `docs/editor.md`（原 `editor-p3.md`）与 `docs/session-events.md`（原 `host-events.md`）
+  改为宿主视角文档
+
 ## [0.10.0] - 2026-11-11
 
 ### Added
@@ -20,7 +31,7 @@
 ### Changed
 
 - Vue 构建将 `@tinyactors/scxmljs/explorer` 作为 external，按需动态加载，不重复打包 explorer
-- 更新 `docs/editor-p3.md` 的 0.10 状态说明
+- 更新 `docs/editor.md` 的 0.10 状态说明
 
 ### Compatibility
 
@@ -40,7 +51,7 @@
 ### Changed
 
 - `package.json` 补充 `repository` / `homepage` / `bugs` 元数据
-- 更新 `docs/releasing.md` 到 0.9.x 实际发布流程（含 2FA、processing、tag/远程约定）
+- 更新 `docs/internal/releasing.md` 到 0.9.x 实际发布流程（含 2FA、processing、tag/远程约定）
 
 ## [0.9.0] - 2026-11-11
 
@@ -208,7 +219,7 @@ P3：可嵌入 Vue 编辑器。新增 `statechart-kit/vue` 入口；core/engine 
 - `src/vue/styles.css` 随包发布为 `statechart-kit/vue/style.css`
 - Vite 构建 SFC + `vue-tsc` 生成 `dist/vue-types/**`；`check:vue` happy-dom 挂载冒烟
 - `test/verify-editor.ts`：25 条断言
-- `docs/editor-p3.md`：入口、adapter 契约、构建、P4 迁移边界
+- `docs/editor.md`：入口、adapter 契约、构建、P4 迁移边界
 
 ### Changed
 
@@ -221,7 +232,7 @@ P3：可嵌入 Vue 编辑器。新增 `statechart-kit/vue` 入口；core/engine 
 
 - 编辑器不读 localStorage、不发 HTTP；默认浏览器适配器可被宿主整体替换。
 - P3 的画布只做 source/session 同步；点击选中、缩放平移、Explorer 与结构化动作编辑器
-  留在 P4（见 `docs/editor-p3.md` §6）。
+  留在 P4（见 `docs/editor.md` §6）。
 
 ## [0.3.0] - 2026-11-10
 
@@ -239,7 +250,7 @@ P2：引擎选项、统一懒加载器、会话生命周期加固与 core 配套
 - `serializeChecked(doc)` + `DocumentStructureError`（结构 error 时拒绝序列化）
 - `neutralizeCdata`（core）：导入/校验/建会话共用，修复 happy-dom 的 script CDATA 兼容性
 - `import.no-dom-parser`：Node 未注入 DOMParser 时给出结构化错误
-- `docs/architecture-review-p2.md`：分层、15 项隐患与 6 项剩余风险
+- `docs/internal/architecture-review.md`：分层、15 项隐患与 6 项剩余风险
 - `test/verify-engine.ts`：38 条断言
 
 ### Changed
