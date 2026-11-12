@@ -1,6 +1,6 @@
-# 发布与 NPM 认证（P6）
+# 发布与 NPM 认证（维护者）
 
-> 目标：发布 `statechart-kit` 0.9.x。当前已发布 `0.9.0`；下文以 `0.9.1` 为例，
+> 目标：发布 `statechart-kit` 0.10.x。当前已发布 `0.9.0`；下文以 `0.10.0` 为例，
 > 实际发布时替换成 `package.json` 里的版本号。本文只写命令与检查，不保存任何 token。
 
 ## 0. 远程约定
@@ -97,7 +97,7 @@ node --input-type=module -e "import('statechart-kit').then(m=>console.log('core'
 
 ```bash
 cd statechart-kit
-git tag v0.9.1
+git tag v0.10.0
 git push github main --tags
 # 需要内部镜像时：
 git push origin main --tags
@@ -110,12 +110,12 @@ git push origin main --tags
 
 ```bash
 cd ../scxml-creator
-npm install --save statechart-kit@^0.9.1
+npm install --save statechart-kit@^0.10.0
 git diff package.json package-lock.json
 npm run typecheck && npm run test:all && npm run check:all
 ```
 
-0.9.x 的 `TransitionEdge.target` 可为 `null`，`ListenEdge.target` /
+0.9.x 起 `TransitionEdge.target` 可为 `null`，`ListenEdge.target` /
 `EventOrigin.target` 也同步可空。creator 中类似
 `stateName(t.target)`、直接读取 `t.target.id` 的代码需要先适配；必要时显示“内部转移”。
 
