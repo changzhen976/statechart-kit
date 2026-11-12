@@ -207,11 +207,11 @@ core/engine 只返回 `{code, params}`，不返回中文文案。宿主可以：
 
 ## 兼容性
 
-- 版本 `0.10.0`，Node.js >= 20，ESM only；
+- 版本 `0.10.1`，Node.js >= 20，ESM only；
 - `vue` 是 optional peer；
 - `ProjectDoc` / SCXML 输出在 0.10 线保持稳定；
 - `TransitionEdge.target` 可为 `null`，`ListenEdge.target` / `EventOrigin.target` 同步可空；
-- `features.explorer` 默认 `false`，不改变现有宿主行为。
+- `features.explorer` / `resizablePanes` 默认 `false`，不改变现有宿主行为。
 
 ## 文档
 
