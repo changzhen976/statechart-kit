@@ -30,6 +30,7 @@
 | KIT-013 | `statechart-kit` 编辑器 | P2 | 左右侧栏折叠按钮位于侧栏顶部，容易被当成普通工具按钮且左栏滚动后消失；应放到分割线纵向中点 | 已实现（0.12.0） |
 | KIT-014 | `statechart-kit` 编辑器 | P1 | 横向布局切换后状态机左右溢出画布，左键/滚轮无法露出被裁内容，只有中键原生自动滚动可用 | 已实现（0.12.0） |
 | KIT-015 | `statechart-kit` 编辑器/engine | P2 | 事件来源不可区分；内部事件无法阻止外部同名输入 | 已实现（0.13.0，见 `docs/internal/work-items/0.13-event-visibility.md`） |
+| KIT-016 | `statechart-kit` 编辑器 | P2 | 结构编辑 addState/removeState/setParent 未维护 ProjectDoc initial 不变量，画布 fallback 与文档/属性面板不一致 | 待修复（0.12.1 / 0.13.1）；详见 `docs/internal/work-items/0.12-initial-invariant.md` |
 
 ---
 
@@ -1153,3 +1154,15 @@ CASCADE_BASE=http://homeassistant:1880 npm run test:cascade
 - 测试：`check-vue` 覆盖折叠/过滤/选中展开与侧栏折叠；`verify-editor` 覆盖 canvas-fit；
   Chromium headless 验证横向 fit、滚轮/左键平移、按钮中点；
 - 自定义 JS 提示：`run()` 不再自动弹模态框，显式 `validate()` 才显示脚本清单。
+
+
+## KIT-016：ProjectDoc `initial` 维护
+
+> 完整记录见 `docs/internal/work-items/0.12-initial-invariant.md`；来源为 Node-RED 宿主
+> `docs/kit-bug-report-initial-state.md`，已在 0.12.0 复现。该 bug 仍存在于 0.13.0。
+
+根因：`EditorStore` 的 `addState` / `removeState` / `setParent` 没有维护
+`doc.initial` / `state.initial` 不变量；`serializeToScxml` 的 fallback 掩盖了问题。
+
+建议统一增加 `ensureInitial(doc, parentUid)`，在结构变更后物化 initial；不要删除
+serializer fallback。回归要覆盖顶层、compound、parallel、history、删除和移动。
