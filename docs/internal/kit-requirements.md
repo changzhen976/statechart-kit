@@ -20,7 +20,7 @@
 | KIT-003 | `statechart-kit` SCXML 导入 | P2 | `scxmlToDoc` 不支持 `<donedata>`，导入时告警并丢弃该元素 | 已支持（0.9.0） |
 | KIT-004 | `statechart-kit` SCXML 导入 | P2 | `scxmlToDoc` 不支持无 target 的内部转移，导入告警且 ProjectDoc 无法表达 | 已支持（0.9.0） |
 | KIT-005 | `@tinyactors/scxmljs` 渲染器 | P2 | 复杂图中同源/同目标的多条条件转移共享走廊，线条近重合、视觉上像重复 | 已记录最小证据与修复方案；待上游修复 |
-| KIT-016 | `statechart-kit` 编辑器 | P2 | 结构编辑 addState/removeState/setParent 未维护 ProjectDoc initial 不变量，画布 fallback 与文档/属性面板不一致 | 待修复（0.12.1 / 0.13.1）；详见 `docs/internal/work-items/0.12-initial-invariant.md` |
+| KIT-016 | `statechart-kit` 编辑器 | P2 | 结构编辑 addState/removeState/setParent 未维护 ProjectDoc initial 不变量，画布 fallback 与文档/属性面板不一致 | 已修复（0.12.1）；详见 `docs/internal/work-items/0.12-initial-invariant.md` |
 | KIT-006 | `statechart-kit` engine | P1 | `done` 不携带终态配置，且 done 后仍发一次空 `active`，宿主必须自行保存最后 `fired` 目标 | 已实现（0.11.0） |
 | KIT-007 | `statechart-kit` engine | P1 | `error` 事件只有 `kind` / `message`，丢弃引擎已有的出错 element，宿主无法定位到状态/转移/动作 | 已实现（0.11.0） |
 | KIT-008 | `statechart-kit` 编辑器 | P2 | `formatValidationIssue` / `formatStructureIssue` / `formatImportWarning` 等硬编码中文，英文宿主的全页编辑器仍显示中文诊断 | 已实现（0.11.0） |
@@ -1165,3 +1165,14 @@ CASCADE_BASE=http://homeassistant:1880 npm run test:cascade
 
 建议统一增加 `ensureInitial(doc, parentUid)`，在结构变更后物化 initial；不要删除
 serializer fallback。回归要覆盖顶层、compound、parallel、history、删除和移动。
+
+
+## 0.12.1 实现记录
+
+- `EditorStore` 增加 `ensureInitial(parentUid)`：
+  - 根 initial 指向首个顶层状态；
+  - compound initial 指向首个非 history 子状态；
+  - parallel 不设置 initial；
+  - 无合法子状态保持 null；
+- `addState` / `removeState` / `setParent` 在结构变更后调用；
+- `verify-editor` 增加 KIT-016 回归（首个顶层、首个子状态、删除、移动、history）。

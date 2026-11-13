@@ -225,7 +225,7 @@ import {
 
 ## 兼容性
 
-- 版本 `0.12.0`，Node.js >= 20，ESM only；
+- 版本 `0.12.1`，Node.js >= 20，ESM only；
 - `vue` 是 optional peer；
 - `ProjectDoc` / SCXML 输出在 0.12 线保持稳定；
 - `TransitionEdge.target` 可为 `null`，`ListenEdge.target` / `EventOrigin.target` 同步可空；

@@ -2,6 +2,16 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.12.1] - 2026-11-13
+
+### Fixed
+
+- KIT-016：结构编辑 `addState` / `removeState` / `setParent` 现在维护
+  `ProjectDoc` 的 `initial` 不变量；空文档首个顶层状态、空 compound 首个子状态、
+  删除 initial 子状态、移动子状态都会同步根/父级 initial；
+- history 伪态不会被选作 compound 的 initial；
+- 回归覆盖顶层、compound、删除、移动、history 与属性面板/序列化一致性。
+
 ## [0.12.0] - 2026-11-13
 
 ### Added
