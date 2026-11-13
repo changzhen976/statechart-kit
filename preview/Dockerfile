@@ -12,7 +12,7 @@ ARG NODE_IMAGE=node:22-alpine
 FROM ${NODE_IMAGE} AS build
 ARG NPM_REGISTRY=
 WORKDIR /app
-COPY package*.json ./
+COPY --chown=1000:1000 package*.json ./
 RUN --mount=type=cache,target=/root/.npm,sharing=locked \
     if [ -n "$NPM_REGISTRY" ]; then npm config set registry "$NPM_REGISTRY"; fi \
  && npm ci --include=dev --no-audit --no-fund
