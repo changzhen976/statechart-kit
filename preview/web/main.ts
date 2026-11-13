@@ -70,6 +70,10 @@ const mounted = mountEditor('#app', {
   adapter: {
     load: () => null,
     readOnly: true,
+    externalEvents: () => [
+      { value: 'start', tag: '宿主' },
+      { value: 'external.poke', tag: '宿主' },
+    ],
     runner: { engine: 'trusted' },
   },
 })

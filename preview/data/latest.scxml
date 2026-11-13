@@ -1,18 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" datamodel="ecmascript" name="preview-demo" initial="idle">
-  <datamodel>
-    <data id="count" expr="0"/>
-  </datamodel>
+<scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" datamodel="ecmascript" name="event-visibility-demo" initial="idle">
   <state id="idle">
-    <transition event="start" target="running">
-      <assign location="count" expr="count + 1"/>
-    </transition>
+    <transition event="start" target="running" data-kit-transition-id="t1"/>
   </state>
-  <state id="running">
-    <transition event="stop" target="idle"/>
-    <transition event="finish" target="done"/>
-  </state>
-  <final id="done">
-    <donedata><content expr="count"/></donedata>
-  </final>
+  <parallel id="running">
+    <state id="left" initial="leftIdle">
+      <onentry>
+        <raise event="internal.ping"/>
+      </onentry>
+      <state id="leftIdle">
+        <transition event="internal.ping" target="leftDone" data-kit-transition-id="t2" data-kit-visibility="internal" cond="_event.type === 'internal'"/>
+      </state>
+      <state id="leftDone"/>
+    </state>
+    <state id="right" initial="rightIdle">
+      <state id="rightIdle">
+        <onentry>
+          <cancel sendid="delay1s_rightIdle_to_rightDone"/>
+          <send event="delay1s_rightIdle_to_rightDone" delay="1s" id="delay1s_rightIdle_to_rightDone"/>
+        </onentry>
+        <onexit>
+          <cancel sendid="delay1s_rightIdle_to_rightDone"/>
+        </onexit>
+        <transition event="external.poke" target="rightDone" data-kit-transition-id="t3"/>
+        <transition event="delay1s_rightIdle_to_rightDone" target="rightDone" data-kit-transition-id="t4"/>
+      </state>
+      <state id="rightDone"/>
+    </state>
+  </parallel>
 </scxml>
