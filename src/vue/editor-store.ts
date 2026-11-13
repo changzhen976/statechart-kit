@@ -255,7 +255,7 @@ export interface EditorStore {
   deleteTransition(id: string): Promise<boolean>
   deleteSelection(): Promise<void>
 
-  validate(): Promise<boolean>
+  validate(opts?: { showScriptDialog?: boolean }): Promise<boolean>
   run(): Promise<boolean>
   stopSim(): Promise<void>
   togglePause(): void
@@ -1097,7 +1097,8 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     }
   }
 
-  async function validate(): Promise<boolean> {
+  async function validate(opts: { showScriptDialog?: boolean } = {}): Promise<boolean> {
+    const showScriptDialog = opts.showScriptDialog !== false
     try {
       const result = await validateDocument(state.doc, {
         policy,
@@ -1121,7 +1122,7 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
         if (hits.length) {
           const scriptIssues = scriptHitsToIssues(hits)
           pushLog('lifecycle', `${labels.validationPassed}；检测到 ${hits.length} 处自定义 JS`)
-          openValidationDialog('草稿包含自定义 JS', scriptIssues)
+          if (showScriptDialog) openValidationDialog('草稿包含自定义 JS', scriptIssues)
         } else {
           pushLog('lifecycle', labels.validationPassed)
         }
@@ -1188,7 +1189,7 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
       pushLog('error', `无法启动：${labels.emptyDoc}`)
       return false
     }
-    if (!(await validate())) return false
+    if (!(await validate({ showScriptDialog: false }))) return false
     try {
       await runner.start(serializeToScxml(state.doc))
       state.sim.running = true

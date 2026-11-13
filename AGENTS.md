@@ -153,7 +153,7 @@ const runner = new SessionRunner({ engine: 'sandboxed', domParser })
 | `test/verify-validation.ts` | 结构/引擎校验、严格序列化、CDATA |
 | `test/verify-engine.ts` | 懒加载、两种数据模型、生命周期竞态 |
 | `test/verify-host-events.ts` | typed send/done/error、done.states、error 定位 |
-| `test/verify-editor.ts` | adapter、CRUD/undo、Explorer 匹配、doneData、locale/diagnostics、canvas-fit |
+| `test/verify-editor.ts` | adapter、CRUD/undo、Explorer 匹配、doneData、locale/diagnostics、canvas-fit、运行/校验脚本提示 |
 
 发布前必须 `npm run verify:all` 全绿。`check:baseline -- --donor` 需要本地
 `../scxml-creator` donor 工作区，仅开发机可用。

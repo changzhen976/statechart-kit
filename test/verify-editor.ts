@@ -248,6 +248,33 @@ console.log('── D) 校验 / 运行 / 停止 ──')
   await editor.destroy()
 }
 
+console.log('── D2) 运行时自定义 JS 不弹窗，显式校验才弹窗 ──')
+{
+  const doc = emptyDoc('script-warning')
+  doc.states = [
+    {
+      uid: 's1',
+      id: 'a',
+      label: 'a',
+      kind: 'atomic',
+      parent: null,
+      entryActions: ['let marker = 1'],
+      exitActions: [],
+    },
+  ]
+  doc.initial = 's1'
+  const { editor } = makeEditor({ initialDoc: doc })
+  await editor.ready
+  const ran = await editor.run()
+  assert(ran && editor.sim.running, '含自定义 JS 时仿真仍可启动')
+  assert(!editor.validationDialog, 'run() 不弹自定义 JS 弹窗')
+  await editor.stopSim()
+  assert(await editor.validate(), '显式校验通过')
+  assert(editor.validationDialog?.title === '草稿包含自定义 JS', '显式校验仍弹自定义 JS 弹窗')
+  editor.closeValidationDialog()
+  await editor.destroy()
+}
+
 console.log('── E) 确认 / 删除 / 保存 ──')
 {
   const { editor, saved } = makeEditor()

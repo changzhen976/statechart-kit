@@ -1150,4 +1150,5 @@ CASCADE_BASE=http://homeassistant:1880 npm run test:cascade
 - KIT-013：`EditorHost` 增加 `.sce-pane` 包装层，折叠按钮绝对定位到分割线中点；
   `aria-expanded`/`aria-label` 同步，按钮不再随左栏滚动；
 - 测试：`check-vue` 覆盖折叠/过滤/选中展开与侧栏折叠；`verify-editor` 覆盖 canvas-fit；
-  Chromium headless 验证横向 fit、滚轮/左键平移、按钮中点。
+  Chromium headless 验证横向 fit、滚轮/左键平移、按钮中点；
+- 自定义 JS 提示：`run()` 不再自动弹模态框，显式 `validate()` 才显示脚本清单。
