@@ -24,6 +24,8 @@ export const CORE_FILES = [
   'src/core/event-catalog.ts',
   'src/core/active-tree.ts',
   'src/core/validate-structure.ts',
+  'src/core/codes.ts',
+  'src/core/event-visibility.ts',
   'src/core/cdata.ts',
   'src/core/serialize-checked.ts',
 ]
@@ -57,6 +59,7 @@ export const VUE_FILES = [
   'src/vue/StructurePanel.vue',
   'src/vue/ChartCanvas.vue',
   'src/vue/canvas-select.ts',
+  'src/vue/canvas-fit.ts',
   'src/vue/PropertyPanel.vue',
   'src/vue/ActionListEditor.vue',
   'src/vue/DoneDataEditor.vue',
@@ -81,6 +84,7 @@ export const TEST_FILES = [
   'test/verify-engine.ts',
   'test/verify-editor.ts',
   'test/verify-host-events.ts',
+  'test/verify-event-visibility.ts',
   'test/fixtures/server-policy.ts',
 ]
 

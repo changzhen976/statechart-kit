@@ -23,7 +23,7 @@ Node-RED 节点与总线、部署与草稿锁都不在本包范围内。
 
 | 项 | 值 |
 | --- | --- |
-| 版本 | `0.12.0` |
+| 版本 | `0.13.0` |
 | 分支 | `main` |
 | 入口 | `.` / `./engine` / `./vue` / `./diagnostics/zh` |
 | Node | `>=20` |
@@ -42,7 +42,7 @@ Node-RED 节点与总线、部署与草稿锁都不在本包范围内。
 ```bash
 npm install
 npm run typecheck     # tsc --noEmit && vue-tsc --noEmit
-npm test              # 9 个套件
+npm test              # 10 个套件
 npm run build         # tsup(core/engine/diagnostics) + Vite(Vue) + vue-tsc d.ts
 npm run verify:all    # typecheck + test + build + baseline + vue + pack
 npm run check:pack    # 真实打包/解包，按 exports map 导入
@@ -52,7 +52,8 @@ npm run preview:serve # 本地运行 preview 容器服务
 ```
 
 单独套件：`test:import` / `test:smoke` / `test:timers` / `test:naming` /
-`test:events` / `test:validation` / `test:engine` / `test:editor` / `test:host-events`。
+`test:events` / `test:validation` / `test:engine` / `test:editor` / `test:host-events` /
+`test:visibility`。
 
 本机 npm 默认 cache 可能只读：
 
@@ -77,6 +78,7 @@ src/core/                零运行时依赖；禁止 import 引擎/Vue/浏览器
   active-tree.ts         激活状态层级树
   validate-structure.ts  纯结构校验（零依赖）
   codes.ts               公开诊断 code 目录
+  event-visibility.ts    事件可见性、raise 守卫、往返剥离
   examples.ts            内置示例（测试依赖）
 
 src/engine/              依赖 @tinyactors/scxmljs；入口不静态 import 实现
@@ -154,6 +156,7 @@ const runner = new SessionRunner({ engine: 'sandboxed', domParser })
 | `test/verify-engine.ts` | 懒加载、两种数据模型、生命周期竞态 |
 | `test/verify-host-events.ts` | typed send/done/error、done.states、error 定位 |
 | `test/verify-editor.ts` | adapter、CRUD/undo、Explorer 匹配、doneData、locale/diagnostics、canvas-fit、运行/校验脚本提示 |
+| `test/verify-event-visibility.ts` | raise、internal-only 守卫、自动延时例外、round-trip、混合可见性 |
 
 发布前必须 `npm run verify:all` 全绿。`check:baseline -- --donor` 需要本地
 `../scxml-creator` donor 工作区，仅开发机可用。
@@ -178,7 +181,7 @@ const runner = new SessionRunner({ engine: 'sandboxed', domParser })
 
 - [`docs/internal/roadmap.md`](docs/internal/roadmap.md)：阶段历史与迁移清单；
 - [`docs/internal/architecture-review.md`](docs/internal/architecture-review.md)：历史架构分层与风险；
-- [`docs/internal/kit-requirements.md`](docs/internal/kit-requirements.md)：KIT-001–014 需求记录（KIT-012–014 已在 0.12.0 实现）；
+- [`docs/internal/kit-requirements.md`](docs/internal/kit-requirements.md)：KIT-001–015 需求记录（KIT-012–014 已在 0.12.0、KIT-015 已在 0.13.0 实现）；
 - [`docs/internal/releasing.md`](docs/internal/releasing.md)：npm 发布与 creator 切换；
 - [`docs/internal/work-items/`](docs/internal/work-items/)：历史工作项。
 
@@ -193,6 +196,7 @@ donor / baseline 说明：`docs/baseline.json` 记录受保护文件哈希；`mi
 - QuickJS 内部加载失败无法重置（上游行为）；ESM loader 缓存可重试。
 - 同一包被 bundler 复制成多份时各自有 loader 缓存；构建侧去重。
 - KIT-002 / KIT-005 属于 `@tinyactors/scxmljs` 上游问题，不在 kit 修复。
+- internal-only 依赖 SCXML 标准 `_event.type`；自动延时是 external 类型，必须继续排除守卫。
 
 ## 11. 远程 / 环境
 

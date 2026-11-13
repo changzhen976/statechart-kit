@@ -153,6 +153,7 @@ function remove(index: number): void {
 function add(kind: (typeof ACTION_KINDS)[number]): void {
   const defaults: Record<ActionStruct['type'], ActionStruct> = {
     send: { type: 'send', event: '事件名' },
+    raise: { type: 'raise', event: '事件名' },
     cancel: { type: 'cancel', sendid: '定时器' },
     assign: { type: 'assign', target: '变量', expr: '0' },
     log: { type: 'log', expr: '"日志内容"' },
@@ -170,6 +171,7 @@ function add(kind: (typeof ACTION_KINDS)[number]): void {
 /** kit 的 ACTION_KINDS.label 是消息 code；宿主负责本地化 */
 const ACTION_LABELS: Record<string, string> = {
   'action.send': '发送事件',
+  'action.raise': '内部事件 raise',
   'action.send-delayed': '延时发送',
   'action.cancel': '撤销事件',
   'action.assign': '赋值',
@@ -180,6 +182,7 @@ const actionLabel = (code: string): string => ACTION_LABELS[code] ?? code
 
 const typeBadge: Record<ActionStruct['type'], string> = {
   send: '发送',
+  raise: '内部',
   cancel: '撤销',
   assign: '赋值',
   log: '日志',
@@ -187,6 +190,7 @@ const typeBadge: Record<ActionStruct['type'], string> = {
 }
 const badgeClass: Record<ActionStruct['type'], string> = {
   send: 'b-send',
+  raise: 'b-raise',
   cancel: 'b-cancel',
   assign: 'b-assign',
   log: 'b-log',
@@ -300,6 +304,20 @@ function setSendData(i: number, raw: string): void {
           placeholder="data JSON；或 =表达式（如 ={value: sm}）"
           title="静态 JSON 直接用；需要发送变量当前值用 =表达式，例如 ={value: sm}"
           @change="setSendData(i, ($event.target as HTMLInputElement).value)"
+        />
+      </template>
+
+      <!-- 内部事件 -->
+      <template v-else-if="row.type === 'raise'">
+        <span class="lbl">raise</span>
+        <EventCombo
+          class="f-ev"
+          :model-value="row.event"
+          :options="eventOptions"
+          :disabled="disabled"
+          placeholder="内部事件名"
+          title="内部事件（SCXML raise）：不经过外部事件队列"
+          @change="onInput(i, { type: 'raise', event: $event })"
         />
       </template>
 
@@ -494,6 +512,10 @@ function setSendData(i: number, raw: string): void {
 .b-send {
   background: var(--scxml-accent-subtle);
   color: var(--scxml-accent-text);
+}
+.b-raise {
+  background: var(--scxml-waiting-bg);
+  color: var(--scxml-waiting);
 }
 .b-cancel {
   background: var(--scxml-error-bg);

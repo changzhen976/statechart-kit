@@ -114,9 +114,10 @@ const explorerDoc = {
   datamodel: [],
   layout: {},
   states: [
-    { uid: 's1', id: 'a', label: 'a', kind: 'atomic', parent: null, initial: null, entryActions: [], exitActions: [] },
+    { uid: 's1', id: 'a', label: 'a', kind: 'atomic', parent: null, initial: null, entryActions: ['raise go'], exitActions: [] },
     { uid: 's2', id: 'b', label: 'b', kind: 'atomic', parent: null, initial: null, entryActions: [], exitActions: [] },
   ],
+  eventVisibility: { go: 'internal' },
   transitions: [
     { id: 't1', source: 's1', target: 's2', event: 'go', cond: 'x > 0', actions: [] },
   ],
@@ -141,6 +142,9 @@ explorerButton.click()
 await new Promise((r) => setTimeout(r, 900))
 const explorerEl = explorerHost.querySelector('scxml-explorer')
 if (!explorerEl || !explorerEl.shadowRoot) throw new Error('Explorer 未升级/挂载')
+const visibilitySelect = explorerHost.querySelector('.sce-events select')
+if (!visibilitySelect || visibilitySelect.value !== 'internal') throw new Error('事件可见性下拉未显示 internal')
+if (!explorerHost.querySelector('.sce-events')?.textContent.includes('内部 raise')) throw new Error('事件来源列未显示内部 raise')
 explorerEl.dispatchEvent(
   new window.CustomEvent('scxml-select', {
     detail: { state: { id: 'a' } },

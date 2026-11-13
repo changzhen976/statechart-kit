@@ -24,15 +24,19 @@ export interface StateRef {
   label: string
 }
 
+export type EventChannel = 'internal' | 'external' | 'auto-delay'
+
 /** 一条发出位置 */
 export type EventOrigin =
   | {
       kind: 'state-action'
+      channel: EventChannel
       state: StateRef
       slot: 'entry' | 'exit'
     }
   | {
       kind: 'transition-action'
+      channel: EventChannel
       transitionId: string
       event: string
       source: StateRef
@@ -42,6 +46,7 @@ export type EventOrigin =
   | {
       /** 内部延迟转移：entry 的延时 send 由序列化器自动注入 */
       kind: 'auto-delay'
+      channel: 'auto-delay'
       transitionId: string
       event: string
       source: StateRef
@@ -99,21 +104,27 @@ export function docEventFacts(doc: ProjectDoc): DocEventFacts {
               (o) =>
                 o.kind === 'state-action' &&
                 o.state.uid === origin.state.uid &&
-                o.slot === origin.slot,
+                o.slot === origin.slot &&
+                o.channel === origin.channel,
             )
           : list.some(
-              (o) => o.kind === 'transition-action' && o.transitionId === origin.transitionId,
+              (o) =>
+              o.kind === 'transition-action' &&
+              o.transitionId === origin.transitionId &&
+              o.channel === origin.channel,
             )
     if (!dup) list.push(origin)
     facts.sendOrigins.set(event, list)
   }
   const scan = (
     actions: string[],
-    originOf: (event: string) => EventOrigin,
+    originOf: (event: string, channel: EventChannel) => EventOrigin,
   ): void => {
     for (const line of actions) {
       const a = parseActionLine(line)
-      if (a.type === 'send' && a.event) addSend(a.event, originOf(a.event))
+      if ((a.type === 'send' || a.type === 'raise') && a.event) {
+        addSend(a.event, originOf(a.event, a.type === 'raise' ? 'internal' : 'external'))
+      }
     }
   }
 
@@ -128,13 +139,14 @@ export function docEventFacts(doc: ProjectDoc): DocEventFacts {
   }
   for (const s of doc.states) {
     const state = ref(s.uid)
-    scan(s.entryActions, () => ({ kind: 'state-action', state, slot: 'entry' }))
-    scan(s.exitActions, () => ({ kind: 'state-action', state, slot: 'exit' }))
+    scan(s.entryActions, (_event, channel) => ({ kind: 'state-action', channel, state, slot: 'entry' }))
+    scan(s.exitActions, (_event, channel) => ({ kind: 'state-action', channel, state, slot: 'exit' }))
   }
   for (const t of doc.transitions) {
     if (t.actions.length) {
-      scan(t.actions, (event) => ({
+      scan(t.actions, (event, channel) => ({
         kind: 'transition-action',
+        channel,
         transitionId: t.id,
         event,
         source: ref(t.source),
@@ -145,6 +157,7 @@ export function docEventFacts(doc: ProjectDoc): DocEventFacts {
     if (t.delayMs !== undefined && t.event) {
       addSend(t.event, {
         kind: 'auto-delay',
+        channel: 'auto-delay',
         transitionId: t.id,
         event: t.event,
         source: ref(t.source),
@@ -229,7 +242,7 @@ export function collectDocEvents(doc: ProjectDoc): string[] {
   const scan = (actions: string[]): void => {
     for (const line of actions) {
       const a = parseActionLine(line)
-      if (a.type === 'send' && a.event) names.add(a.event)
+      if ((a.type === 'send' || a.type === 'raise') && a.event) names.add(a.event)
     }
   }
   for (const t of doc.transitions) if (t.event) names.add(t.event)

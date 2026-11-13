@@ -59,6 +59,15 @@ export interface EditorLabels {
   transitionListen: string
   internalEvents: string
   internalEventHint: string
+  eventSourceInternal: string
+  eventSourceSend: string
+  eventSourceAutoDelay: string
+  eventSourceExternal: string
+  eventSourceListenOnly: string
+  eventVisibility: string
+  visibilityBoth: string
+  visibilityInternal: string
+  eventInternalBlocked: string
   locate: string
   simulation: string
   explorer: string
@@ -182,6 +191,15 @@ export const DEFAULT_LABELS: EditorLabels = {
   transitionListen: '转移监听',
   internalEvents: '内部延时事件',
   internalEventHint: '系统自动生成；只在本机内部收发，不参与广播、路由或 MQTT。',
+  eventSourceInternal: '内部 raise',
+  eventSourceSend: '本机 send',
+  eventSourceAutoDelay: '自动延时',
+  eventSourceExternal: '外部来源',
+  eventSourceListenOnly: '仅监听',
+  eventVisibility: '可见性',
+  visibilityBoth: '双向',
+  visibilityInternal: '仅内部',
+  eventInternalBlocked: '事件 {name} 仅允许内部触发，已忽略外部注入',
   locate: '定位',
   simulation: '仿真',
   explorer: 'Explorer',
@@ -307,6 +325,15 @@ export const DEFAULT_LABELS_EN: EditorLabels = {
   internalEvents: 'Internal delayed events',
   internalEventHint:
     'Generated automatically; local only, not broadcast, routed, or sent over MQTT.',
+  eventSourceInternal: 'internal raise',
+  eventSourceSend: 'local send',
+  eventSourceAutoDelay: 'auto delay',
+  eventSourceExternal: 'external source',
+  eventSourceListenOnly: 'listen only',
+  eventVisibility: 'Visibility',
+  visibilityBoth: 'Both',
+  visibilityInternal: 'Internal only',
+  eventInternalBlocked: 'Event {name} is internal-only; external injection ignored',
   locate: 'Locate',
   simulation: 'Simulation',
   explorer: 'Explorer',

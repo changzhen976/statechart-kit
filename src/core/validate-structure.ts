@@ -451,6 +451,18 @@ export function validateStructure(doc: ProjectDoc): StructureReport {
         })
       }
     }
+    if (t.delayMs === undefined) {
+      const names = t.event.split(/\s+/).filter(Boolean)
+      const internalNames = names.filter((name) => doc.eventVisibility?.[name] === 'internal')
+      if (names.length > 1 && internalNames.length > 0 && internalNames.length < names.length) {
+        add({
+          severity: 'warning',
+          code: 'structure.transition.mixed-event-visibility',
+          params: { id: t.id, events: names.join(' ') },
+          transitionId: t.id,
+        })
+      }
+    }
     if (t.delayMs !== undefined) {
       if (!Number.isFinite(t.delayMs) || t.delayMs < 10) {
         add({
