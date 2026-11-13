@@ -45,6 +45,57 @@ npm config get registry       # 应为 https://registry.npmjs.org/
 - 不要把 token 写进仓库内的 `.npmrc`；本仓库不包含认证文件；
 - 发布过程建议放在 `tmux` / `screen` 里，避免终端断开导致上传中断。
 
+
+## 2.5 GitHub Actions 自动发布（推荐）
+
+仓库包含 `.github/workflows/publish.yml`：
+
+- push `v*` tag 时自动发布；
+- 也可以在 Actions → publish → Run workflow 输入已有 tag 手动补发；
+- 使用 npm Trusted Publishing（OIDC），不需要 `NPM_TOKEN`；
+- 发布前自动执行 `npm ci` + `npm run verify:all`；
+- 发布带 `--provenance`。
+
+### npm 侧配置一次
+
+在 npmjs.com 打开包设置 → **Publishing access** → **Trusted Publishers** →
+**Add GitHub Actions**：
+
+```text
+Organization/user: changzhen976
+Repository:        statechart-kit
+Workflow filename: publish.yml
+Environment:       （留空）
+```
+
+不要配置 `NPM_TOKEN` secret；workflow 没有读取它。
+
+### 触发发布
+
+方式 A：推送 tag
+
+```bash
+git tag v0.13.1
+git push github v0.13.1
+```
+
+方式 B：补发已有 tag
+
+GitHub → Actions → `publish` → Run workflow → 输入 `v0.13.0`。
+
+workflow 会校验 tag 与 `package.json` 版本一致，再执行全量验证和发布。
+
+### 如果暂时不用 Trusted Publishing
+
+也可以把 npm Automation token 放进 GitHub secret `NPM_TOKEN`，并在 publish step 加：
+
+```yaml
+env:
+  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+```
+
+但不推荐长期保存 token；优先使用 OIDC。
+
 ## 3. 发布
 
 ```bash
