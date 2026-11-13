@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "generatedAt": "2026-11-13T00:23:09.048Z",
+  "generatedAt": "2026-11-13T00:26:23.597Z",
   "package": "statechart-kit",
   "phase": "P4 (core/editor boundary, BASE_POLICY, EditorModule)",
   "donor": {
@@ -70,7 +70,7 @@
     "test/verify-validation.ts": "c0610a2b845640a9306564588a549f68a9e7a9a2b48c6d07c16f574d89fed5e9",
     "test/verify-engine.ts": "d40e610b39c545b9e9b5e0a96ebb06214f3fab1903460b3481c7ff961db5e152",
     "test/verify-editor.ts": "4049e8c7d38838293d1f43b7439f1f2c8c364e4ff0d4b91bce9eea9af5124189",
-    "test/verify-host-events.ts": "bd0d873144ca5e6e18f15aa35045289d28bec92c18e5b947b28c91fd56b8e624",
+    "test/verify-host-events.ts": "2b164b481defd01e270da2ca4213dea4d1e8af62f1fe958a28dbc212ab9b8f6c",
     "test/fixtures/server-policy.ts": "efa112f336eed9afe591328a26919f93ee5587c25ae504c32220d2d4fa35fd4d"
   },
   "mirrored": [

@@ -264,22 +264,24 @@ console.log('── 4g) serializer 保留 transition 定位 id ──')
 
 console.log('── 4h) xmldom（Node 宿主）错误定位 ──')
 {
-  const runner = new SessionRunner({ domParser: xmlDomParser, engine: 'trusted' })
-  const events = collect(runner)
-  await runner.start(
-    xmlOpen(`
-      <state id="a">
-        <onentry><script>throw new Error('xmldom entry boom')</script></onentry>
-      </state>
-    `),
-  )
-  await runner.settled()
-  const error = events.find((e) => e.type === 'error')
-  assert(
-    error?.type === 'error' && error.stateId === 'a' && error.slot === 'entry',
-    `xmldom 下仍能发出 error 定位（${JSON.stringify(error)}）`,
-  )
-  await runner.stop()
+  for (const engine of ['trusted', 'sandboxed'] as const) {
+    const runner = new SessionRunner({ domParser: xmlDomParser, engine })
+    const events = collect(runner)
+    await runner.start(
+      xmlOpen(`
+        <state id="a">
+          <onentry><script>throw new Error('xmldom entry boom')</script></onentry>
+        </state>
+      `),
+    )
+    await runner.settled()
+    const error = events.find((e) => e.type === 'error')
+    assert(
+      error?.type === 'error' && error.stateId === 'a' && error.slot === 'entry',
+      `xmldom/${engine} 下仍能发出 error 定位（${JSON.stringify(error)}）`,
+    )
+    await runner.stop()
+  }
 }
 
 console.log('── 5) error：kind/message 结构化 ──')
