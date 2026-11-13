@@ -91,20 +91,48 @@ export interface RunnerErrorEvent {
   element?: { localName: string; id?: string }
 }
 
+function elementTagName(node: Node): string {
+  const el = node as Element
+  return String(el.localName || el.nodeName || '').toLowerCase()
+}
+
+/** 只用 DOM Level 1 API：@xmldom/xmldom 没有 closest()/children/parentElement。 */
+function closestTag(start: Node | null, tags: ReadonlySet<string>): Element | null {
+  let node: Node | null = start
+  while (node) {
+    if (node.nodeType === 1 && tags.has(elementTagName(node))) return node as Element
+    node = node.parentNode
+  }
+  return null
+}
+
+function elementChildIndex(element: Element): number {
+  const parent = element.parentNode
+  if (!parent) return -1
+  let index = 0
+  for (let i = 0; i < parent.childNodes.length; i++) {
+    const node = parent.childNodes[i]
+    if (!node || node.nodeType !== 1) continue
+    if (node === element) return index
+    index++
+  }
+  return -1
+}
+
 /** 从引擎错误元素提取文档定位信息；找不到就不填可选字段。 */
 function errorElementInfo(element: Element | null): Partial<RunnerErrorEvent> {
   if (!element) return {}
   const info: Partial<RunnerErrorEvent> = {
     element: {
-      localName: element.localName,
+      localName: elementTagName(element),
       ...(element.getAttribute('id') ? { id: element.getAttribute('id')! } : {}),
     },
   }
-  const stateEl = element.closest('state,parallel,final,history')
+  const stateEl = closestTag(element, new Set(['state', 'parallel', 'final', 'history']))
   const stateId = stateEl?.getAttribute('id')
   if (stateId) info.stateId = stateId
-  const slotEl = element.closest('onentry,onexit,transition')
-  const slotTag = slotEl?.tagName.toLowerCase()
+  const slotEl = closestTag(element, new Set(['onentry', 'onexit', 'transition']))
+  const slotTag = slotEl ? elementTagName(slotEl) : ''
   if (slotTag === 'onentry') info.slot = 'entry'
   else if (slotTag === 'onexit') info.slot = 'exit'
   else if (slotTag === 'transition' && slotEl) {
@@ -112,11 +140,8 @@ function errorElementInfo(element: Element | null): Partial<RunnerErrorEvent> {
     const transitionId = slotEl.getAttribute('data-kit-transition-id')
     if (transitionId) info.transitionId = transitionId
   }
-  const parent = element.parentElement
-  if (parent) {
-    const index = Array.from(parent.children).indexOf(element)
-    if (index >= 0) info.actionIndex = index
-  }
+  const index = elementChildIndex(element)
+  if (index >= 0) info.actionIndex = index
   return info
 }
 

@@ -55,7 +55,9 @@ interface RunnerErrorEvent {
 - `slot`：`onentry` / `onexit` / `transition`；
 - `actionIndex`：出错元素在动作容器中的序号；
 - `transitionId`：只对自产 SCXML 可靠，序列化器会写 `data-kit-transition-id`；
-- `element`：可序列化的 DOM 描述，宿主不需要持有基类 `Element`。
+- `element`：可序列化的 DOM 描述，宿主不需要持有基类 `Element`；
+- 定位实现只依赖 DOM Level 1（`parentNode` / `childNodes` / `nodeType`），不要求
+  `Element.closest()`，因此 Node 的 `@xmldom/xmldom` 也可用。
 
 `start()` 失败仍抛异常，不额外发 typed `error`。`error.*` 事件不一定是致命的，
 图表仍可继续 transition。

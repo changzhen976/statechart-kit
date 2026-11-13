@@ -785,6 +785,7 @@ CASCADE_BASE=http://homeassistant:1880 npm run test:cascade
   `active`，`done` 后抑制空 `active`；
 - KIT-007：`RunnerErrorEvent` 增加 `stateId` / `transitionId` / `slot` / `actionIndex` /
   `element`；序列化器写 `data-kit-transition-id`，导入器保留，保证 round-trip；
+  错误定位只用 DOM Level 1 API，兼容 `@xmldom/xmldom`，并有 Node 回归用例；
 - KIT-008：`CreateEditorOptions.diagnostics` 注入 5 个 formatter；默认仍为中文；
 - KIT-009：`locale: 'en'` + `DEFAULT_LABELS_EN`；`labels` 仍可覆盖单个键；
 - KIT-010：核心导出 `NAMING_ISSUE_CODES` / `STRUCTURE_ISSUE_CODES` /

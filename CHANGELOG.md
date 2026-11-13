@@ -10,6 +10,7 @@
 - `SessionRunner` 在 `done` 前发一次终态 `active`，`done` 后不再发空 `active: []`；
 - `RunnerErrorEvent` 增加可选 `stateId` / `transitionId` / `slot` / `actionIndex` /
   `element`，可从运行时错误定位到状态、动作或转移；
+- 错误定位只使用 DOM Level 1 API，兼容 `@xmldom/xmldom` 的 Node 环境；新增 xmldom 回归用例；
 - 序列化器为转移写 `data-kit-transition-id`，导入器保留该属性，保证自产 SCXML
   round-trip 与错误定位稳定；
 - `CreateEditorOptions.diagnostics`：可注入 `formatNamingIssue` /

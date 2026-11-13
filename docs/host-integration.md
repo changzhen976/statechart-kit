@@ -98,7 +98,8 @@ runner.on((event) => {
 
 ### Node 环境
 
-Node 没有全局 `DOMParser`，必须传入：
+Node 没有全局 `DOMParser`，必须传入。`@xmldom/xmldom` 与 happy-dom 都可；错误定位不依赖
+`Element.closest()`，只使用 DOM Level 1 API。
 
 ```ts
 import { Window } from 'happy-dom'

@@ -5,6 +5,7 @@
  * 运行：npm run test:host-events
  */
 import { Window } from 'happy-dom'
+import { DOMParser as XmlDOMParser } from '@xmldom/xmldom'
 import { SessionRunner, type RunnerEvent } from '../src/engine/session-runner'
 import { emptyDoc, newUid, type ProjectDoc } from '../src/core/model'
 import { serializeToScxml } from '../src/core/serializer'
@@ -22,7 +23,8 @@ function assert(cond: unknown, msg: string): asserts cond {
 }
 
 const w = new Window()
-const domParser = new w.DOMParser() as unknown as ConstructorParameters<typeof SessionRunner>[0] extends infer O
+const domParser = new w.DOMParser()
+const xmlDomParser = new XmlDOMParser() as unknown as typeof domParser as unknown as ConstructorParameters<typeof SessionRunner>[0] extends infer O
   ? O extends { domParser?: infer D }
     ? D
     : never
@@ -256,6 +258,26 @@ console.log('── 4g) serializer 保留 transition 定位 id ──')
   assert(
     error?.type === 'error' && error.transitionId === transitionId && error.stateId === 'a',
     `serializer 产出的 transition id 可用于错误定位（${JSON.stringify(error)}）`,
+  )
+  await runner.stop()
+}
+
+console.log('── 4h) xmldom（Node 宿主）错误定位 ──')
+{
+  const runner = new SessionRunner({ domParser: xmlDomParser, engine: 'trusted' })
+  const events = collect(runner)
+  await runner.start(
+    xmlOpen(`
+      <state id="a">
+        <onentry><script>throw new Error('xmldom entry boom')</script></onentry>
+      </state>
+    `),
+  )
+  await runner.settled()
+  const error = events.find((e) => e.type === 'error')
+  assert(
+    error?.type === 'error' && error.stateId === 'a' && error.slot === 'entry',
+    `xmldom 下仍能发出 error 定位（${JSON.stringify(error)}）`,
   )
   await runner.stop()
 }
