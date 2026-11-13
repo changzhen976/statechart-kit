@@ -275,6 +275,28 @@ console.log('── D2) 运行时自定义 JS 不弹窗，显式校验才弹窗 
   await editor.destroy()
 }
 
+console.log('── D3) 事件可见性设置与外部注入拦截 ──')
+{
+  const doc = emptyDoc('visibility')
+  doc.states = [
+    { uid: 's1', id: 'a', label: 'a', kind: 'atomic', parent: null, entryActions: [], exitActions: [] },
+    { uid: 's2', id: 'b', label: 'b', kind: 'atomic', parent: null, entryActions: [], exitActions: [] },
+  ]
+  doc.initial = 's1'
+  doc.transitions = [{ id: 't1', source: 's1', target: 's2', event: 'go', cond: '', actions: [] }]
+  doc.eventVisibility = { go: 'internal' }
+  const { editor } = makeEditor({ initialDoc: doc })
+  await editor.ready
+  assert(await editor.run(), 'internal-only 文档可启动仿真')
+  editor.sendEvent('go')
+  assert(editor.sim.log.some((l) => l.text.includes('仅允许内部触发')), '编辑器拒绝外部注入 internal-only 事件')
+  assert(editor.activeLabels.length === 1, '被拒绝后仍停留在原状态')
+  await editor.stopSim()
+  editor.setEventVisibility('go', 'both')
+  assert(editor.doc.eventVisibility?.go === undefined, '设回双向会移除可见性记录')
+  await editor.destroy()
+}
+
 console.log('── E) 确认 / 删除 / 保存 ──')
 {
   const { editor, saved } = makeEditor()

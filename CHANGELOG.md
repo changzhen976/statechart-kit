@@ -2,6 +2,30 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.13.0] - 2026-11-13
+
+### Added
+
+- `raise <event>` 动作：解析、编辑器动作行、序列化 `<raise>`、导入保留；
+- `ProjectDoc.eventVisibility`：事件可标记为 `internal`（仅内部）或 `both`（默认）；
+- internal-only 事件转移生成标准 SCXML 守卫：
+  `_event.type === 'internal'`，外部同名事件不再触发；
+- 事件面板显示真实来源（内部 raise、本机 send、自动延时、外部来源、仅监听）和可见性下拉；
+- 编辑器外部注入 internal-only 事件时提前拒绝并写日志；
+- 混合可见性转移 warning：`structure.transition.mixed-event-visibility`。
+
+### Changed
+
+- `raise` 导入不再降级为普通 `<send>`；
+- 自产 SCXML 的 internal-only 转移新增 `data-kit-visibility="internal"` 和守卫条件；
+- 自动延时事件继续按 external 处理，不参与 internal-only 守卫，避免破坏定时转移。
+
+### Tests
+
+- 新增 `test/verify-event-visibility.ts`：raise、守卫、外部拦截、自动延时例外、round-trip、来源通道；
+- `check-vue` 覆盖事件来源与可见性下拉；
+- `verify-editor` 覆盖 visible 设置与外部注入拒绝。
+
 ## [0.12.0] - 2026-11-13
 
 ### Added

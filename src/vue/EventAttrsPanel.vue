@@ -12,8 +12,9 @@
 import { computed } from 'vue'
 import { useEditor } from './use-editor'
 import { parseActionLine } from '../core/action-parse'
+import { docEventFacts } from '../core/event-catalog'
 import { isAutoDelayEvent } from '../core/naming'
-import type { MetaAttrs, MetaValue } from '../core/model'
+import type { EventVisibility, MetaAttrs, MetaValue } from '../core/model'
 import type { EditorAttributeField } from './modules'
 
 const editor = useEditor()
@@ -59,7 +60,30 @@ function collectListens(): Set<string> {
 }
 
 const sendRows = computed(() => [...collectSends()].sort((a, b) => a.localeCompare(b)))
-const receiveRows = computed(() => [...collectListens()].sort((a, b) => a.localeCompare(b)))
+const facts = computed(() => docEventFacts(editor.doc))
+const externalNames = computed(() => new Set(editor.state.externalEvents.map((e) => e.value)))
+const receiveRows = computed(() =>
+  [...collectListens()]
+    .sort((a, b) => a.localeCompare(b))
+    .map((name) => {
+      const origins = facts.value.sendOrigins.get(name) ?? []
+      const sources: string[] = []
+      if (origins.some((o) => o.channel === 'internal')) sources.push(editor.labels.eventSourceInternal)
+      if (origins.some((o) => o.channel === 'external')) sources.push(editor.labels.eventSourceSend)
+      if (origins.some((o) => o.channel === 'auto-delay')) sources.push(editor.labels.eventSourceAutoDelay)
+      if (externalNames.value.has(name)) sources.push(editor.labels.eventSourceExternal)
+      if (!sources.length) sources.push(editor.labels.eventSourceListenOnly)
+      return {
+        name,
+        sources,
+        visibility: (editor.doc.eventVisibility?.[name] === 'internal' ? 'internal' : 'both') as EventVisibility,
+      }
+    }),
+)
+
+function setVisibility(name: string, e: Event): void {
+  editor.setEventVisibility(name, (e.target as HTMLSelectElement).value as EventVisibility)
+}
 
 function delayLabel(ms: number | undefined, unit: 's' | 'ms' | undefined): string {
   const v = ms ?? 0
@@ -153,12 +177,24 @@ const hasAny = computed(() => sendRows.value.length > 0 || receiveRows.value.len
           <tr>
             <th>{{ editor.labels.event }}</th>
             <th>{{ editor.labels.eventSource }}</th>
+            <th>{{ editor.labels.eventVisibility }}</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="name in receiveRows" :key="name">
-            <td class="name" :title="name">{{ name }}</td>
-            <td class="source">{{ editor.labels.transitionListen }}</td>
+          <tr v-for="row in receiveRows" :key="row.name">
+            <td class="name" :title="row.name">{{ row.name }}</td>
+            <td class="source">{{ row.sources.join(' · ') }}</td>
+            <td class="visibility">
+              <select
+                :value="row.visibility"
+                :disabled="editor.locked"
+                :aria-label="`${row.name} ${editor.labels.eventVisibility}`"
+                @change="setVisibility(row.name, $event)"
+              >
+                <option value="both">{{ editor.labels.visibilityBoth }}</option>
+                <option value="internal">{{ editor.labels.visibilityInternal }}</option>
+              </select>
+            </td>
           </tr>
         </tbody>
       </table>

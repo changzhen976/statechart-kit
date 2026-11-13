@@ -57,6 +57,7 @@ export const STRUCTURE_ISSUE_CODES = [
   'structure.transition.internal-eventless',
   'structure.transition.delay-invalid',
   'structure.transition.delay-without-event',
+  'structure.transition.mixed-event-visibility',
 ] as const
 
 export const IMPORT_WARNING_CODES = [

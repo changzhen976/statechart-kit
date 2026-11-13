@@ -147,6 +147,46 @@ import {
 } from 'statechart-kit'
 ```
 
+## 事件可见性
+
+事件面板的「接收事件」现在显示真实来源和可见性：
+
+| 列 | 内容 |
+| --- | --- |
+| 来源 | `内部 raise` / `本机 send` / `自动延时` / `外部来源` / `仅监听` |
+| 可见性 | `双向`（默认）/ `仅内部` |
+
+设置为「仅内部」后，序列化器会给该事件的所有转移加标准 SCXML 守卫：
+
+```xml
+<transition
+  event="parallel.go"
+  data-kit-visibility="internal"
+  cond="_event.type === 'internal'"
+  target="next"
+/>
+```
+
+- 内部事件用 `raise <event>` 动作产生，动作编辑器提供「内部事件 raise」；
+- 外部注入同名事件会被守卫拦截；
+- 编辑器仿真面板也会拒绝 external 注入 internal-only 事件；
+- 自动延时事件不参与该守卫：引擎里 `<send delay>` 的 `_event.type` 是 `external`；
+- 一条转移包含多个事件时，只有全部事件都是「仅内部」才加守卫，否则产生
+  `structure.transition.mixed-event-visibility` warning；
+- `ProjectDoc.eventVisibility` 是可选字段，缺省全部为双向。
+
+`raise` 动作的 DSL：
+
+```text
+raise parallel.go
+```
+
+对应：
+
+```xml
+<raise event="parallel.go"/>
+```
+
 ## `EditorAdapter` 契约
 
 | 方法/字段 | 缺失时行为 |

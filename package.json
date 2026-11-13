@@ -1,6 +1,6 @@
 {
   "name": "statechart-kit",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "description": "Statechart authoring model, editor and session runner. Produces and drives SCXML; it does not interpret SCXML.",
   "license": "MIT",
   "repository": {
@@ -57,7 +57,7 @@
   "scripts": {
     "build": "npm run build:core && npm run build:vue",
     "typecheck": "tsc --noEmit && vue-tsc --noEmit -p tsconfig.vue.json",
-    "test": "npm run test:import && npm run test:smoke && npm run test:timers && npm run test:naming && npm run test:events && npm run test:validation && npm run test:engine && npm run test:editor && npm run test:host-events",
+    "test": "npm run test:import && npm run test:smoke && npm run test:timers && npm run test:naming && npm run test:events && npm run test:validation && npm run test:engine && npm run test:editor && npm run test:host-events && npm run test:visibility",
     "test:import": "tsx test/verify-import.ts",
     "test:smoke": "tsx test/smoke-engine.ts",
     "test:timers": "tsx test/verify-timers.ts",
@@ -77,7 +77,8 @@
     "prepublishOnly": "npm run verify:all",
     "test:host-events": "tsx test/verify-host-events.ts",
     "preview:build": "vite build --config preview/vite.config.ts",
-    "preview:serve": "node preview/server.mjs"
+    "preview:serve": "node preview/server.mjs",
+    "test:visibility": "tsx test/verify-event-visibility.ts"
   },
   "dependencies": {
     "@tinyactors/scxmljs": "0.2.0-dev.0"

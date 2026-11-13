@@ -182,6 +182,8 @@ await mounted.ready
 - 点击 Explorer 中的状态会同步选中编辑器状态并滚动结构树；
 - 覆盖层内的转移列表可直接选中转移并打开属性面板。
 
+事件可见性、`raise` 动作和 internal-only 守卫见 [`docs/editor.md`](docs/editor.md#事件可见性)。
+
 默认关闭。
 
 ### 结构树与画布
@@ -225,14 +227,15 @@ import {
 
 ## 兼容性
 
-- 版本 `0.12.0`，Node.js >= 20，ESM only；
+- 版本 `0.13.0`，Node.js >= 20，ESM only；
 - `vue` 是 optional peer；
-- `ProjectDoc` / SCXML 输出在 0.12 线保持稳定；
+- `ProjectDoc` / SCXML 输出在 0.13 线保持稳定；
 - `TransitionEdge.target` 可为 `null`，`ListenEdge.target` / `EventOrigin.target` 同步可空；
 - `done` 事件新增 `states`；`error` 事件新增可选定位字段（见[会话事件](docs/session-events.md)）；
 - 序列化器会给转移写 `data-kit-transition-id`，导入器会保留；
 - `features.explorer` / `resizablePanes` 默认 `false`，不改变现有宿主行为；
-- 结构树折叠是编辑器会话内 UI；横向/纵向切换后会自动 fit 一次，侧栏 resize 不强制重置缩放。
+- 结构树折叠是编辑器会话内 UI；横向/纵向切换后会自动 fit 一次，侧栏 resize 不强制重置缩放；
+- 事件可设置「仅内部」：转移生成 `_event.type === 'internal'` 守卫；`raise` 是内部事件动作。
 
 ## 文档
 

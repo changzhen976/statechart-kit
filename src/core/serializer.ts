@@ -15,6 +15,7 @@
  */
 import type { DoneData, ProjectDoc, StateNode, TransitionEdge } from './model'
 import { childrenOf, uidMap } from './model'
+import { isInternalOnlyTransition, withInternalGuard } from './event-visibility'
 
 /** XML 属性值转义 */
 const esc = (v: string) =>
@@ -45,6 +46,10 @@ export function actionLineToScxml(line: string): string | null {
     }
     return `<send ${attrs.join(' ')}/>`
   }
+  // raise <event>（SCXML 内部事件）
+  if ((m = t.match(/^raise\s+(\S+)\s*$/))) {
+    return `<raise event="${esc(m[1])}"/>`
+  }
   // cancel <sendid>
   if ((m = t.match(/^cancel\s+(\S+)\s*$/))) {
     return `<cancel sendid="${esc(m[1])}"/>`
@@ -70,13 +75,16 @@ function actionsBlock(actions: string[], pad: string): string {
   return lines.length ? `\n${lines.join('\n')}` : ''
 }
 
-function transitionXml(t: TransitionEdge, idOf: (uid: string) => string, pad: string): string {
+function transitionXml(doc: ProjectDoc, t: TransitionEdge, idOf: (uid: string) => string, pad: string): string {
   const attrs: string[] = []
+  const internal = isInternalOnlyTransition(doc, t)
   if (t.event) attrs.push(`event="${esc(t.event)}"`)
   if (t.target !== null) attrs.push(`target="${esc(idOf(t.target))}"`)
   if (t.transitionType) attrs.push(`type="${esc(t.transitionType)}"`)
   attrs.push(`data-kit-transition-id="${esc(t.id)}"`)
-  if (t.cond) attrs.push(`cond="${esc(t.cond)}"`)
+  if (internal) attrs.push(`data-kit-visibility="internal"`)
+  const cond = internal ? withInternalGuard(t.cond) : t.cond
+  if (cond) attrs.push(`cond="${esc(cond)}"`)
   const open = `${pad}<transition ${attrs.join(' ')}`
   const body = actionsBlock(t.actions, pad + '  ')
   return body ? `${open}>${body}\n${pad}</transition>` : `${open}/>`
@@ -142,9 +150,16 @@ function stateToScxml(doc: ProjectDoc, s: StateNode, idOf: (uid: string) => stri
   for (const c of kids) parts.push(stateToScxml(doc, c, idOf, pad + '  '))
   // history 的出边即其"默认转移"（SCXML 规定写在 <history> 元素内部），此处逻辑天然正确
   for (const t of doc.transitions.filter((x) => x.source === s.uid)) {
-    parts.push(transitionXml(t, idOf, pad + '  '))
+    parts.push(transitionXml(doc, t, idOf, pad + '  '))
   }
   return parts.length ? `${open}>\n${parts.join('\n')}\n${pad}</${tag}>` : `${open}/>`
+}
+
+/** 仅供编辑器画布展示：去掉 internal-only 守卫，避免把实现条件显示成作者条件。 */
+export function serializeToDisplayScxml(doc: ProjectDoc): string {
+  const displayDoc: ProjectDoc = { ...doc }
+  delete displayDoc.eventVisibility
+  return serializeToScxml(displayDoc)
 }
 
 /** 文档模型 → SCXML 文本 */

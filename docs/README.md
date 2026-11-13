@@ -6,6 +6,7 @@
 - [Vue 编辑器](editor.md)：`mountEditor` / `EditorAdapter` / `features` / Explorer。
 - [EditorModule 契约](editor-modules.md)：右侧标签页、工具栏、外部事件、额外校验、属性字段。
 - [会话 typed 事件](session-events.md)：`SessionRunner` 的 send/done/error 契约。
+- [事件可见性](editor.md#事件可见性)：`raise`、internal-only 和自动延时例外。
 - [诊断消息 code](messages.md)：命名/结构/导入/校验/变量写入。
 - [只读预览容器](../preview/README.md)：Docker 预览最新 `.scxml` / `.json`。
 

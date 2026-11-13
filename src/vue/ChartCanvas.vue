@@ -39,7 +39,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import '@tinyactors/scxmljs/view'
 import { defaultViewStrings } from '@tinyactors/scxmljs/view'
-import { serializeToScxml } from '../core/serializer'
+import { serializeToDisplayScxml, serializeToScxml } from '../core/serializer'
 import { createEngineSession } from '../engine/engine-loader'
 import { useEditor } from './use-editor'
 import { matchTransitionId } from './canvas-select'
@@ -146,7 +146,7 @@ let timer: ReturnType<typeof setTimeout> | null = null
 function pushSource(): void {
   const el = viewEl.value
   if (!el || editor.sim.running) return
-  el.source = serializeToScxml(editor.doc)
+  el.source = serializeToDisplayScxml(editor.doc)
   scheduleContractProbe()
 }
 

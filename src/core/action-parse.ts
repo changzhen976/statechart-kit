@@ -7,6 +7,7 @@
  *                                        → { type:'send' }
  *     data      → <send><content>JSON</content></send>（静态数据）
  *     data-expr → <send><content expr="表达式"/></send>（可发送变量当前值）
+ *   raise <event>                       → { type:'raise' }（SCXML 内部事件）
  *   cancel <sendid>                     → { type:'cancel' }
  *   assign <var> = <JS 表达式>           → { type:'assign' }（变量仅标识符）
  *   log <JS 表达式>                      → { type:'log' }
@@ -17,6 +18,7 @@
 
 export type ActionStruct =
   | { type: 'send'; event: string; delay?: string; id?: string; data?: unknown; dataExpr?: string }
+  | { type: 'raise'; event: string }
   | { type: 'cancel'; sendid: string }
   | { type: 'assign'; target: string; expr: string }
   | { type: 'log'; expr: string }
@@ -24,6 +26,7 @@ export type ActionStruct =
 
 const RE_SEND =
   /^send\s+(\S+)(?:\s+delay\s+(\S+))?(?:\s+id\s+(\S+))?(?:\s+(data-expr|data)\s+([\s\S]+))?\s*$/
+const RE_RAISE = /^raise\s+(\S+)\s*$/
 const RE_CANCEL = /^cancel\s+(\S+)\s*$/
 // 变量名支持 Unicode 字母（引擎的 ECMAScript datamodel 允许中文变量，如 温度）
 const RE_ASSIGN = /^assign\s+([\p{L}_$][\p{L}\p{N}_$]*)\s*=\s*([\s\S]+)$/u
@@ -49,6 +52,7 @@ export function parseActionLine(line: string): ActionStruct {
     }
     return a
   }
+  if ((m = t.match(RE_RAISE))) return { type: 'raise', event: m[1] }
   if ((m = t.match(RE_CANCEL))) return { type: 'cancel', sendid: m[1] }
   if ((m = t.match(RE_ASSIGN))) return { type: 'assign', target: m[1], expr: m[2].trim() }
   if ((m = t.match(RE_LOG))) return { type: 'log', expr: m[1].trim() }
@@ -66,6 +70,8 @@ export function actionToLine(a: ActionStruct): string {
       else if (a.data !== undefined) s += ` data ${JSON.stringify(a.data)}`
       return s
     }
+    case 'raise':
+      return `raise ${a.event}`
     case 'cancel':
       return `cancel ${a.sendid}`
     case 'assign':
@@ -86,6 +92,7 @@ export const ACTION_KINDS: {
   template?: ActionStruct
 }[] = [
   { type: 'send', label: 'action.send', template: { type: 'send', event: 'event' } },
+  { type: 'raise', label: 'action.raise', template: { type: 'raise', event: 'event' } },
   {
     type: 'send',
     label: 'action.send-delayed',

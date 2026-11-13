@@ -20,6 +20,7 @@ import {
   uidMap,
   uniqueStateId,
   type DataVar,
+  type EventVisibility,
   type MetaValue,
   type ProjectDoc,
   type StateKind,
@@ -28,6 +29,7 @@ import {
 } from '../core/model'
 import { NCNAME_RE } from '../core/validate-structure'
 import { serializeToScxml } from '../core/serializer'
+import { setEventVisibility as setDocEventVisibility } from '../core/event-visibility'
 import { checkEventName, checkVarName } from '../core/naming'
 import { scanScriptActions } from '../core/action-parse'
 import { scriptHitsToIssues, validateDocument, type ValidationIssue } from '../engine/validator'
@@ -248,6 +250,7 @@ export interface EditorStore {
   updateVariable(index: number, patch: Partial<DataVar>): string | null
   setVariableAttr(index: number, key: string, value: MetaValue | undefined): void
   setEventAttr(event: string, key: string, value: MetaValue | undefined): void
+  setEventVisibility(event: string, visibility: EventVisibility): void
   removeVariable(index: number): void
   setDocMeta(patch: { name?: string; initial?: string | null }): void
   select(kind: SelectionKind, id: string | null): void
@@ -1007,6 +1010,15 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     touch()
   }
 
+  function setEventVisibility(event: string, visibility: EventVisibility): void {
+    if (readOnly() || state.sim.running) return
+    const name = event.trim()
+    if (!name) return
+    captureUndo(`eventVisibility:${name}`)
+    setDocEventVisibility(state.doc, name, visibility)
+    touch()
+  }
+
   function setEventAttr(event: string, key: string, value: MetaValue | undefined): void {
     if (readOnly() || state.sim.running) return
     const name = event.trim()
@@ -1231,6 +1243,10 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
 
   function sendEvent(name: string, data?: unknown): void {
     if (!state.sim.running || !name) return
+    if (state.doc.eventVisibility?.[name] === 'internal') {
+      pushLog('error', labels.eventInternalBlocked.replace('{name}', name))
+      return
+    }
     runner.send(name, data, undefined, 'inject', 'sim')
     refreshVariables()
   }
@@ -1404,6 +1420,7 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     updateVariable,
     setVariableAttr,
     setEventAttr,
+    setEventVisibility,
     removeVariable,
     setDocMeta,
     select,

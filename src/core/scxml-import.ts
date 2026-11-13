@@ -7,7 +7,7 @@
  * <initial> 子元素、onentry/onexit、transition(event/target/cond/type)、
  * final 的 <donedata>（content/expr/param）、无 target 的内部转移，
  * 动作 send(含 <content> 文本/@expr/delay/id)、cancel、assign、log、
- * script（CDATA）、raise（等价 send）、datamodel/data。
+ * script（CDATA）、raise（内部事件）、datamodel/data。
  *
  * 不支持（收集 warnings 后跳过，不中断导入）：if/elseif/else/foreach、
  * invoke、多 initial（取第一个）。
@@ -24,6 +24,7 @@ import type {
   StateKind,
 } from './model'
 import { emptyDoc, newTransitionId, newUid, normalizeDoc, uniqueStateId } from './model'
+import { setEventVisibility, stripInternalGuard } from './event-visibility'
 import { isAutoDelayEvent } from './naming'
 import { actionToLine, type ActionStruct } from './action-parse'
 import { neutralizeCdata } from './cdata'
@@ -94,8 +95,15 @@ function actionElToLine(el: Element, at: ImportLocation, ctx: Ctx): string | nul
   const tag = el.tagName.toLowerCase()
   let a: ActionStruct | null = null
   switch (tag) {
-    case 'send':
     case 'raise': {
+      const event = el.getAttribute('event') ?? ''
+      if (!event) {
+        warn(ctx, 'import.action.missing-event', { at, tag })
+        return null
+      }
+      return `raise ${event}`
+    }
+    case 'send': {
       const event = el.getAttribute('event') ?? ''
       if (!event) {
         warn(ctx, 'import.action.missing-event', { at, tag })
@@ -339,13 +347,19 @@ function transitionFromEl(
     else warn(ctx, 'import.transition.type-invalid', { at, type: rawType })
   }
   const kitTransitionId = el.getAttribute('data-kit-transition-id')?.trim()
+  const event = el.getAttribute('event') ?? ''
+  let cond = el.getAttribute('cond') ?? ''
+  if (el.getAttribute('data-kit-visibility') === 'internal') {
+    cond = stripInternalGuard(cond)
+    for (const name of event.split(/\s+/).filter(Boolean)) setEventVisibility(ctx.doc, name, 'internal')
+  }
   return {
     id: kitTransitionId || newTransitionId(),
     source: sourceUid,
     target,
     ...(transitionType ? { transitionType } : {}),
-    event: el.getAttribute('event') ?? '',
-    cond: el.getAttribute('cond') ?? '',
+    event,
+    cond,
     actions: actionsFromContainer(el, at, ctx),
   }
 }

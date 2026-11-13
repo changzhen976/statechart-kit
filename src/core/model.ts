@@ -20,6 +20,9 @@
  */
 export type StateKind = 'atomic' | 'compound' | 'final' | 'parallel' | 'history'
 
+/** 事件可见性：both = 内部/外部均可触发；internal = 只允许 SCXML internal 事件 */
+export type EventVisibility = 'both' | 'internal'
+
 /** 转移语义：internal = 不退出源状态；external 为 SCXML 默认。无 target 时 type 不影响语义。 */
 export type TransitionType = 'internal' | 'external'
 
@@ -136,6 +139,8 @@ export interface ProjectDoc {
   datamodel: DataVar[]
   states: StateNode[]
   transitions: TransitionEdge[]
+  /** 事件可见性；缺省视为 both，通常只保存 internal */
+  eventVisibility?: Record<string, EventVisibility>
   /** 宿主自定义事件属性（如 broadcast）；key 为事件名 */
   eventAttrs?: Record<string, MetaAttrs>
   /** 布局（画布绝对坐标），键为状态 uid */
@@ -241,6 +246,17 @@ export function normalizeDoc(doc: ProjectDoc): ProjectDoc {
     }
   }
   doc.eventAttrs ??= {}
+  if (doc.eventVisibility && typeof doc.eventVisibility === 'object') {
+    const next: Record<string, EventVisibility> = {}
+    for (const [rawName, rawValue] of Object.entries(doc.eventVisibility)) {
+      const name = rawName.trim()
+      if (name && (rawValue === 'internal' || rawValue === 'both')) next[name] = rawValue
+    }
+    if (Object.keys(next).length) doc.eventVisibility = next
+    else delete doc.eventVisibility
+  } else {
+    delete doc.eventVisibility
+  }
   for (const d of doc.datamodel) {
     if (d.attrs && typeof d.attrs !== 'object') delete d.attrs
   }
