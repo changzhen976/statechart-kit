@@ -1,13 +1,15 @@
 # statechart-kit / scxmljs 需求记录
 
-> 记录时间：2026-11-11；2026-11-12 追加 Node-RED 宿主 0.7 反哺（KIT-006–011）
+> 记录时间：2026-11-11；2026-11-12 追加 Node-RED 宿主 0.7 反哺（KIT-006–011）；
+> 2026-11-13 追加全页编辑器作者体验反哺（KIT-012–014）
 >
-> 本仓库依赖：`statechart-kit@0.10.0`、`@tinyactors/scxmljs@0.2.0-dev.0`
+> 本仓库依赖：`statechart-kit@0.11.0`、`@tinyactors/scxmljs@0.2.0-dev.0`
 >
 > 目的：把本轮测试中遇到、但**不应该在 flow 层反复绕过**的问题固定下来，供 kit / scxmljs 后续版本修复。
 >
 > 来源：Node-RED 宿主 `@changzhen976/node-red-contrib-statechart@0.7.0-dev.0`
-> （宿主仓库 `node-red-contrib-scxmljs`，gitHead `e07e001`）。
+> （宿主仓库 `node-red-contrib-scxmljs`，gitHead `e07e001`）；2026-11-13 的
+> KIT-012–014 来自宿主 `0.7.0` 的全页编辑器作者反馈。
 
 ## 需求总表
 
@@ -24,6 +26,9 @@
 | KIT-009 | `statechart-kit` 编辑器 | P2 | `EditorLabels` 默认中文且约 140 个键，英文宿主只能整份复制；缺少 `labels/en` 或 `locale` 预设 | 已实现（0.11.0） |
 | KIT-010 | `statechart-kit` 诊断 | P2 | 没有导出诊断 code 目录，宿主只能手工维护映射；kit 新增 code 时容易漏翻并显示原始 code | 已实现（0.11.0） |
 | KIT-011 | `statechart-kit` engine | P3 | `send()` 只返回 boolean，done / not-running / queue-full 都表现为 `false`，宿主无法给出准确错误 | 可选（宿主可先检查 false） |
+| KIT-012 | `statechart-kit` 编辑器 | P2 | 结构树的组合/并行状态不能折叠，复杂状态机左栏变成超长列表，难以按层次梳理 | 待开发（0.12 候选） |
+| KIT-013 | `statechart-kit` 编辑器 | P2 | 左右侧栏折叠按钮位于侧栏顶部，容易被当成普通工具按钮且左栏滚动后消失；应放到分割线纵向中点 | 待开发（0.12 候选） |
+| KIT-014 | `statechart-kit` 编辑器 | P1 | 横向布局切换后状态机左右溢出画布，左键/滚轮无法露出被裁内容，只有中键原生自动滚动可用 | 待开发（0.12 候选） |
 
 ---
 
@@ -757,6 +762,347 @@ trySend(name, data?, logText?, logKind?, source?): {
 
 ---
 
+## 0.12 候选：编辑器作者体验（2026-11-13）
+
+以下三项来自 Node-RED 宿主 `0.7.0` 全页编辑器的作者反馈。三项都属于
+`statechart-kit` 编辑器层，不需要宿主改业务代码，也不要求
+`@tinyactors/scxmljs` 发版；宿主只需升级 kit 后重新构建、回归、发布。
+
+| ID | 主题 | 优先级 | kit 工作量 | 宿主动作 |
+| --- | --- | --- | --- | --- |
+| KIT-012 | 结构树组合状态折叠 | P2 | 0.5–1 人日 | 升级 kit，重新打包 |
+| KIT-013 | 侧栏折叠按钮移到分割线中点 | P2 | 0.5–1 人日 | 升级 kit，重新打包 |
+| KIT-014 | 横向布局画布溢出与导航 | P1 | 1.5–2.5 人日 | 升级 kit，重新打包 |
+
+建议开发顺序：**KIT-014 → KIT-012 → KIT-013**。KIT-014 是功能性阻塞；KIT-012 /
+KIT-013 可以并行，且都只改编辑器 DOM/CSS/组件状态，不改 `ProjectDoc` 与 SCXML。
+
+---
+
+## KIT-012：结构树支持组合/并行状态折叠
+
+### 现象
+
+全页编辑器左栏「结构」按层级缩进展示所有状态。当前组合状态（`compound`）和
+并行状态（`parallel`）的子状态**始终展开**；状态机稍复杂（几十个状态、多层嵌套）
+时，左栏会变成一条很长的列表：
+
+- 作者很难一眼看清顶层结构、当前选中状态在树中的位置；
+- 转移分组被推到很远，需要频繁滚动；
+- 只能靠过滤框临时缩小范围，过滤清空后又回到长列表。
+
+当前没有折叠/展开入口。
+
+### 根因/证据
+
+`StructurePanel.vue` 的 `rows` 对所有容器无条件递归，没有折叠状态：
+
+- [`StructurePanel.vue`](../../src/vue/StructurePanel.vue#L73-L86)
+
+模板行只渲染 kind、label、id、删除按钮，没有 caret：
+
+- [`StructurePanel.vue`](../../src/vue/StructurePanel.vue#L168-L185)
+
+`kindLabel` 已经把 `compound` 显示为「组合」、`parallel` 显示为「并行」：
+
+- [`StructurePanel.vue`](../../src/vue/StructurePanel.vue#L108-L113)
+
+### 整改目的
+
+1. **降低信息密度**：复杂状态机先看顶层结构，再按需展开某个组合/并行状态；
+2. **减少滚动和过滤**：折叠后仍保留状态选中、转移分组、删除等操作；
+3. **不改变文档语义**：折叠只是作者态 UI 状态，不写入 `ProjectDoc`/SCXML，
+   不影响保存、导入导出和运行时；
+4. **向后兼容**：默认全部展开，现有用户行为不变。
+
+### 期望行为
+
+- `compound` / `parallel` 行首出现折叠按钮（caret），默认展开；
+- 点击 caret 折叠/展开直接子状态，再次点击恢复；
+- 折叠状态按 `state.uid` 记忆，至少在当前编辑会话内保持；
+- 过滤框有输入时，强制展开所有命中路径；清空过滤后恢复之前的折叠状态；
+- 从画布选中一个被折叠隐藏的后代时，自动展开其祖先并滚动到该行；
+- 新建、删除状态、切换文档时不出现“幽灵折叠”；
+- 行点击选中、删除按钮、转移列表行为不变；
+- 中英文 tooltip 可用（复用 `EditorLabels.collapse/expand`）。
+
+### 非目标
+
+- 不把折叠状态写入 `ProjectDoc`/SCXML；
+- 不做跨会话持久化（localStorage / 宿主存储）——如需要，另列可选需求；
+- 不做“树折叠同步画布折叠”；当前 `<scxml-view>` 的 collapsed 集合不是公共受控
+  API，若要联动需要 scxmljs 暴露受控接口，属于二期；
+- 不改变状态排序、层级规则和转移分组逻辑。
+
+### 建议实现
+
+- 增加 `folded = ref<Set<string>>(new Set())`，按 `state.uid` 记录；
+- `rows` 中：`if (container && (active || !folded.has(s.uid))) walk(...)`；
+- 行首增加 caret 按钮，`@click.stop`，带 `aria-expanded` 和 `title`；
+- 选中变化时向上遍历 `parent`，删除祖先的 folded 记录；
+- `editor.doc` 引用变化时清空 folded；删除状态后清理失效 uid；
+- 只在 `compound`/`parallel` 上显示 caret；`atomic`/`final`/`history` 不显示；
+- `check-vue` 增加组合状态用例：默认展开、点击折叠、搜索自动展开、选中隐藏后代
+  自动展开。
+
+### 验收
+
+- 20+ 状态、3 层嵌套的组合状态：折叠后子状态行消失，展开后恢复；
+- 过滤命中隐藏子状态时自动展开，清空过滤后恢复折叠；
+- 画布选中隐藏子状态时左栏自动展开并滚动到该行；
+- 折叠/展开不改变 `editor.doc`，保存/导出 SCXML 不变；
+- `check:vue` 覆盖 caret、折叠、过滤展开、选中展开；
+- 中英文界面 tooltip 正常。
+
+### 工作量
+
+0.5–1 人日（实现 + check-vue + 文档）。
+
+### 待决
+
+- 是否覆盖 `parallel`：建议覆盖，二者都是有子状态的容器；
+- 是否需要跨会话持久化：建议一期不做；
+- 是否需要与画布折叠联动：建议二期，需 scxmljs API。
+
+---
+
+## KIT-013：左右侧栏折叠按钮移到分割线纵向中点
+
+### 现象
+
+全页编辑器左右侧栏各有一个折叠按钮，当前位于侧栏顶部，和标题/标签页混在一起：
+
+- 视觉上像普通工具按钮，作者很难发现这是“收起侧栏”的入口；
+- 左栏本身是滚动容器，按钮会随内容滚动，滚到中间以后入口消失；
+- 需求是把按钮放到左右分割线的**纵向中点**，作为“面板把手”。
+
+### 根因/证据
+
+左右栏按钮都在 `<aside>` 内部，CSS 是 `align-self: flex-start`，所以停在顶部：
+
+- [`EditorHost.vue`](../../src/vue/EditorHost.vue#L150-L164)
+- [`EditorHost.vue`](../../src/vue/EditorHost.vue#L187-L199)
+
+`.sce-pane-toggle` 的样式是普通小按钮，不是覆盖在分割线上的把手：
+
+- [`styles.css`](../../src/vue/styles.css#L94-L109)
+
+左栏 `.sce-side-left` 自身是 `overflow-y: auto` 的滚动容器，按钮放在里面无法固定
+在视口中点；直接改 `position: absolute; top: 50%` 会随内容滚动。
+
+### 整改目的
+
+1. **可发现性**：把折叠入口放在分割线中点，符合可拖拽面板的通用 affordance；
+2. **稳定性**：按钮不随左栏内容滚动，始终停在视口中点；
+3. **不误触**：按钮与拖拽 resizer 共存，但按钮本身不挡住整条拖拽线；
+4. **零数据影响**：只改 DOM 包裹和 CSS 定位，不改侧栏宽度、内容、`features` 默认值。
+
+### 期望行为
+
+- 左右侧栏折叠按钮都位于对应分割线的纵向中点；
+- 展开态、收起态都显示；收起后仍可点击展开；
+- 按钮不随左栏内容滚动；
+- 按钮不挡住整条 resizer；拖拽分割线其他位置仍可调宽；
+- 键盘可聚焦，Enter/Space 可切换；`aria-expanded` 正确；
+- 与画布右上角的方向切换/缩放控件不重叠；
+- 1280/1920 宽度、左右栏同时打开时视觉正常。
+
+### 非目标
+
+- 不改 `PANE_MIN` / `PANE_MAX`、拖拽逻辑、双击复位；
+- 不做移动端抽屉/浮层；
+- 不引入第三方 split-pane 组件；
+- 不改 `features.resizablePanes` 的默认值。
+
+### 建议实现
+
+- 给左右栏各加 `.sce-pane` 包装层（`position: relative; display: flex; flex: none`），
+  `<aside>` 放在里面；
+- 折叠按钮作为包装层的绝对定位兄弟，`top: 50%; transform: translateY(-50%)`；
+- 左栏 `right: -9px`，右栏 `left: -9px`，让按钮中心落在分割线上；
+- 收起态宽度 28px 时同样定位在边缘中点；
+- `z-index` 高于画布和 resizer；按钮尺寸建议 18–20 × 36–40px；
+- 保留 `aria-expanded` / `aria-label` / `title`；
+- `check-vue` 更新选择器，断言按钮在包装层内、点击可收起/展开。
+
+### 验收
+
+- 左右按钮在分割线纵向中点，不是顶部；
+- 左栏滚动时按钮位置不动；
+- 收起态按钮仍可见、可展开；
+- 拖拽分割线（按钮以外区域）仍可调宽，双击复位正常；
+- 键盘可操作，aria 状态正确；
+- Firefox/Chromium 视觉检查通过。
+
+### 工作量
+
+0.5–1 人日（实现 + check-vue + 视觉验证）。
+
+### 待决
+
+- 按钮形态：半圆贴边、胶囊、还是带阴影的小圆钮；
+- 是否 hover 才显示：建议常驻，降低发现成本；
+- 收起态是否显示文字：建议只显示箭头。
+
+---
+
+## KIT-014：横向布局切换后画布溢出与导航不可用
+
+### 现象
+
+默认自动布局下，把布局切成「横向」后，状态机**左右溢出画布边缘**：
+
+- 左键拖拽/滚轮只能移动外层盒子，无法露出被裁掉的内容；
+- 只有按住鼠标中键左右拖动（浏览器原生自动滚动）才能移动看清全貌；
+- 复杂状态机在横向布局下无法一眼看全，也不能用常规滚轮/拖拽导航。
+
+这不是“横向布局不支援”，而是 kit 画布包装层与官方 `<scxml-view>` 缩放策略叠加
+导致的可视区域裁切 + 导航失效。
+
+### 根因/证据
+
+1. `innerW` 被 `ResizeObserver` 设成**容器可视宽度**，`innerH` 固定 3200；内层
+   “大画布”横向没有多余空间：
+   [`ChartCanvas.vue`](../../src/vue/ChartCanvas.vue#L360-L372)
+2. 官方 view 在内容宽于宿主时按 `--scxml-min-scale` 缩放，默认最低 **0.65**，再内部
+   滚动：`@tinyactors/scxmljs@0.2.0-dev.0` 的 `dist/view/element.js` `#applyFit`。
+3. kit 又隐藏 view 内部滚动条，并 `preventDefault` 拦截滚轮：
+   [`styles.css`](../../src/vue/styles.css#L453-L455)、
+   [`ChartCanvas.vue`](../../src/vue/ChartCanvas.vue#L406-L415)
+4. 切换方向只改 `direction`，**没有重新 fit**；`fitView` 最低缩放 0.3，大图仍然
+   放不下：
+   [`ChartCanvas.vue`](../../src/vue/ChartCanvas.vue#L101-L112)、
+   [`ChartCanvas.vue`](../../src/vue/ChartCanvas.vue#L383-L384)、
+   [`ChartCanvas.vue`](../../src/vue/ChartCanvas.vue#L440-L454)
+
+净效果：外层 `.zoom-pan` 横向没有额外画布，左键/滚轮平移只是移动“已经被 view
+裁掉的盒子”；真正能滚到隐藏内容的是浏览器对 shadow `.canvas` 的中键原生自动
+滚动——所以用户感觉“只有中键左右拖才能看全”。
+
+### 整改目的
+
+1. **让横向布局真正可用**：切过去就能看到全貌，而不是先找中键；
+2. **恢复“大画布 + 外层缩放/平移”设计**：滚轮、左键拖拽、缩放按钮、适应窗口都
+   在完整图上工作；
+3. **不依赖隐藏的内部滚动条**：作者不需要理解 shadow DOM 的滚动行为；
+4. **不改变文档与运行时**：只改画布尺寸、fit 和导航，不改 `ProjectDoc`/SCXML/
+   `layoutChart` 算法；
+5. **为复杂状态机兜底**：超宽/超高图也能通过动态扩容或等效方案完整呈现。
+
+### 归属判断
+
+| 层 | 结论 |
+| --- | --- |
+| `statechart-kit` 编辑器 | **要改**：画布尺寸、fit、方向切换、滚动条隐藏都在 kit |
+| `node-red-contrib-scxmljs` 宿主 | **只升级 kit 并重新打包**，不改 `editor-page` / 节点逻辑 |
+| `@tinyactors/scxmljs` | **本需求不要求发版**：已有 `direction`、自动布局、`max-states` 折叠、`fit`；原生 zoom/pan 未发版，但 kit 已有外层缩放层 |
+| 可选二期 | 树/画布折叠联动需要 scxmljs 暴露受控 `collapsed` 集合，另算 |
+
+### 期望行为
+
+- 切换「横向 / 纵向 / 自动」后自动 fit 一次，整张图完整落在画布视口内；
+- 之后用户手动缩放/平移不被重置；
+- 滚轮/触摸板平移、Ctrl+滚轮缩放、左键拖拽平移都能在完整图上工作；
+- 不再依赖中键原生自动滚动；
+- 超宽/超高图（超过固定画布）仍能完整呈现；
+- 右侧栏调宽/窗口 resize 不强制重置视图（保留用户当前缩放）；
+- 布局切换不改变文档、不触发保存、不影响仿真。
+
+### 非目标
+
+- 不改 `@tinyactors/scxmljs` 的 `layoutChart` 算法；
+- 不实现 view 原生 zoom/pan（等上游发版后再评估）；
+- 不做 mini-map/缩略图/横向滚动条皮肤；
+- 不改变方向按钮的位置和交互；
+- 不把画布尺寸写进 `ProjectDoc`。
+
+### 建议方案 A（推荐）
+
+1. 拆分 `viewportW`（只用于 auto 断点）与 `canvasW/H`（用于绘制）；`canvasW/H`
+   固定 6000×4000 或按内容增长；
+2. `contentSize()` 读 shadow root 的 `.diagram.offsetWidth/offsetHeight`（加 24px
+   margin），**不要读 `.canvas.scrollWidth`**——大画布下它会等于 6000，fit 会把
+   整张空白画布当内容；
+3. 方向切换：`el.direction = want` → `await nextTick()` → `requestAnimationFrame`
+   → `fitView()`；必要时 100–150ms 后再 fit 一次；
+4. `fitView` 最低缩放从 0.3 降到 **0.1**（或区分 `FIT_MIN=0.1` 与 `ZOOM_MIN=0.3`），
+   避免大图永远 fit 不进去；
+5. 超大图：渲染后若 `diagram.offsetWidth + 48 > canvasW`，把 `canvasW` 增长到内容宽，
+   等一帧重绘后再 fit；高度同理；
+6. 侧栏调宽/窗口 resize 默认不自动 fit，保留“适应窗口”按钮；
+7. 保留现有 `.zoom-pan` 手势阈值、点击选中、Ctrl+滚轮缩放逻辑。
+
+### 方案 B（临时缓解，不作为最终方案）
+
+宿主可临时加 CSS：
+
+```css
+scxml-view { --scxml-min-scale: 0.1; }
+```
+
+让官方 view 直接缩到 0.1 避免裁剪；或显示 `::part(canvas)` 的横向滚动条。但这会让
+图很小、方向切换不居中、外层平移仍无效，只能止血。
+
+### 方案 C（不推荐现在做）
+
+等 scxmljs 发布原生 zoom/pan，kit 删除外层缩放层。跨库发版，约 3–5 人日，和本次
+三个 UX 问题没有依赖关系。
+
+### 验收
+
+- 22 状态宽图、900px 视口，自动布局 → 点击「横向」后所有 `[data-state]` 盒子都在
+  `.zoom-pan` 内；
+- 滚轮/左键拖拽可平移，不再需要中键；
+- `view.shadowRoot` 内 `.canvas` 不出现横向裁切；
+- 800/1280/1920 宽度、Firefox/Chromium 通过；
+- 超宽图（>6000px）动态扩容后仍能 fit；
+- 切换方向不改变 `editor.doc`，不触发保存。
+
+### 工作量
+
+1.5–2.5 人日（实现 + 宽图浏览器回归 + 跨浏览器验证）。
+
+### 待决
+
+- fit 下限 0.1 还是 0.15；
+- 超大图动态扩容上限（如 12000/20000px）；
+- 侧栏调宽后是否自动 fit：建议否，保留用户当前缩放；
+- 整图 fit（字可能很小）还是 fit 宽度 + 纵向滚动：建议整图 fit + 手动放大。
+
+---
+
+## 0.12 实施建议（KIT-012–014）
+
+| 顺序 | 内容 | 依赖 | 预估 |
+| --- | --- | --- | --- |
+| 1 | KIT-014 横向画布溢出与方向切换 refit | 无 | 1.5–2.5 人日 |
+| 2 | KIT-012 结构树折叠 | 无 | 0.5–1 人日 |
+| 3 | KIT-013 侧栏折叠按钮 | 无 | 0.5–1 人日 |
+| 4 | 测试、文档、baseline、发版 | 1–3 | 0.5–1 人日 |
+| 5 | 宿主升级 kit + 回归 + 发版（宿主仓库） | kit 发布 | 0.5–1 人日 |
+
+kit 侧合计约 **3–5.5 人日**，含宿主升级约 **3.5–6.5 人日**，建议按 **5 人日**排期。
+
+建议分支与提交：
+
+```text
+feat/editor-ux-0.12
+  ├─ fix(canvas): fit after direction change and grow canvas to content
+  ├─ feat(structure): fold compound/parallel states
+  ├─ feat(ui): center pane toggles on the splitter
+  └─ chore(release): 0.12.0 baseline + changelog
+```
+
+发布前检查：
+
+- `npm run typecheck && npm test && npm run build && npm run check:vue && npm run check:pack`；
+- `npm run check:baseline` 前先 `npm run freeze:baseline` 更新改动文件哈希；
+- 宽图浏览器回归至少覆盖 Firefox 与 Chromium；
+- 宿主侧 `npm run test:live` / `test:browser` / `test:p4` 通过；
+- 宿主 `scripts/check-kit.mjs` 的 `EXPECTED_VERSION` 同步到新 kit 版本。
+
+---
+
 ## 回归资产
 
 - 示例：`node-red-contrib-scxmljs/examples/cascade-test.json`
@@ -778,6 +1124,8 @@ CASCADE_BASE=http://homeassistant:1880 npm run test:cascade
 - KIT-006 / KIT-007 已在 0.11.0 实现：done.states、抑制空 active、error 定位字段。
 - KIT-008 / KIT-009 / KIT-010 已在 0.11.0 实现：diagnostics 注入、locale=en / DEFAULT_LABELS_EN、诊断 code 目录。
 - KIT-011 为可选增强；宿主可先检查 `send()` 返回值自行报错。
+- KIT-012 / KIT-013 / KIT-014 为 0.12 候选，均属 kit 编辑器；KIT-014 优先修复。
+  宿主只需升级 kit 并重新打包，不需要改业务代码；不要求 scxmljs 发版。
 
 ## 0.11.0 实现记录
 

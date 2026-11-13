@@ -177,7 +177,7 @@ const runner = new SessionRunner({ engine: 'sandboxed', domParser })
 
 - [`docs/internal/roadmap.md`](docs/internal/roadmap.md)：阶段历史与迁移清单；
 - [`docs/internal/architecture-review.md`](docs/internal/architecture-review.md)：历史架构分层与风险；
-- [`docs/internal/kit-requirements.md`](docs/internal/kit-requirements.md)：KIT-001–011 需求记录；
+- [`docs/internal/kit-requirements.md`](docs/internal/kit-requirements.md)：KIT-001–014 需求记录（KIT-012–014 为 0.12 候选）；
 - [`docs/internal/releasing.md`](docs/internal/releasing.md)：npm 发布与 creator 切换；
 - [`docs/internal/work-items/`](docs/internal/work-items/)：历史工作项。
 

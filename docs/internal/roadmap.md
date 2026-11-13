@@ -17,7 +17,8 @@
 | P4.3 | 导入能力补齐：`<donedata>`、无 target / `type="internal"` 转移（KIT-003/004） | 3–4 人日 | ✅ 完成（v0.9.0） |
 | P4.4 | 编辑器完整性：转移 target/type、doneData 编辑器、可选 Explorer、画布匹配回归 | 4–6 人日 | ✅ 完成（v0.10.0） |
 | P4.5 | 宿主运行时反哺：done.states、error 定位、本地化、诊断 code 目录 | 4–6 人日 | ✅ 完成（v0.11.0） |
-| P5 | `node-red-contrib-scxmljs` 切换（**宿主仓库任务**：删除 vendor 与 17 条构建期替换） | 3–4 人日 | ✅ 已完成（宿主 0.2.0 起；当前宿主 0.7 使用 kit 0.10.0） |
+| P4.6 | 编辑器作者体验：结构树折叠、侧栏把手、横向画布导航（KIT-012–014） | 3–5.5 人日 | 待开发（0.12 候选） |
+| P5 | `node-red-contrib-scxmljs` 切换（**宿主仓库任务**：删除 vendor 与 17 条构建期替换） | 3–4 人日 | ✅ 已完成（宿主 0.2.0 起；当前宿主 0.7 使用 kit 0.11.0） |
 | P6 | 发布与治理：版本策略、CHANGELOG、发布流水线 | 1.5–2 人日 | 待开始 |
 | P7 | 宿主集成加固：done 终态、错误定位、编辑器本地化（KIT-006–010） | TBD | 待排期（0.11 候选） |
 
@@ -132,9 +133,22 @@
 
 KIT-002 / KIT-005 仍属于上游 `@tinyactors/scxmljs`，不在本候选范围内。
 
+## 0.12 候选（编辑器 UX，2026-11-13）
+
+来自 Node-RED 宿主 `0.7.0` 全页编辑器的作者体验反馈；详细现象、根因、方案与验收见
+[`kit-requirements.md`](kit-requirements.md) 的 KIT-012–014。
+
+- **P1 KIT-014**：横向布局切换后自动 fit，恢复完整画布导航（大图溢出/只能中键拖动）；
+- **P2 KIT-012**：结构树组合/并行状态折叠；
+- **P2 KIT-013**：左右侧栏折叠按钮移到分割线纵向中点。
+
+三项均在 kit 编辑器层，宿主只需升级 kit 后重新打包；不要求 scxmljs 发版。建议顺序
+KIT-014 → KIT-012 → KIT-013，kit 侧约 3–5.5 人日，含宿主升级约 3.5–6.5 人日，
+建议按 5 人日排期。
+
 ## 消费方同步
 
 | 仓库 | 现状 | 切换点 |
 | --- | --- | --- |
 | `scxml-creator` | 已切 core/engine；编辑器 UI 仍为增强版 | P4 收尾 |
-| `node-red-contrib-scxmljs` | 已切换 core/engine/editor；当前使用 kit 0.10.0，无 vendor 残留 | 已完成（宿主 0.2.0） |
+| `node-red-contrib-scxmljs` | 已切换 core/engine/editor；当前使用 kit 0.11.0，无 vendor 残留 | 已完成（宿主 0.2.0） |
