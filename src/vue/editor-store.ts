@@ -718,6 +718,29 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     touch()
   }
 
+  /**
+   * 把 serializer 的 initial fallback 物化回 ProjectDoc。
+   * - 根 initial 必须指向顶层状态；
+   * - compound initial 必须指向第一个非 history 直接子状态；
+   * - parallel 不设置 initial；
+   * - 无合法子状态时保持 null，让 compound-empty 继续提示。
+   */
+  function ensureInitial(parentUid: string | null): void {
+    if (parentUid === null) {
+      const tops = childrenOf(state.doc, null)
+      if (!state.doc.initial || !tops.some((s) => s.uid === state.doc.initial)) {
+        state.doc.initial = tops[0]?.uid ?? null
+      }
+      return
+    }
+    const parent = state.doc.states.find((s) => s.uid === parentUid)
+    if (!parent || parent.kind !== 'compound') return
+    const children = childrenOf(state.doc, parentUid).filter((s) => s.kind !== 'history')
+    if (!parent.initial || !children.some((s) => s.uid === parent.initial)) {
+      parent.initial = children[0]?.uid ?? null
+    }
+  }
+
   function addState(kind: StateKind, parentUid?: string | null): void {
     if (readOnly() || state.sim.running) return
     const sel = editor.selectedState
@@ -769,6 +792,7 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     }
     captureUndo('addState')
     state.doc.states.push(s)
+    ensureInitial(parent)
     touch()
     select('state', s.uid)
   }
@@ -831,6 +855,8 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     captureUndo(`removeState:${uid}`)
     const doomed = descendantsOf(state.doc, uid)
     doomed.add(uid)
+    const affectedParents = new Set<string | null>()
+    for (const s of state.doc.states) if (doomed.has(s.uid)) affectedParents.add(s.parent)
     state.doc.states = state.doc.states.filter((s) => !doomed.has(s.uid))
     state.doc.transitions = state.doc.transitions.filter(
       (t) => !doomed.has(t.source) && (t.target === null || !doomed.has(t.target)),
@@ -838,9 +864,8 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     for (const s of state.doc.states) {
       if (s.initial && doomed.has(s.initial)) s.initial = null
     }
-    if (state.doc.initial && doomed.has(state.doc.initial)) {
-      state.doc.initial = editor.topStates[0]?.uid ?? null
-    }
+    for (const parentUid of affectedParents) ensureInitial(parentUid)
+    ensureInitial(null)
     if (state.selection.id && doomed.has(state.selection.id)) select(null, null)
     touch()
     return true
@@ -865,6 +890,9 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
       const op = state.doc.states.find((s) => s.uid === oldParent)
       if (op && op.initial === childUid) op.initial = null
     }
+    ensureInitial(oldParent)
+    ensureInitial(parentUid)
+    if (oldParent === null || parentUid === null) ensureInitial(null)
     touch()
   }
 

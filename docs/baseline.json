@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "generatedAt": "2026-11-13T13:26:52.242Z",
+  "generatedAt": "2026-11-13T13:48:37.518Z",
   "package": "statechart-kit",
   "phase": "P4 (core/editor boundary, BASE_POLICY, EditorModule)",
   "donor": {
@@ -44,7 +44,7 @@
     "src/vue/format.ts": "dbdae06d8eca5ea29a1c15baaf688518fbd96af0516a308dd531d45a934181c5",
     "src/vue/events.ts": "923c9ea6c11d5e22713b02b691eede1ec12278de3784dbb365025374a4690c96",
     "src/vue/browser-adapter.ts": "bb7bfa00f8979dc38a4dcaaa095ae518a8789af3575c3a6c9abed9bf87115516",
-    "src/vue/editor-store.ts": "6cf8dc8bad88231f0e5b8f60c6ce40ed7c6df5200216590c39e5364a0207c29b",
+    "src/vue/editor-store.ts": "45af78f1e0d0ce907e14dc18ec59a05a8b2dabebfe82505a406ee6946dfe6376",
     "src/vue/use-editor.ts": "5c4e1a312fd464323f8a11d70e377ecf333df7f0b2199f79bc32c38340f8beb1",
     "src/vue/modules.ts": "dfb32c012649f01576b69b1f4cb892cae80a52e755f6807bc8dba898304b2d77",
     "src/vue/shims-vue.d.ts": "aa5ca4dfba3d7281e62ac0efdbb46b0d671d41ab64c8a2c6cd5e66bbe82fc3a8",
@@ -72,7 +72,7 @@
     "test/verify-events.ts": "3a62876b4ce4755258a545372f393c768abac2fe221f569b7ac91170f486a6f2",
     "test/verify-validation.ts": "c0610a2b845640a9306564588a549f68a9e7a9a2b48c6d07c16f574d89fed5e9",
     "test/verify-engine.ts": "d40e610b39c545b9e9b5e0a96ebb06214f3fab1903460b3481c7ff961db5e152",
-    "test/verify-editor.ts": "cefb3baca7548c092d9ed00c05e25cf56831fc2af5fbc06d589832522c9e8c68",
+    "test/verify-editor.ts": "9a6abf4b4cd988ef8a46bcc797a8374653295378cc724649bbb9ac66c8b5f863",
     "test/verify-host-events.ts": "2b164b481defd01e270da2ca4213dea4d1e8af62f1fe958a28dbc212ab9b8f6c",
     "test/verify-event-visibility.ts": "ead0f751ac07826dcef546eb6e83d6c94c1a6cea2b66eb2873c2d305d130ed49",
     "test/fixtures/server-policy.ts": "efa112f336eed9afe591328a26919f93ee5587c25ae504c32220d2d4fa35fd4d"

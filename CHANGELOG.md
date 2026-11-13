@@ -20,11 +20,28 @@
 - 自产 SCXML 的 internal-only 转移新增 `data-kit-visibility="internal"` 和守卫条件；
 - 自动延时事件继续按 external 处理，不参与 internal-only 守卫，避免破坏定时转移。
 
+### Fixed
+
+- KIT-016：结构编辑 `addState` / `removeState` / `setParent` 维护 `ProjectDoc`
+  的 `initial` 不变量；空文档首个顶层状态、空 compound 首个子状态、删除 initial
+  子状态、移动子状态都会同步根/父级 initial；history 不会被选作 compound initial。
+
 ### Tests
 
 - 新增 `test/verify-event-visibility.ts`：raise、守卫、外部拦截、自动延时例外、round-trip、来源通道；
 - `check-vue` 覆盖事件来源与可见性下拉；
-- `verify-editor` 覆盖 visible 设置与外部注入拒绝。
+- `verify-editor` 覆盖 visible 设置、外部注入拒绝与 KIT-016 initial 回归。
+
+## [0.12.1] - 2026-11-13
+
+### Fixed
+
+- KIT-016：结构编辑 `addState` / `removeState` / `setParent` 现在维护
+  `ProjectDoc` 的 `initial` 不变量；空文档首个顶层状态、空 compound 首个子状态、
+  删除 initial 子状态、移动子状态都会同步根/父级 initial；
+- history 伪态不会被选作 compound 的 initial；
+- 回归覆盖顶层、compound、删除、移动、history 与属性面板/序列化一致性。
+
 
 ## [0.12.0] - 2026-11-13
 

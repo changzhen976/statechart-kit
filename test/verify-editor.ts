@@ -297,6 +297,44 @@ console.log('── D3) 事件可见性设置与外部注入拦截 ──')
   await editor.destroy()
 }
 
+console.log('── H) initial 不变量（KIT-016）──')
+{
+  const { editor } = makeEditor()
+  await editor.ready
+  editor.addState('compound')
+  const root = editor.doc.states[0]!
+  assert(editor.doc.initial === root.uid, '第一个顶层状态回填根 initial')
+
+  editor.addState('atomic', root.uid)
+  const first = editor.doc.states.find((s) => s.parent === root.uid)!
+  assert(root.initial === first.uid, '空 compound 的第一个子状态回填 initial')
+
+  editor.addState('atomic', root.uid)
+  const second = editor.doc.states.filter((s) => s.parent === root.uid)[1]!
+  assert(root.initial === first.uid, '添加第二个子状态不覆盖 initial')
+
+  editor.removeState(first.uid)
+  assert(root.initial === second.uid, '删除 initial 子状态后回填剩余第一个')
+
+  editor.removeState(second.uid)
+  assert(root.initial === null, '删除最后一个子状态后 initial 为 null')
+
+  editor.addState('compound', null)
+  const other = editor.doc.states.find((s) => s.kind === 'compound' && s.uid !== root.uid)!
+  editor.addState('atomic', root.uid)
+  const movable = editor.doc.states.find((s) => s.parent === root.uid)!
+  editor.setParent(movable.uid, other.uid)
+  assert(other.initial === movable.uid, '移入空 compound 后设置新父级 initial')
+  assert(root.initial === null, '旧父级无子状态时 initial 为 null')
+
+  editor.addState('history', root.uid)
+  editor.addState('atomic', root.uid)
+  const nonHistory = editor.doc.states.find((s) => s.parent === root.uid && s.kind === 'atomic')!
+  assert(root.initial === nonHistory.uid, 'history 不作为 compound initial')
+  assert(editor.doc.initial === root.uid, '根 initial 在结构编辑后仍可用')
+  await editor.destroy()
+}
+
 console.log('── E) 确认 / 删除 / 保存 ──')
 {
   const { editor, saved } = makeEditor()
