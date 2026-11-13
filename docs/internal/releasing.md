@@ -19,7 +19,7 @@ cd statechart-kit
 git status --short          # 必须干净
 node -p "require('./package.json').version"
 npm run verify:all          # typecheck + test + build + baseline + vue + pack
-npm pack --ignore-scripts --pack-destination /tmp --silent
+npm pack --pack-destination /tmp --silent
 ```
 
 预期：
@@ -28,6 +28,9 @@ npm pack --ignore-scripts --pack-destination /tmp --silent
 - tarball 包含 `dist/index.js`、`dist/engine.js`、`dist/vue.js`、
   `dist/vue/style.css`、`dist/vue-types/**`；
 - `check:pack` 输出 `pack ok: exports resolve, d.ts present, version consistent`。
+
+> `dist/` 不提交。不要用 `npm pack --ignore-scripts` 检查旧 `dist/`；`npm pack` 会通过
+> `prepack` 重新构建。发布前以 `npm run verify:all` 为准。
 
 ## 2. NPM 认证（交互式，只在本机执行）
 
