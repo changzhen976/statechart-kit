@@ -147,21 +147,28 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
     <Toolbar v-if="editor.features.toolbar" />
 
     <div class="sce-main">
-      <aside
+      <div
         v-if="editor.features.structure"
-        class="sce-side sce-side-left"
+        class="sce-pane sce-pane-left"
         :class="{ collapsed: resizablePanes && leftCollapsed }"
-        :style="resizablePanes && !leftCollapsed ? { width: leftWidth + 'px' } : undefined"
       >
+        <aside
+          class="sce-side sce-side-left"
+          :class="{ collapsed: resizablePanes && leftCollapsed }"
+          :style="resizablePanes && !leftCollapsed ? { width: leftWidth + 'px' } : undefined"
+        >
+          <StructurePanel v-if="!resizablePanes || !leftCollapsed" />
+        </aside>
         <button
           v-if="resizablePanes"
           class="sce-pane-toggle"
           type="button"
+          :aria-expanded="!leftCollapsed"
+          :aria-label="leftCollapsed ? editor.labels.expand + editor.labels.structure : editor.labels.collapse + editor.labels.structure"
           :title="leftCollapsed ? editor.labels.expand + editor.labels.structure : editor.labels.collapse + editor.labels.structure"
           @click="togglePane('left')"
         >{{ leftCollapsed ? '›' : '‹' }}</button>
-        <StructurePanel v-if="!resizablePanes || !leftCollapsed" />
-      </aside>
+      </div>
       <div
         v-if="resizablePanes && !leftCollapsed"
         class="sce-pane-resizer"
@@ -184,19 +191,25 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
         @pointerdown="startPaneResize('right', $event)"
         @dblclick="resetPaneWidth('right')"
       ></div>
-      <aside
+      <div
         v-if="showRight"
-        class="sce-side sce-side-right"
+        class="sce-pane sce-pane-right"
         :class="{ collapsed: resizablePanes && rightCollapsed }"
-        :style="resizablePanes && !rightCollapsed ? { width: rightWidth + 'px' } : undefined"
       >
         <button
           v-if="resizablePanes"
           class="sce-pane-toggle"
           type="button"
+          :aria-expanded="!rightCollapsed"
+          :aria-label="rightCollapsed ? editor.labels.expand + editor.labels.properties : editor.labels.collapse + editor.labels.properties"
           :title="rightCollapsed ? editor.labels.expand + editor.labels.properties : editor.labels.collapse + editor.labels.properties"
           @click="togglePane('right')"
         >{{ rightCollapsed ? '‹' : '›' }}</button>
+        <aside
+          class="sce-side sce-side-right"
+          :class="{ collapsed: resizablePanes && rightCollapsed }"
+          :style="resizablePanes && !rightCollapsed ? { width: rightWidth + 'px' } : undefined"
+        >
         <template v-if="!resizablePanes || !rightCollapsed">
         <nav class="sce-tabs" role="tablist">
           <button
@@ -248,7 +261,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
           />
         </div>
         </template>
-      </aside>
+        </aside>
+      </div>
     </div>
 
     <SimBar v-if="editor.features.simBar" />

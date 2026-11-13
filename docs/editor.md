@@ -60,6 +60,7 @@ statechart-kit/vue
   styles.css          全部编辑器样式
   DoneDataEditor.vue  doneData 的 content/expr/param 编辑器
   canvas-select.ts    画布标签 → 转移匹配（纯函数）
+  canvas-fit.ts       大画布扩容与 fit 比例纯函数
 ```
 
 原则：
@@ -89,6 +90,28 @@ statechart-kit/vue
 
 `deploy` / `exit` / `explorer` / `resizablePanes` 默认关闭；其余默认开启。宿主可以只打开表单 + 画布，
 也可以全开并接部署/退出。
+
+## 结构树与画布
+
+### 结构树折叠
+
+- `compound` / `parallel` 行首有 caret；默认全部展开；
+- 折叠状态只保存在当前编辑器会话内，不写入 `ProjectDoc`；
+- 过滤时强制展开命中路径，清空过滤后恢复之前的折叠；
+- 画布选中被折叠隐藏的后代时，自动展开祖先并滚动到对应行；
+- `atomic` / `final` / `history` 不显示 caret。
+
+### 可调宽侧栏
+
+`features.resizablePanes: true` 时左右栏可拖拽调宽、双击复位、折叠。折叠按钮位于
+分割线纵向中点，不随左栏滚动，`aria-expanded` 会同步状态。
+
+### 画布方向与 fit
+
+- 画布使用固定大画布承载官方 view，内容超过当前画布时自动扩容（上限 20000px）；
+- 切换「横向 / 纵向 / 自动」时等待官方布局完成后 fit 一次；
+- 侧栏调宽/窗口 resize 不强制重置用户缩放；
+- fit 最低 0.1；普通滚轮平移、Ctrl+滚轮缩放、左键拖拽平移仍由外层承担。
 
 ## 本地化与诊断
 

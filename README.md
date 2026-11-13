@@ -184,6 +184,13 @@ await mounted.ready
 
 默认关闭。
 
+### 结构树与画布
+
+- `compound` / `parallel` 状态支持折叠，默认展开；过滤时自动展开命中路径；
+- `features.resizablePanes` 打开后，左右栏可拖拽调宽、折叠，折叠按钮位于分割线中点；
+- 切换横向/纵向布局后自动 fit；侧栏 resize 不重置用户缩放；
+- 大画布按内容动态扩容，fit 下限 0.1。
+
 ## 只读预览容器
 
 [`preview/`](preview/README.md) 提供一个小型 Docker 容器，读取挂载目录里最新的
@@ -218,13 +225,14 @@ import {
 
 ## 兼容性
 
-- 版本 `0.11.0`，Node.js >= 20，ESM only；
+- 版本 `0.12.0`，Node.js >= 20，ESM only；
 - `vue` 是 optional peer；
-- `ProjectDoc` / SCXML 输出在 0.11 线保持稳定；
+- `ProjectDoc` / SCXML 输出在 0.12 线保持稳定；
 - `TransitionEdge.target` 可为 `null`，`ListenEdge.target` / `EventOrigin.target` 同步可空；
 - `done` 事件新增 `states`；`error` 事件新增可选定位字段（见[会话事件](docs/session-events.md)）；
 - 序列化器会给转移写 `data-kit-transition-id`，导入器会保留；
-- `features.explorer` / `resizablePanes` 默认 `false`，不改变现有宿主行为。
+- `features.explorer` / `resizablePanes` 默认 `false`，不改变现有宿主行为；
+- 结构树折叠是编辑器会话内 UI；横向/纵向切换后会自动 fit 一次，侧栏 resize 不强制重置缩放。
 
 ## 文档
 

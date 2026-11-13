@@ -26,9 +26,9 @@
 | KIT-009 | `statechart-kit` 编辑器 | P2 | `EditorLabels` 默认中文且约 140 个键，英文宿主只能整份复制；缺少 `labels/en` 或 `locale` 预设 | 已实现（0.11.0） |
 | KIT-010 | `statechart-kit` 诊断 | P2 | 没有导出诊断 code 目录，宿主只能手工维护映射；kit 新增 code 时容易漏翻并显示原始 code | 已实现（0.11.0） |
 | KIT-011 | `statechart-kit` engine | P3 | `send()` 只返回 boolean，done / not-running / queue-full 都表现为 `false`，宿主无法给出准确错误 | 可选（宿主可先检查 false） |
-| KIT-012 | `statechart-kit` 编辑器 | P2 | 结构树的组合/并行状态不能折叠，复杂状态机左栏变成超长列表，难以按层次梳理 | 待开发（0.12 候选） |
-| KIT-013 | `statechart-kit` 编辑器 | P2 | 左右侧栏折叠按钮位于侧栏顶部，容易被当成普通工具按钮且左栏滚动后消失；应放到分割线纵向中点 | 待开发（0.12 候选） |
-| KIT-014 | `statechart-kit` 编辑器 | P1 | 横向布局切换后状态机左右溢出画布，左键/滚轮无法露出被裁内容，只有中键原生自动滚动可用 | 待开发（0.12 候选） |
+| KIT-012 | `statechart-kit` 编辑器 | P2 | 结构树的组合/并行状态不能折叠，复杂状态机左栏变成超长列表，难以按层次梳理 | 已实现（0.12.0） |
+| KIT-013 | `statechart-kit` 编辑器 | P2 | 左右侧栏折叠按钮位于侧栏顶部，容易被当成普通工具按钮且左栏滚动后消失；应放到分割线纵向中点 | 已实现（0.12.0） |
+| KIT-014 | `statechart-kit` 编辑器 | P1 | 横向布局切换后状态机左右溢出画布，左键/滚轮无法露出被裁内容，只有中键原生自动滚动可用 | 已实现（0.12.0） |
 
 ---
 
@@ -1124,8 +1124,7 @@ CASCADE_BASE=http://homeassistant:1880 npm run test:cascade
 - KIT-006 / KIT-007 已在 0.11.0 实现：done.states、抑制空 active、error 定位字段。
 - KIT-008 / KIT-009 / KIT-010 已在 0.11.0 实现：diagnostics 注入、locale=en / DEFAULT_LABELS_EN、诊断 code 目录。
 - KIT-011 为可选增强；宿主可先检查 `send()` 返回值自行报错。
-- KIT-012 / KIT-013 / KIT-014 为 0.12 候选，均属 kit 编辑器；KIT-014 优先修复。
-  宿主只需升级 kit 并重新打包，不需要改业务代码；不要求 scxmljs 发版。
+- KIT-012 / KIT-013 / KIT-014 已在 0.12.0 实现；宿主升级 kit 并重新打包即可，不需要改业务代码。
 
 ## 0.11.0 实现记录
 
@@ -1140,3 +1139,15 @@ CASCADE_BASE=http://homeassistant:1880 npm run test:cascade
   `IMPORT_WARNING_CODES` / `VALIDATION_ISSUE_CODES` / `VARIABLE_WRITE_CODES` /
   `DOCUMENT_STRUCTURE_ERROR_CODES`；`verify-validation` 校验目录与 `docs/messages.md` 一致；
 - KIT-011：仍未实现；继续保留 `send(): boolean`，等宿主需要时再加 `trySend`。
+
+## 0.12.0 实现记录
+
+- KIT-014：`ChartCanvas` 拆分 `viewportW/H` 与 `canvasW/H`；固定大画布 + 内容扩容；
+  `contentSize()` 改读 `.diagram.offsetWidth/Height`；方向切换 double-rAF + 140ms 兜底 fit；
+  fit 下限 0.1；只有作者显式切换方向才自动 fit，侧栏 resize 不重置视图；
+- KIT-012：`StructurePanel` 增加 `folded: Set<uid>`，只对 compound/parallel 显示 caret；
+  默认展开，过滤强制展开，选中隐藏后代自动展开祖先，文档切换/删除清理；
+- KIT-013：`EditorHost` 增加 `.sce-pane` 包装层，折叠按钮绝对定位到分割线中点；
+  `aria-expanded`/`aria-label` 同步，按钮不再随左栏滚动；
+- 测试：`check-vue` 覆盖折叠/过滤/选中展开与侧栏折叠；`verify-editor` 覆盖 canvas-fit；
+  Chromium headless 验证横向 fit、滚轮/左键平移、按钮中点。

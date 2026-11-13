@@ -43,6 +43,15 @@ import { serializeToScxml } from '../core/serializer'
 import { createEngineSession } from '../engine/engine-loader'
 import { useEditor } from './use-editor'
 import { matchTransitionId } from './canvas-select'
+import {
+  CANVAS_INITIAL_H,
+  CANVAS_INITIAL_W,
+  CANVAS_PADDING,
+  SCALE_MAX,
+  SCALE_MIN,
+  fitScale,
+  growCanvas,
+} from './canvas-fit'
 
 const editor = useEditor()
 
@@ -77,10 +86,13 @@ const explorerTransitions = computed(() =>
     : [],
 )
 
-/** 内层画布尺寸：跟随容器实时变化（自适应纵横布局），带最小限制 */
-const innerW = ref(6000)
-const innerH = ref(3200)
+/** 视口尺寸只用于 auto 断点；画布尺寸独立，保证横向内容有完整绘制空间。 */
+const viewportW = ref(CANVAS_INITIAL_W)
+const viewportH = ref(CANVAS_INITIAL_H)
+const canvasW = ref(CANVAS_INITIAL_W)
+const canvasH = ref(CANVAS_INITIAL_H)
 let ro: ResizeObserver | null = null
+let directionFitTimer: ReturnType<typeof setTimeout> | null = null
 
 // ───────────────── 布局方向管理 ─────────────────
 // 不用元素的 direction="auto"：其内部只在"宽度大幅变化"时重排，侧栏开合等场景
@@ -92,6 +104,7 @@ const NARROW_BREAK = 900 // 横向 → 纵向
 const WIDE_BREAK = 1100 // 纵向 → 横向
 const dirMode = ref<'auto' | 'down' | 'right'>('auto')
 const dirName = ref<'down' | 'right'>('right')
+let lastDirMode: 'auto' | 'down' | 'right' = 'auto'
 
 function hysteresis(w: number): 'down' | 'right' {
   if (dirName.value === 'down') return w >= WIDE_BREAK ? 'right' : 'down'
@@ -99,14 +112,29 @@ function hysteresis(w: number): 'down' | 'right' {
 }
 
 watch(
-  [dirMode, innerW] as const,
+  [dirMode, viewportW] as const,
   async ([m, w]) => {
+    const modeChanged = m !== lastDirMode
+    lastDirMode = m
     const want = m === 'auto' ? hysteresis(w) : m
     if (want === dirName.value) return
     dirName.value = want
     await nextTick() // 先让画布宽度样式生效，再赋方向重排
     const el = viewEl.value
     if (el) el.direction = want
+    // 只有作者显式切换方向才自动 fit；窗口/侧栏 resize 导致的 auto 切换
+    // 不重置用户当前缩放（需求 KIT-014 的“侧栏调宽不强制重置视图”）。
+    if (!modeChanged) return
+    // 官方 view 在 direction 赋值后异步重排；双 rAF + 延迟兜底，避免量到旧布局。
+    if (directionFitTimer) clearTimeout(directionFitTimer)
+    await nextTick()
+    requestAnimationFrame(() => {
+      fitView()
+      directionFitTimer = setTimeout(() => {
+        directionFitTimer = null
+        fitView()
+      }, 140)
+    })
   },
   { flush: 'post' },
 )
@@ -365,14 +393,21 @@ onMounted(() => {
     ro = new ResizeObserver((entries) => {
       const r = entries[0]?.contentRect
       if (!r) return
-      innerW.value = Math.max(480, Math.round(r.width))
-      innerH.value = Math.max(3200, Math.round(r.height))
+      viewportW.value = Math.max(480, Math.round(r.width))
+      viewportH.value = Math.max(320, Math.round(r.height))
+      // 画布只负责“装得下内容”；视口变化本身不 fit，保留用户当前缩放。
+      const grown = growCanvas(canvasW.value, canvasH.value, viewportW.value, viewportH.value)
+      if (grown.changed) {
+        canvasW.value = grown.width
+        canvasH.value = grown.height
+      }
     })
     ro.observe(panEl.value)
   }
 })
 onBeforeUnmount(() => {
   if (timer) clearTimeout(timer)
+  if (directionFitTimer) clearTimeout(directionFitTimer)
   ro?.disconnect()
   detachExplorer()
   disposePreviewSession()
@@ -380,8 +415,6 @@ onBeforeUnmount(() => {
 
 // ───────────────── 缩放 / 平移层（手势阈值模型） ─────────────────
 
-const SCALE_MIN = 0.3
-const SCALE_MAX = 3
 const CLICK_SLOP = 5 // 位移小于该值视为点击，大于则进入平移
 
 const scale = ref(1)
@@ -427,17 +460,18 @@ function resetView(): void {
   ty.value = 0
 }
 
-/** 读取元素内部 canvas 的内容尺寸（shadow root 为 open 模式，可访问） */
+/** 读取官方 view 的 diagram 内容尺寸（不是 .canvas 的滚动框尺寸）。 */
 function contentSize(): { w: number; h: number } | null {
   const root = (viewEl.value as any)?.shadowRoot
-  const canvas = root?.querySelector('.canvas') as HTMLElement | null
-  if (!canvas) return null
-  const w = canvas.scrollWidth
-  const h = canvas.scrollHeight
-  return w > 0 && h > 0 ? { w, h } : null
+  const diagram = root?.querySelector('.diagram') as HTMLElement | null
+  if (!diagram) return null
+  const w = diagram.offsetWidth
+  const h = diagram.offsetHeight
+  // .diagram 自身有 12px margin；offsetWidth/Height 不含 margin。
+  return w > 0 && h > 0 ? { w: w + CANVAS_PADDING, h: h + CANVAS_PADDING } : null
 }
 
-/** 适应窗口：内容尺寸等比缩放并居中（量不到尺寸时复位 1:1） */
+/** 适应窗口：内容尺寸等比缩放并居中；内容超出大画布时先扩容再重试。 */
 function fitView(): void {
   const el = panEl.value
   if (!el) return
@@ -446,8 +480,15 @@ function fitView(): void {
     resetView()
     return
   }
+  const grown = growCanvas(canvasW.value, canvasH.value, size.w, size.h)
+  if (grown.changed) {
+    canvasW.value = grown.width
+    canvasH.value = grown.height
+    requestAnimationFrame(() => fitView())
+    return
+  }
   const r = el.getBoundingClientRect()
-  const s = Math.min(2, Math.max(SCALE_MIN, Math.min((r.width - 32) / size.w, (r.height - 32) / size.h)))
+  const s = fitScale(r.width, r.height, size.w, size.h)
   scale.value = s
   tx.value = (r.width - size.w * s) / 2
   ty.value = (r.height - size.h * s) / 2
@@ -625,8 +666,8 @@ function transitionIdFromLabel(e: PointerEvent): string | null {
       <div
         class="zoom-inner"
         :style="{
-          width: innerW + 'px',
-          height: innerH + 'px',
+          width: canvasW + 'px',
+          height: canvasH + 'px',
           transform: `translate(${tx}px, ${ty}px) scale(${scale})`,
         }"
       >

@@ -22,6 +22,8 @@ const delayOn = ref(false)
 const delayVal = ref(5)
 const delayUnit = ref<'s' | 'ms'>('s')
 const addError = ref('')
+/** 仅当前编辑会话内的 UI 折叠状态；不写入 ProjectDoc。 */
+const folded = ref<Set<string>>(new Set())
 
 const events = computed(() => editor.eventOptions())
 const eventNames = computed(() => [...new Set(events.value.map((e) => e.value))].sort((a, b) => a.localeCompare(b)))
@@ -42,7 +44,10 @@ watch(
 watch(
   () => editor.selection,
   async (sel) => {
-    if (sel.kind === 'state' && sel.id) source.value = sel.id
+    if (sel.kind === 'state' && sel.id) {
+      source.value = sel.id
+      expandAncestors(sel.id)
+    }
     await nextTick()
     const attr = sel.kind === 'state' ? 'data-suid' : sel.kind === 'transition' ? 'data-tid' : null
     if (!attr || !sel.id) return
@@ -65,6 +70,49 @@ function stateMatches(s: StateNode): boolean {
 function subtreeHasMatch(uid: string): boolean {
   return childrenOf(editor.doc, uid).some((s) => stateMatches(s) || subtreeHasMatch(s.uid))
 }
+function isContainer(s: StateNode): boolean {
+  return s.kind === 'compound' || s.kind === 'parallel'
+}
+function toggleFold(uid: string): void {
+  const next = new Set(folded.value)
+  if (next.has(uid)) next.delete(uid)
+  else next.add(uid)
+  folded.value = next
+}
+function foldTitle(s: StateNode): string {
+  const action = folded.value.has(s.uid) ? editor.labels.expand : editor.labels.collapse
+  return action + (s.label || s.id)
+}
+function expandAncestors(uid: string): void {
+  const byUid = new Map(editor.doc.states.map((s) => [s.uid, s]))
+  let current = byUid.get(uid)
+  const seen = new Set<string>()
+  while (current?.parent && !seen.has(current.parent)) {
+    seen.add(current.parent)
+    if (folded.value.has(current.parent)) {
+      const next = new Set(folded.value)
+      next.delete(current.parent)
+      folded.value = next
+    }
+    current = byUid.get(current.parent)
+  }
+}
+
+watch(
+  () => editor.doc,
+  () => {
+    folded.value = new Set()
+  },
+)
+watch(
+  () => editor.doc.states.map((s) => s.uid).join(','),
+  () => {
+    if (!folded.value.size) return
+    const alive = new Set(editor.doc.states.map((s) => s.uid))
+    const next = new Set([...folded.value].filter((uid) => alive.has(uid)))
+    if (next.size !== folded.value.size) folded.value = next
+  },
+)
 
 interface Row {
   state: StateNode
@@ -75,10 +123,11 @@ const rows = computed<Row[]>(() => {
   const active = q.value !== ''
   const walk = (parent: string | null, depth: number): void => {
     for (const s of editor.doc.states.filter((x) => x.parent === parent)) {
-      const container = s.kind === 'compound' || s.kind === 'parallel'
+      const container = isContainer(s)
       if (active && !stateMatches(s) && !(container && subtreeHasMatch(s.uid))) continue
       out.push({ state: s, depth })
-      if (container) walk(s.uid, depth + 1)
+      // 过滤时强制展开命中路径；清空过滤后恢复作者之前的折叠状态。
+      if (container && (active || !folded.value.has(s.uid))) walk(s.uid, depth + 1)
     }
   }
   walk(null, 0)
@@ -173,6 +222,16 @@ function add(): void {
         :style="{ paddingLeft: 8 + row.depth * 14 + 'px' }"
         @click="selectState(row.state.uid)"
       >
+        <button
+          v-if="isContainer(row.state)"
+          class="sce-fold-btn"
+          type="button"
+          :aria-expanded="!folded.has(row.state.uid)"
+          :aria-label="foldTitle(row.state)"
+          :title="foldTitle(row.state)"
+          @click.stop="toggleFold(row.state.uid)"
+        >{{ folded.has(row.state.uid) ? '▸' : '▾' }}</button>
+        <span v-else class="sce-fold-spacer"></span>
         <span class="sce-kind">{{ kindLabel(row.state.kind) }}</span>
         <span class="sce-tree-label">{{ row.state.label || row.state.id }}</span>
         <span class="sce-tree-id">{{ row.state.id }}</span>
