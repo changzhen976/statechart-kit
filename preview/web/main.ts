@@ -60,6 +60,7 @@ const mounted = mountEditor('#app', {
     simBar: true,
     validation: true,
     explorer: true,
+    resizablePanes: true,
     importExport: false,
     examples: false,
     undoRedo: false,

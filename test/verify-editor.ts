@@ -14,6 +14,7 @@ import { emptyDoc, type ProjectDoc } from '../src/core/model'
 import { serializeToScxml } from '../src/core/serializer'
 import { createEditor, type CreateEditorOptions } from '../src/vue/editor-store'
 import { matchTransitionId } from '../src/vue/canvas-select'
+import { CANVAS_MAX, fitScale, growCanvas } from '../src/vue/canvas-fit'
 import { resolveFeatures } from '../src/vue/features'
 import type { EditorAdapter } from '../src/vue/types'
 import type { Component } from 'vue'
@@ -160,6 +161,13 @@ console.log('── B3) 画布转移标签匹配 ──')
   assert(resolveFeatures({ explorer: true }).explorer === true, 'Explorer 可由 feature flag 打开')
   assert(resolveFeatures({}).resizablePanes === false, '可调宽侧栏默认关闭')
   assert(resolveFeatures({ resizablePanes: true }).resizablePanes === true, '可调宽侧栏可由 feature flag 打开')
+
+  const fit = fitScale(900, 600, 1200, 500)
+  assert(Math.abs(fit - (900 - 32) / 1200) < 1e-9, '画布 fit 按内容宽高取最小比例')
+  const grown = growCanvas(6000, 4000, 7000, 5000)
+  assert(grown.changed && grown.width === 7024 && grown.height === 5024, '内容超画布时按内容扩容')
+  const capped = growCanvas(6000, 4000, 30000, 30000)
+  assert(capped.width === CANVAS_MAX && capped.height === CANVAS_MAX, '画布扩容有上限')
 
   const en = createEditor({
     locale: 'en',

@@ -93,14 +93,14 @@ if (!tabTexts.includes('事件')) throw new Error(`事件标签页未渲染：${
 if (!host.textContent.includes('ProbeGlobal') || !host.textContent.includes('ProbeBroadcast')) {
   throw new Error('变量/事件字段未渲染')
 }
-const leftToggle = host.querySelector('.sce-side-left .sce-pane-toggle')
+const leftToggle = host.querySelector('.sce-pane-left .sce-pane-toggle')
 if (!leftToggle) throw new Error('可调宽侧栏的折叠按钮未渲染')
 leftToggle.click()
 await new Promise((r) => setTimeout(r, 20))
-if (!host.querySelector('.sce-side-left.collapsed')) throw new Error('左侧栏折叠未生效')
+if (!host.querySelector('.sce-pane-left.collapsed') || !host.querySelector('.sce-side-left.collapsed')) throw new Error('左侧栏折叠未生效')
 leftToggle.click()
 await new Promise((r) => setTimeout(r, 20))
-if (host.querySelector('.sce-side-left.collapsed')) throw new Error('左侧栏展开未生效')
+if (host.querySelector('.sce-pane-left.collapsed') || host.querySelector('.sce-side-left.collapsed')) throw new Error('左侧栏展开未生效')
 mounted.unmount()
 
 // Explorer：编辑态预览 session + 状态/转移选中桥接。官方 explorer 依赖
@@ -160,4 +160,61 @@ if (explorerMounted.editor.selection.kind !== 'transition' || explorerMounted.ed
   throw new Error(`Explorer 转移选中未同步：${JSON.stringify(explorerMounted.editor.selection)}`)
 }
 explorerMounted.unmount()
+
+// 结构树折叠：默认展开、caret 折叠、过滤强制展开、选中隐藏后代自动展开。
+const foldHost = document.createElement('div')
+document.body.append(foldHost)
+const foldDoc = {
+  formatVersion: 1,
+  name: 'fold-probe',
+  initial: 'c',
+  datamodel: [],
+  layout: {},
+  states: [
+    { uid: 'c', id: 'container', label: 'Container', kind: 'compound', parent: null, initial: 'c1', entryActions: [], exitActions: [] },
+    { uid: 'c1', id: 'child1', label: 'Child One', kind: 'atomic', parent: 'c', initial: null, entryActions: [], exitActions: [] },
+    { uid: 'c2', id: 'child2', label: 'Child Two', kind: 'atomic', parent: 'c', initial: null, entryActions: [], exitActions: [] },
+    { uid: 'p', id: 'parallel', label: 'Parallel', kind: 'parallel', parent: null, initial: null, entryActions: [], exitActions: [] },
+    { uid: 'p1', id: 'p1', label: 'P1', kind: 'atomic', parent: 'p', initial: null, entryActions: [], exitActions: [] },
+  ],
+  transitions: [],
+}
+const foldMounted = mountEditor(foldHost, {
+  initialDoc: foldDoc,
+  features: { canvas: false, simulation: false, simBar: false, validation: false, examples: false, resizablePanes: true },
+  autoLoad: false,
+  adapter: { load: () => null, save: () => {} },
+})
+await foldMounted.ready
+const parentRow = foldHost.querySelector('.sce-tree-row[data-suid="c"]')
+if (!parentRow) throw new Error('组合状态行未渲染')
+const caret = parentRow.querySelector('.sce-fold-btn')
+if (!caret) throw new Error('组合状态折叠按钮未渲染')
+if (foldHost.querySelectorAll('.sce-fold-btn').length < 2) throw new Error('并行状态折叠按钮未渲染')
+if (!foldHost.querySelector('.sce-tree-row[data-suid="c1"]')) throw new Error('折叠前子状态未显示')
+const docBefore = JSON.stringify(foldMounted.editor.doc)
+caret.click()
+await new Promise((r) => setTimeout(r, 20))
+if (foldHost.querySelector('.sce-tree-row[data-suid="c1"]')) throw new Error('折叠后子状态仍显示')
+if (caret.getAttribute('aria-expanded') !== 'false') throw new Error('折叠后 aria-expanded 不正确')
+caret.click()
+await new Promise((r) => setTimeout(r, 20))
+if (!foldHost.querySelector('.sce-tree-row[data-suid="c1"]')) throw new Error('展开后子状态未恢复')
+caret.click()
+await new Promise((r) => setTimeout(r, 20))
+const filterInput = foldHost.querySelector('.sce-filter')
+filterInput.value = 'Child Two'
+filterInput.dispatchEvent(new window.Event('input', { bubbles: true }))
+await new Promise((r) => setTimeout(r, 30))
+if (!foldHost.querySelector('.sce-tree-row[data-suid="c2"]')) throw new Error('过滤命中隐藏子状态时未强制展开')
+filterInput.value = ''
+filterInput.dispatchEvent(new window.Event('input', { bubbles: true }))
+await new Promise((r) => setTimeout(r, 30))
+if (foldHost.querySelector('.sce-tree-row[data-suid="c2"]')) throw new Error('清空过滤后未恢复折叠')
+foldMounted.editor.select('state', 'c2')
+await new Promise((r) => setTimeout(r, 40))
+if (!foldHost.querySelector('.sce-tree-row[data-suid="c2"]')) throw new Error('选中隐藏后代时未自动展开祖先')
+if (JSON.stringify(foldMounted.editor.doc) !== docBefore) throw new Error('折叠操作改变了 ProjectDoc')
+foldMounted.unmount()
+
 console.log('vue ok: EditorHost mounts; Explorer edit preview and selection bridge work')

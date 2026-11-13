@@ -88,25 +88,30 @@
 }
 /* KIT-001：父级 .sce-side 是 overflow:hidden，左栏必须建立自己的纵向滚动上下文，
    否则结构树与转移列表会被直接裁掉（右栏由 .sce-tab-body 负责滚动）。 */
+.sce-pane { position: relative; display: flex; flex: none; min-width: 0; }
 .sce-side-left { width: 300px; border-right: 1px solid var(--scxml-border); overflow-y: auto; }
 .sce-side-right { width: 340px; border-left: 1px solid var(--scxml-border); }
 .sce-side.collapsed { width: 28px; overflow: hidden; }
 .sce-pane-toggle {
-  flex: none;
-  align-self: flex-start;
-  width: 22px;
-  height: 22px;
-  margin: 4px 3px;
+  position: absolute;
+  top: 50%;
+  z-index: 12;
+  width: 18px;
+  height: 38px;
   padding: 0;
+  transform: translateY(-50%);
   border: 1px solid var(--scxml-border-2);
-  border-radius: 5px;
+  border-radius: 6px;
   background: var(--scxml-surface-2);
   color: var(--scxml-fg-muted);
-  font: 12px var(--scxml-font-sans);
-  line-height: 1;
+  font: 13px/1 var(--scxml-font-sans);
   cursor: pointer;
+  box-shadow: var(--scxml-shadow, 0 2px 8px rgba(0, 0, 0, 0.16));
 }
-.sce-side.collapsed .sce-pane-toggle { align-self: center; margin: 4px 2px; }
+.sce-pane-left .sce-pane-toggle { right: -9px; }
+.sce-pane-right .sce-pane-toggle { left: -9px; }
+.sce-pane-toggle:hover { color: var(--scxml-accent); }
+.sce-pane-toggle:focus-visible { outline: 2px solid var(--scxml-accent); outline-offset: 1px; }
 .sce-pane-resizer {
   flex: 0 0 4px;
   cursor: col-resize;
@@ -258,6 +263,18 @@
   padding: 0 5px;
   flex: none;
 }
+.sce-fold-btn {
+  width: 14px;
+  flex: none;
+  padding: 0;
+  border: none !important;
+  background: transparent !important;
+  color: var(--scxml-fg-muted);
+  font: 11px/1 var(--scxml-font-mono);
+  cursor: pointer;
+}
+.sce-fold-btn:hover { color: var(--scxml-accent) !important; background: transparent !important; }
+.sce-fold-spacer { width: 14px; flex: none; }
 .sce-tree-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sce-tree-id { font: 10.5px var(--scxml-font-mono); color: var(--scxml-fg-faint); margin-left: auto; overflow: hidden; text-overflow: ellipsis; }
 .sce-icon-btn {

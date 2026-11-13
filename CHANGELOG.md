@@ -2,6 +2,28 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.12.0] - 2026-11-13
+
+### Added
+
+- 结构树支持 `compound` / `parallel` 状态折叠：默认展开，过滤时强制展开命中路径，
+  选中隐藏后代自动展开祖先；折叠状态只在当前编辑会话内保存；
+- `features.resizablePanes` 的左右折叠按钮移到分割线纵向中点，按钮不随左栏滚动，
+  收起态仍可操作，并补充 `aria-expanded` / `aria-label`；
+- 横向布局方向切换后自动 fit，画布按内容动态扩容，fit 下限降到 0.1；侧栏 resize
+  不强制重置用户缩放。
+
+### Fixed
+
+- 横向布局下状态机左右溢出、滚轮/左键无法露出被裁内容的问题：画布尺寸与视口尺寸
+  分离，不再用 `.canvas.scrollWidth` 当内容尺寸。
+
+### Tests
+
+- `check-vue` 增加结构树折叠、过滤展开、选中隐藏后代自动展开用例；
+- `verify-editor` 增加 canvas-fit 纯函数断言；
+- 横向布局、fit、滚轮/拖拽和分割线把手通过 Chromium 真实浏览器检查。
+
 ## [0.11.0] - 2026-11-12
 
 ### Added
