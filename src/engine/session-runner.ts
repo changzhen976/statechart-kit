@@ -37,6 +37,15 @@ import {
   type EngineMode,
 } from './engine-loader'
 
+/** `trySend()` 的结果：失败时给出稳定 code，不靠 boolean 猜测。 */
+export type SendResult =
+  | { ok: true }
+  | {
+      ok: false
+      code: 'session-not-running' | 'session-done' | 'send-failed'
+      params: { event: string; detail?: string }
+    }
+
 /** 运行日志条目（仿真面板展示用；类型定义在 core/log，见 P19） */
 export type { SimLogEntry }
 
@@ -479,7 +488,28 @@ export class SessionRunner {
     logKind: SimLogEntry['kind'] = 'inject',
     source?: string,
   ): boolean {
-    if (!this.session) return false
+    return this.trySend(name, data, logText, logKind, source).ok
+  }
+
+  /**
+   * `send()` 的结构化版本：
+   * - `session-not-running`：未启动 / 已 stop；
+   * - `session-done`：已到顶层终态；
+   * - `send-failed`：引擎拒绝或抛出。
+   */
+  trySend(
+    name: string,
+    data?: unknown,
+    logText?: string | null,
+    logKind: SimLogEntry['kind'] = 'inject',
+    source?: string,
+  ): SendResult {
+    if (!this.session) {
+      return { ok: false, code: 'session-not-running', params: { event: name } }
+    }
+    if (this.session.status === 'done') {
+      return { ok: false, code: 'session-done', params: { event: name } }
+    }
     try {
       this.session.send(name, data)
       if (logText !== null) {
@@ -489,10 +519,11 @@ export class SessionRunner {
         if (source) text += `（${source}）`
         this.log(logKind, text, { data })
       }
-      return true
+      return { ok: true }
     } catch (e) {
-      this.log('error', `发送 ${name} 失败：${errorMessage(e)}`)
-      return false
+      const detail = errorMessage(e)
+      this.log('error', `发送 ${name} 失败：${detail}`)
+      return { ok: false, code: 'send-failed', params: { event: name, detail } }
     }
   }
 

@@ -123,7 +123,11 @@ export function docEventFacts(doc: ProjectDoc): DocEventFacts {
     for (const line of actions) {
       const a = parseActionLine(line)
       if ((a.type === 'send' || a.type === 'raise') && a.event) {
-        addSend(a.event, originOf(a.event, a.type === 'raise' ? 'internal' : 'external'))
+        const channel =
+          a.type === 'raise' || (a.type === 'send' && a.target === '#_internal')
+            ? 'internal'
+            : 'external'
+        addSend(a.event, originOf(a.event, channel))
       }
     }
   }

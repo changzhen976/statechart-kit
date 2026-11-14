@@ -21,7 +21,7 @@
 export type StateKind = 'atomic' | 'compound' | 'final' | 'parallel' | 'history'
 
 /** 事件可见性：both = 内部/外部均可触发；internal = 只允许 SCXML internal 事件 */
-export type EventVisibility = 'both' | 'internal'
+export type EventVisibility = 'both' | 'internal' | 'external'
 
 /** 转移语义：internal = 不退出源状态；external 为 SCXML 默认。无 target 时 type 不影响语义。 */
 export type TransitionType = 'internal' | 'external'
@@ -250,7 +250,7 @@ export function normalizeDoc(doc: ProjectDoc): ProjectDoc {
     const next: Record<string, EventVisibility> = {}
     for (const [rawName, rawValue] of Object.entries(doc.eventVisibility)) {
       const name = rawName.trim()
-      if (name && (rawValue === 'internal' || rawValue === 'both')) next[name] = rawValue
+      if (name && (rawValue === 'internal' || rawValue === 'external' || rawValue === 'both')) next[name] = rawValue
     }
     if (Object.keys(next).length) doc.eventVisibility = next
     else delete doc.eventVisibility

@@ -82,6 +82,23 @@ console.log('── 2) 延时 send 的 sendid ──')
   await runner.stop()
 }
 
+console.log('── 2.5) trySend 结构化结果 ──')
+{
+  const runner = new SessionRunner({ domParser })
+  const notStarted = runner.trySend('go')
+  assert(!notStarted.ok && notStarted.code === 'session-not-running', 'trySend 未启动返回 session-not-running')
+
+  await runner.start(
+    xmlOpen(`<state id="a"><transition event="finish" target="done"/></state><final id="done"/>`),
+  )
+  const accepted = runner.trySend('finish')
+  assert(accepted.ok, 'trySend 运行中接受事件')
+  await runner.settled()
+  const done = runner.trySend('finish')
+  assert(!done.ok && done.code === 'session-done', 'trySend 顶层终态返回 session-done')
+  await runner.stop()
+}
+
 console.log('── 3) 序列化延时转移：自动事件名作为 sendid ──')
 {
   const doc = emptyDoc('host-events-delay')

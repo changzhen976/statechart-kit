@@ -73,6 +73,7 @@ const mounted = mountEditor('#app', {
     externalEvents: () => [
       { value: 'start', tag: '宿主' },
       { value: 'external.poke', tag: '宿主' },
+      { value: 'external.only', tag: '宿主' },
     ],
     runner: { engine: 'trusted' },
   },

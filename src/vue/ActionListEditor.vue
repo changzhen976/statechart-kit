@@ -171,6 +171,7 @@ function add(kind: (typeof ACTION_KINDS)[number]): void {
 /** kit 的 ACTION_KINDS.label 是消息 code；宿主负责本地化 */
 const ACTION_LABELS: Record<string, string> = {
   'action.send': '发送事件',
+  'action.send-internal': '内部发送',
   'action.raise': '内部事件 raise',
   'action.send-delayed': '延时发送',
   'action.cancel': '撤销事件',
@@ -199,6 +200,23 @@ const badgeClass: Record<ActionStruct['type'], string> = {
 
 function onInput(i: number, p: Partial<ActionStruct>): void {
   patch(i, p)
+}
+
+function patchSend(i: number, row: ActionStruct, p: Partial<ActionStruct>): void {
+  if (row.type !== 'send') return
+  update(i, { ...row, ...p } as ActionStruct)
+}
+
+function setInternalSend(i: number, row: ActionStruct, checked: boolean): void {
+  if (row.type !== 'send') return
+  const next: ActionStruct = { ...row }
+  if (checked) next.target = '#_internal'
+  else delete next.target
+  update(i, next)
+}
+
+function badgeOf(row: ActionStruct): string {
+  return row.type === 'send' && row.target === '#_internal' ? '内部发送' : typeBadge[row.type]
 }
 
 /** 发送动作的数据：`=表达式`（动态）或 JSON（静态） */
@@ -258,7 +276,7 @@ function setSendData(i: number, raw: string): void {
         @dragstart="onDragStart(i, $event)"
         @dragend="endDrag"
       >⠿</span>
-      <span class="ale-badge" :class="badgeClass[row.type]">{{ typeBadge[row.type] }}</span>
+      <span class="ale-badge" :class="badgeClass[row.type]">{{ badgeOf(row) }}</span>
 
       <!-- 延时发送 -->
       <template v-if="row.type === 'send'">
@@ -269,18 +287,27 @@ function setSendData(i: number, raw: string): void {
           :disabled="disabled"
           placeholder="事件名"
           title="事件名（下拉含本机转移/发送 + 全局时钟/路由）"
-          @change="onInput(i, { type: 'send', event: $event })"
+          @change="patchSend(i, row, { event: $event })"
         />
+        <label class="f-target" title="target=#_internal：发送到会话内部队列（不等同于 raise）">
+          <input
+            type="checkbox"
+            :checked="row.target === '#_internal'"
+            :disabled="disabled"
+            @change="setInternalSend(i, row, ($event.target as HTMLInputElement).checked)"
+          />
+          内部
+        </label>
         <input
           class="f-small"
           :value="row.delay ?? ''"
-          :disabled="disabled"
+          :disabled="disabled || row.target === '#_internal'"
           placeholder="延时"
-          title="延时（如 3s / 500ms）"
+          :title="row.target === '#_internal' ? '内部 target 不能使用延时' : '延时（如 3s / 500ms）'"
           @change="
             onInput(
               i,
-              { type: 'send', event: row.event, delay: ($event.target as HTMLInputElement).value || undefined },
+              { target: row.target, event: row.event, delay: ($event.target as HTMLInputElement).value || undefined },
             )
           "
         />
@@ -293,7 +320,7 @@ function setSendData(i: number, raw: string): void {
           @change="
             onInput(
               i,
-              { type: 'send', event: row.event, delay: row.delay, id: ($event.target as HTMLInputElement).value || undefined },
+              { target: row.target, event: row.event, delay: row.delay, id: ($event.target as HTMLInputElement).value || undefined },
             )
           "
         />

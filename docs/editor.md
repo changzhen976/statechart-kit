@@ -161,10 +161,10 @@ internal.ping    left · 进入动作              1 条转移
 
 | 列 | 内容 |
 | --- | --- |
-| 来源 | `内部 raise` / `本机 send` / `自动延时` / `外部来源` / `仅监听` |
-| 可见性 | `双向`（默认）/ `仅内部` |
+| 来源 | `内部 raise/send` / `本机 send` / `自动延时` / `外部来源` / `仅监听` |
+| 可见性 | `双向`（默认）/ `仅内部` / `仅外部` |
 
-设置为「仅内部」后，序列化器会给该事件的所有转移加标准 SCXML 守卫：
+设置为「仅内部」或「仅外部」后，序列化器会给该事件的所有转移加对应标准 SCXML 守卫：
 
 ```xml
 <transition
@@ -175,11 +175,11 @@ internal.ping    left · 进入动作              1 条转移
 />
 ```
 
-- 内部事件用 `raise <event>` 动作产生，动作编辑器提供「内部事件 raise」；
-- 外部注入同名事件会被守卫拦截；
+- 内部事件用 `raise <event>` 或 `send <event> target #_internal` 产生，动作编辑器提供「内部事件 raise」和「内部发送」；
+- internal-only 会拦截外部注入的同名事件；external-only 会拦截内部 `raise`；
 - 编辑器仿真面板也会拒绝 external 注入 internal-only 事件；
 - 自动延时事件不参与该守卫：引擎里 `<send delay>` 的 `_event.type` 是 `external`；
-- 一条转移包含多个事件时，只有全部事件都是「仅内部」才加守卫，否则产生
+- 一条转移包含多个事件时，只有全部事件都是同一非双向可见性才加守卫，否则产生
   `structure.transition.mixed-event-visibility` warning；
 - `ProjectDoc.eventVisibility` 是可选字段，缺省全部为双向。
 

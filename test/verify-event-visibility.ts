@@ -140,5 +140,79 @@ console.log('── D) event facts channel 与混合可见性 warning ──')
   )
 }
 
+
+console.log('── E) external-only：外部可触发，内部 raise 被拦截 ──')
+{
+  const doc = emptyDoc('external-only')
+  doc.states = [node('a', 'a'), node('b', 'b')]
+  doc.initial = 'a'
+  doc.transitions = [edge('a', 'b', 'go')]
+  doc.eventVisibility = { go: 'external' }
+  const xml = serializeToScxml(doc)
+  assert(xml.includes('data-kit-visibility="external"'), '序列化写入 external 元数据')
+  assert(xml.includes("_event.type === 'external'"), '序列化写入 external 守卫')
+
+  const runner = new SessionRunner({ engine: 'trusted', domParser })
+  const events: string[] = []
+  runner.on((e) => { if (e.type === 'active') events.push(e.ids.join(',')) })
+  await runner.start(xml)
+  await runner.settled()
+  runner.send('go')
+  await runner.settled()
+  assert(events.at(-1) === 'b', '外部事件触发 external-only 转移')
+  await runner.stop()
+
+  const externalDoc = scxmlToDoc(xml, domParser as unknown as DOMParser)
+  assert(externalDoc.doc.eventVisibility?.go === 'external', '导入恢复 external 可见性')
+  assert(externalDoc.doc.transitions[0]?.cond === '', '导入剥离 external 守卫')
+}
+{
+  const doc = emptyDoc('external-blocks-raise')
+  doc.states = [node('a', 'a', ['raise go']), node('b', 'b')]
+  doc.initial = 'a'
+  doc.transitions = [edge('a', 'b', 'go')]
+  doc.eventVisibility = { go: 'external' }
+  const runner = new SessionRunner({ engine: 'trusted', domParser })
+  const events: string[] = []
+  runner.on((e) => { if (e.type === 'active') events.push(e.ids.join(',')) })
+  await runner.start(serializeToScxml(doc))
+  await runner.settled()
+  assert(events.at(-1) === 'a', '内部 raise 不能触发 external-only 转移')
+  await runner.stop()
+}
+{
+  const doc = emptyDoc('external-delay')
+  doc.states = [node('a', 'a'), node('b', 'b')]
+  doc.initial = 'a'
+  doc.transitions = [edge('a', 'b', 'auto.go', { delayMs: 20, delayUnit: 'ms' })]
+  doc.eventVisibility = { 'auto.go': 'external' }
+  const xml = serializeToScxml(doc)
+  assert(!xml.includes('data-kit-visibility="external"'), '自动延时仍不写 external 守卫')
+}
+
+
+console.log('── F) send target="#_internal" ──')
+{
+  const line = 'send internal.go target #_internal'
+  const parsed = parseActionLine(line)
+  assert(
+    parsed.type === 'send' && parsed.target === '#_internal',
+    'send target #_internal 可解析',
+  )
+  assert(actionToLine(parsed) === line, 'send target #_internal 可往返')
+  assert(
+    actionLineToScxml(line) === '<send event="internal.go" target="#_internal"/>',
+    'send target #_internal 可序列化',
+  )
+  const xml = `<?xml version="1.0"?><scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="a"><state id="a"><onentry><send event="internal.go" target="#_internal"/></onentry><transition event="go" target="b"/></state><state id="b"/></scxml>`
+  const imported = scxmlToDoc(xml, domParser as unknown as DOMParser)
+  assert(
+    imported.doc.states[0]?.entryActions[0] === line,
+    '导入保留 #_internal target',
+  )
+  const facts = docEventFacts(imported.doc)
+  assert(facts.sendOrigins.get('internal.go')?.[0]?.channel === 'internal', '#_internal send 来源标记为 internal')
+}
+
 console.log(`\n结果：${pass} 通过 / ${fail} 失败`)
 process.exit(fail ? 1 : 0)

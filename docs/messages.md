@@ -75,7 +75,7 @@ import {
 | `structure.transition.internal-eventless` | warning | 无 target 且无事件，可能形成自激循环 |
 | `structure.transition.delay-invalid` | error | `delayMs` 非有限值或 < 10 |
 | `structure.transition.delay-without-event` | error | 有 `delayMs` 但没有事件名 |
-| `structure.transition.mixed-event-visibility` | warning | 同一转移混合仅内部/双向事件，不会生成 internal-only 守卫 |
+| `structure.transition.mixed-event-visibility` | warning | 同一转移混合仅内部/仅外部/双向事件，不会生成可见性守卫 |
 
 ## SCXML 导入（`ImportWarning` / `ScxmlImportError`）
 

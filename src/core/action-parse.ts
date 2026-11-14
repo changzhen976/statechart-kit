@@ -3,7 +3,7 @@
  *
  * 识别规则与 serializer.actionLineToScxml **同源**，保证
  * `actionToLine(parseActionLine(line)) === line` 的往返一致性：
- *   send <event> [delay <T>] [id <X>] [data <JSON> | data-expr <JS表达式>]
+ *   send <event> [target #_internal] [delay <T>] [id <X>] [data <JSON> | data-expr <JS表达式>]
  *                                        → { type:'send' }
  *     data      → <send><content>JSON</content></send>（静态数据）
  *     data-expr → <send><content expr="表达式"/></send>（可发送变量当前值）
@@ -17,7 +17,16 @@
  */
 
 export type ActionStruct =
-  | { type: 'send'; event: string; delay?: string; id?: string; data?: unknown; dataExpr?: string }
+  | {
+      type: 'send'
+      event: string
+      /** SCXML send target；仅 #_internal 是一等公民 */
+      target?: string
+      delay?: string
+      id?: string
+      data?: unknown
+      dataExpr?: string
+    }
   | { type: 'raise'; event: string }
   | { type: 'cancel'; sendid: string }
   | { type: 'assign'; target: string; expr: string }
@@ -25,7 +34,7 @@ export type ActionStruct =
   | { type: 'script'; code: string }
 
 const RE_SEND =
-  /^send\s+(\S+)(?:\s+delay\s+(\S+))?(?:\s+id\s+(\S+))?(?:\s+(data-expr|data)\s+([\s\S]+))?\s*$/
+  /^send\s+(\S+)(?:\s+target\s+(\S+))?(?:\s+delay\s+(\S+))?(?:\s+id\s+(\S+))?(?:\s+(data-expr|data)\s+([\s\S]+))?\s*$/
 const RE_RAISE = /^raise\s+(\S+)\s*$/
 const RE_CANCEL = /^cancel\s+(\S+)\s*$/
 // 变量名支持 Unicode 字母（引擎的 ECMAScript datamodel 允许中文变量，如 温度）
@@ -38,16 +47,17 @@ export function parseActionLine(line: string): ActionStruct {
   let m: RegExpMatchArray | null
   if ((m = t.match(RE_SEND))) {
     const a: ActionStruct = { type: 'send', event: m[1] }
-    if (m[2]) a.delay = m[2]
-    if (m[3]) a.id = m[3]
-    if (m[4] === 'data-expr') {
-      a.dataExpr = m[5].trim()
-    } else if (m[5] !== undefined) {
+    if (m[2]) a.target = m[2]
+    if (m[3]) a.delay = m[3]
+    if (m[4]) a.id = m[4]
+    if (m[5] === 'data-expr') {
+      a.dataExpr = m[6].trim()
+    } else if (m[6] !== undefined) {
       // data <JSON>：解析失败时保留原始字符串（引擎侧按字符串数据处理）
       try {
-        a.data = JSON.parse(m[5])
+        a.data = JSON.parse(m[6])
       } catch {
-        a.data = m[5]
+        a.data = m[6]
       }
     }
     return a
@@ -64,6 +74,7 @@ export function actionToLine(a: ActionStruct): string {
   switch (a.type) {
     case 'send': {
       let s = `send ${a.event}`
+      if (a.target) s += ` target ${a.target}`
       if (a.delay) s += ` delay ${a.delay}`
       if (a.id) s += ` id ${a.id}`
       if (a.dataExpr !== undefined) s += ` data-expr ${a.dataExpr}`
@@ -92,6 +103,11 @@ export const ACTION_KINDS: {
   template?: ActionStruct
 }[] = [
   { type: 'send', label: 'action.send', template: { type: 'send', event: 'event' } },
+  {
+    type: 'send',
+    label: 'action.send-internal',
+    template: { type: 'send', event: 'event', target: '#_internal' },
+  },
   { type: 'raise', label: 'action.raise', template: { type: 'raise', event: 'event' } },
   {
     type: 'send',

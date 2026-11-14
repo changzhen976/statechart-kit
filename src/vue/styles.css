@@ -474,3 +474,12 @@ scxml-view::part(canvas)::-webkit-scrollbar { width: 0; height: 0; display: none
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-thumb { background: var(--scxml-border-2); border-radius: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
+
+.ale .f-target {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--x-fg3);
+  white-space: nowrap;
+}
