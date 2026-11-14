@@ -2,7 +2,7 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
-## [0.15.0] - Unreleased
+## [0.15.0] - 2026-11-14
 
 > `0.14.0` 从未发布：其可用内容（`trySend`、`#_internal`、内部发出区块）并入本版本；
 > `external-only` 从未对外提供，0.15.0 不包含。仅内部事件的目标设计与迁移见
