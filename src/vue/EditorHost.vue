@@ -18,6 +18,7 @@ import EventAttrsPanel from './EventAttrsPanel.vue'
 import SimPanel from './SimPanel.vue'
 import SimBar from './SimBar.vue'
 import ConfirmDialog from './ConfirmDialog.vue'
+import InternalEventDialog from './InternalEventDialog.vue'
 import ValidationDialog from './ValidationDialog.vue'
 
 const props = defineProps<{ editor: EditorStore }>()
@@ -268,6 +269,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
     <SimBar v-if="editor.features.simBar" />
 
     <ConfirmDialog />
+    <InternalEventDialog v-if="showEvents" />
     <ValidationDialog v-if="editor.features.validation" />
   </div>
 </template>

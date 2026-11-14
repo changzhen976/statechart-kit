@@ -367,7 +367,8 @@ function transitionFromEl(
         // 根级集合优先；没有根级时才从转移元数据重建。
         if (ctx.rootInternalEvents === null) setInternalOnlyEvent(ctx.doc, name, true)
       } else {
-        setEventVisibility(ctx.doc, name, 'external')
+        // 0.15：external 不再支持；剥离守卫并按双向处理。
+        warn(ctx, 'import.event-visibility-external-removed', { event: name })
       }
     }
   }

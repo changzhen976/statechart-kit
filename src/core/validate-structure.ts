@@ -534,9 +534,13 @@ export function validateStructure(doc: ProjectDoc): StructureReport {
           if (origin.actionIndex !== undefined) issue.actionIndex = origin.actionIndex
         } else {
           issue.transitionId = origin.transitionId
-          if (origin.kind === 'transition-action' && origin.actionIndex !== undefined) {
-            issue.actionIndex = origin.actionIndex
-            issue.slot = 'transition'
+          if (origin.kind === 'transition-action') {
+            issue.stateUid = origin.source.uid
+            issue.stateId = origin.source.id
+            if (origin.actionIndex !== undefined) {
+              issue.actionIndex = origin.actionIndex
+              issue.slot = 'transition'
+            }
           }
         }
         add(issue)

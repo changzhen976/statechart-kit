@@ -14,7 +14,7 @@ import { useEditor } from './use-editor'
 import { parseActionLine } from '../core/action-parse'
 import { docEventFacts } from '../core/event-catalog'
 import { isAutoDelayEvent } from '../core/naming'
-import type { EventVisibility, MetaAttrs, MetaValue } from '../core/model'
+import type { MetaAttrs, MetaValue } from '../core/model'
 import type { EditorAttributeField } from './modules'
 
 const editor = useEditor()
@@ -73,11 +73,7 @@ const receiveRows = computed(() =>
       if (origins.some((o) => o.channel === 'auto-delay')) sources.push(editor.labels.eventSourceAutoDelay)
       if (externalNames.value.has(name)) sources.push(editor.labels.eventSourceExternal)
       if (!sources.length) sources.push(editor.labels.eventSourceListenOnly)
-      return {
-        name,
-        sources,
-        visibility: (editor.doc.eventVisibility?.[name] ?? 'both') as EventVisibility,
-      }
+      return { name, sources }
     }),
 )
 
@@ -102,8 +98,10 @@ const raiseRows = computed(() => {
   return rows.sort((a, b) => a.event.localeCompare(b.event))
 })
 
-function setVisibility(name: string, e: Event): void {
-  editor.setEventVisibility(name, (e.target as HTMLSelectElement).value as EventVisibility)
+function setInternalOnly(name: string, e: Event): void {
+  const checked = (e.target as HTMLInputElement).checked
+  if (checked) editor.requestInternalOnly(name)
+  else editor.clearInternalOnly(name)
 }
 
 function delayLabel(ms: number | undefined, unit: 's' | 'ms' | undefined): string {
@@ -224,7 +222,7 @@ const hasAny = computed(
           <tr>
             <th>{{ editor.labels.event }}</th>
             <th>{{ editor.labels.eventSource }}</th>
-            <th>{{ editor.labels.eventVisibility }}</th>
+            <th>{{ editor.labels.internalOnly }}</th>
           </tr>
         </thead>
         <tbody>
@@ -232,16 +230,16 @@ const hasAny = computed(
             <td class="name" :title="row.name">{{ row.name }}</td>
             <td class="source">{{ row.sources.join(' · ') }}</td>
             <td class="visibility">
-              <select
-                :value="row.visibility"
-                :disabled="editor.locked"
-                :aria-label="`${row.name} ${editor.labels.eventVisibility}`"
-                @change="setVisibility(row.name, $event)"
-              >
-                <option value="both">{{ editor.labels.visibilityBoth }}</option>
-                <option value="internal">{{ editor.labels.visibilityInternal }}</option>
-                <option value="external">{{ editor.labels.visibilityExternal }}</option>
-              </select>
+              <label class="sce-var-flag" :title="editor.labels.internalOnlyHint">
+                <input
+                  type="checkbox"
+                  :checked="editor.isInternalOnly(row.name)"
+                  :disabled="editor.locked"
+                  :aria-label="`${row.name} ${editor.labels.internalOnly}`"
+                  @change="setInternalOnly(row.name, $event)"
+                />
+                {{ editor.labels.internalOnly }}
+              </label>
             </td>
           </tr>
         </tbody>

@@ -168,8 +168,12 @@ console.log('── E) external-only：外部可触发，内部 raise 被拦截 
   await runner.stop()
 
   const externalDoc = scxmlToDoc(xml, domParser as unknown as DOMParser)
-  assert(externalDoc.doc.eventVisibility?.go === 'external', '导入恢复 external 可见性')
+  assert(externalDoc.doc.eventVisibility?.go === undefined, '导入把 external 降级为双向')
   assert(externalDoc.doc.transitions[0]?.cond === '', '导入剥离 external 守卫')
+  assert(
+    externalDoc.warnings.some((w) => w.code === 'import.event-visibility-external-removed'),
+    '导入 external 给降级 warning',
+  )
 }
 {
   const doc = emptyDoc('external-blocks-raise')

@@ -23,20 +23,22 @@
 - 结构校验新增 `structure.event.internal-only-with-external-producer`、
   `structure.event.internal-only-without-producer`、
   `structure.action.internal-delay-unsupported`；导入新增
-  `import.event-visibility-invalid` / `import.event-visibility-mismatch`。
+  `import.event-visibility-invalid` / `import.event-visibility-mismatch`；
+- 事件面板「仅内部」复选框 + 定义/约束弹窗：显示生产者/监听者扫描、冲突时禁止
+  确认、普通 `send` 一键改 `target="#_internal"`、会话内不再提示（仅内存）。
 
 ### Changed
 
 - 混合可见性转移从 warning 升为 **error**（不会生成守卫，`serializeChecked` 拒绝）；
 - 自动延时转移仍不生成可见性守卫，避免破坏延时行为；
-- 事件改名时同时清理 `internalOnlyEvents` 与 legacy `eventVisibility`。
+- 事件改名时同时清理 `internalOnlyEvents` 与 legacy `eventVisibility`；
+- 旧 `external` 草稿在 `normalizeDoc` / SCXML 导入 / 编辑器加载时降级为双向（导入给
+  `import.event-visibility-external-removed` warning）；事件面板不再提供「仅外部」。
 
 ### Planned (0.15.0)
 
 > 以下为剩余设计目标，随实现逐条并入 Added / Changed / Removed；发布前删除本节。
 
-- 事件面板「仅内部」复选框 + 定义/约束弹窗（含会话内不再提示、冲突禁用、
-  普通 send 一键改内部发送）；
 - 删除 `external` 可见性与 `EventVisibility` / `eventVisibility` / 旧 API；
 - 动作编辑器移除「延时发送」与 delay 输入；旧 `send delay` 行只读，自动转换器
   延后到 0.15.x；
@@ -47,7 +49,8 @@
 - `verify-host-events` 覆盖 `trySend` 的未启动/终态结果；
 - `verify-event-visibility` 覆盖 `internalOnlyEvents`、根级元数据往返、生产者
   冲突、混合 error、`#_internal+delay`、无生产者 warning、导入优先级；
-- `verify-editor` 覆盖 `internalOnlyEvents` 改名清理。
+- `verify-editor` 覆盖 `internalOnlyEvents` 改名清理、仅内部弹窗/扫描/一键修复/
+  会话内抑制，以及外部生产者、混合事件、`#_internal+delay` 的校验错误。
 
 ## [0.13.1] - 2026-11-14
 

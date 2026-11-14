@@ -70,6 +70,27 @@ export interface EditorLabels {
   visibilityBoth: string
   visibilityInternal: string
   visibilityExternal: string
+  internalOnly: string
+  internalOnlyHint: string
+  internalOnlyTitle: string
+  internalOnlyDefinition: string
+  internalOnlyAllowed: string
+  internalOnlyForbidden: string
+  internalOnlyConsumerRule: string
+  internalOnlyScan: string
+  internalOnlyProducers: string
+  internalOnlyListeners: string
+  internalOnlyConflicts: string
+  internalOnlyReady: string
+  internalOnlyNoProducer: string
+  internalOnlyFixSend: string
+  internalOnlyManualFix: string
+  internalOnlyInternalDelay: string
+  internalOnlyAutoDelay: string
+  internalOnlyMixed: string
+  internalOnlySet: string
+  internalOnlySuppress: string
+  internalOnlyNotSecurity: string
   eventInternalBlocked: string
   locate: string
   simulation: string
@@ -205,6 +226,28 @@ export const DEFAULT_LABELS: EditorLabels = {
   visibilityBoth: '双向',
   visibilityInternal: '仅内部',
   visibilityExternal: '仅外部',
+  internalOnly: '仅内部',
+  internalOnlyHint: '只允许 raise / send target="#_internal" 产生',
+  internalOnlyTitle: '仅内部事件',
+  internalOnlyDefinition:
+    '仅内部事件只允许由本会话内部的 raise 或 send target="#_internal" 产生；监听它的转移会加 _event.type === "internal" 守卫。',
+  internalOnlyAllowed: '允许：raise、send target="#_internal"（不带 delay）',
+  internalOnlyForbidden: '不允许：普通 send、send delay、delayMs 自动事件、自定义 JS 发事件',
+  internalOnlyConsumerRule: '一条转移只能包含仅内部事件；与双向事件混用会报错。',
+  internalOnlyScan: '当前扫描',
+  internalOnlyProducers: '生产者',
+  internalOnlyListeners: '监听者',
+  internalOnlyConflicts: '存在 {count} 处冲突，先修复后再设置',
+  internalOnlyReady: '检查通过',
+  internalOnlyNoProducer: '该事件目前没有生产者；设置后不会触发。',
+  internalOnlyFixSend: '改为内部发送',
+  internalOnlyManualFix: '需手动改为 raise 中继',
+  internalOnlyInternalDelay: '#_internal + delay 会被引擎丢弃',
+  internalOnlyAutoDelay: '自动延时事件不能设仅内部',
+  internalOnlyMixed: '该转移混用了双向事件，需拆成多条转移',
+  internalOnlySet: '设为仅内部',
+  internalOnlySuppress: '本次会话不再提示',
+  internalOnlyNotSecurity: '这不是安全边界；事件名在 SCXML 中仍可见。',
   eventInternalBlocked: '事件 {name} 仅允许内部触发，已忽略外部注入',
   locate: '定位',
   simulation: '仿真',
@@ -342,6 +385,28 @@ export const DEFAULT_LABELS_EN: EditorLabels = {
   visibilityBoth: 'Both',
   visibilityInternal: 'Internal only',
   visibilityExternal: 'External only',
+  internalOnly: 'Internal only',
+  internalOnlyHint: 'Only raise / send target="#_internal" may produce it',
+  internalOnlyTitle: 'Internal-only event',
+  internalOnlyDefinition:
+    'An internal-only event may only be produced by raise or send target="#_internal"; transitions listening to it get the _event.type === "internal" guard.',
+  internalOnlyAllowed: 'Allowed: raise, send target="#_internal" (without delay)',
+  internalOnlyForbidden: 'Forbidden: plain send, send delay, delayMs auto events, custom JS event emission',
+  internalOnlyConsumerRule: 'A transition may only contain internal-only events; mixing with two-way events is an error.',
+  internalOnlyScan: 'Current scan',
+  internalOnlyProducers: 'Producers',
+  internalOnlyListeners: 'Listeners',
+  internalOnlyConflicts: '{count} conflict(s); resolve them before setting',
+  internalOnlyReady: 'Checks passed',
+  internalOnlyNoProducer: 'No producer yet; this event will never fire.',
+  internalOnlyFixSend: 'Make internal send',
+  internalOnlyManualFix: 'Change to a raise relay manually',
+  internalOnlyInternalDelay: '#_internal + delay is dropped by the engine',
+  internalOnlyAutoDelay: 'Auto-delay events cannot be internal-only',
+  internalOnlyMixed: 'This transition mixes two-way events; split it into multiple transitions',
+  internalOnlySet: 'Set internal only',
+  internalOnlySuppress: "Don't show again this session",
+  internalOnlyNotSecurity: 'This is not a security boundary; event names remain visible in SCXML.',
   eventInternalBlocked: 'Event {name} is internal-only; external injection ignored',
   locate: 'Locate',
   simulation: 'Simulation',

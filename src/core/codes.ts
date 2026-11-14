@@ -86,6 +86,7 @@ export const IMPORT_WARNING_CODES = [
   'import.transition.type-invalid',
   'import.event-visibility-invalid',
   'import.event-visibility-mismatch',
+  'import.event-visibility-external-removed',
   'import.root-initial.missing-target',
   'import.no-dom-parser',
   'import.parse-error',

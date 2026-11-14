@@ -268,17 +268,21 @@ mountEditor('#editor', {
 - 公开 API/诊断 code 变化看 [`CHANGELOG.md`](../CHANGELOG.md)。
 
 
-## 事件可见性
+## 仅内部事件
 
-`ProjectDoc.eventVisibility` 是可选的事件名映射：
+`ProjectDoc.internalOnlyEvents` 是可选的事件名数组；缺省全部双向：
 
 ```ts
-eventVisibility?: Record<string, 'internal' | 'external' | 'both'>
+internalOnlyEvents?: string[]
 ```
 
-- `both`（默认）：不生成守卫；
-- `internal`：只允许 `_event.type === 'internal'`；
-- `external`：只允许 `_event.type === 'external'`。
+- 仅内部事件只允许由 `raise` 或 `send … target="#_internal"`（不带 delay）产生；
+- 监听它的转移生成 `_event.type === 'internal'` 守卫，宿主 `send()` 注入会被拦截；
+- 普通 `send`、`send delay`、`delayMs` 自动事件不能标仅内部；校验会报
+  `structure.event.internal-only-with-external-producer`；
+- 多事件转移混用仅内部与双向事件会报 `structure.transition.mixed-event-visibility`；
+- 可用 `isInternalOnlyEvent(doc, name)` / `setInternalOnlyEvent(doc, name, on)` 读写；
+- 旧 `eventVisibility` 会在加载/导入时迁移；`external` 降级为双向（0.14.0 未发布）。
 
 `SessionRunner.send()` 仍返回 boolean；需要区分失败原因时使用 `trySend()`：
 `session-not-running` / `session-done` / `send-failed`。

@@ -273,9 +273,10 @@ export function normalizeDoc(doc: ProjectDoc): ProjectDoc {
         internalOnly.add(name)
         // P1 过渡：legacy 与 internalOnlyEvents 双写，P3 删除。
         next[name] = 'internal'
-      } else if (rawValue === 'external' || rawValue === 'both') {
+      } else if (rawValue === 'both') {
         next[name] = rawValue
       }
+      // external 在 0.15 降级为双向：不写入 next，也不加入 internalOnlyEvents。
     }
     if (Object.keys(next).length) doc.eventVisibility = next
     else delete doc.eventVisibility

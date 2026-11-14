@@ -483,3 +483,33 @@ scxml-view::part(canvas)::-webkit-scrollbar { width: 0; height: 0; display: none
   color: var(--x-fg3);
   white-space: nowrap;
 }
+
+/* 仅内部事件：定义/约束弹窗（0.15） */
+.sce-internal-dialog h3 { color: var(--scxml-fg); }
+.sce-internal-dialog h3 code { font-family: var(--scxml-font-mono); font-size: 12px; }
+.sce-internal-dialog h4 { margin: 12px 0 6px; font: 600 12px var(--scxml-font-sans); }
+.sce-internal-rules { margin: 0 0 10px; padding-left: 18px; font-size: 11.5px; line-height: 1.6; }
+.sce-internal-rules .ok { color: var(--scxml-running); }
+.sce-internal-rules .no { color: var(--scxml-error); }
+.sce-internal-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.sce-internal-grid h5 { margin: 0 0 4px; font: 600 11px var(--scxml-font-sans); color: var(--scxml-fg-muted); }
+.sce-internal-list { margin: 0; padding: 0; list-style: none; max-height: 180px; overflow-y: auto; }
+.sce-internal-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  padding: 3px 0;
+  border-bottom: 1px solid var(--scxml-border);
+  font-size: 11px;
+}
+.sce-internal-list li:last-child { border-bottom: 0; }
+.sce-internal-list li.bad { color: var(--scxml-error); }
+.sce-internal-list li.muted { color: var(--scxml-fg-subtle); }
+.sce-internal-list .src { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.sce-internal-list .chan { color: var(--scxml-fg-subtle); }
+.sce-internal-list code { font-family: var(--scxml-font-mono); font-size: 10.5px; }
+.sce-internal-list .hint { flex-basis: 100%; color: var(--scxml-waiting); font-size: 10.5px; }
+.sce-internal-list .mini { font-size: 10.5px; padding: 1px 6px; }
+.sce-internal-ok { margin: 8px 0 0; color: var(--scxml-running); font-size: 11.5px; }
+.sce-internal-suppress { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 11px; color: var(--scxml-fg-muted); }

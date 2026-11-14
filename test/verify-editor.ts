@@ -11,6 +11,7 @@
 import { Window } from 'happy-dom'
 import type { DOMParserLike } from '@tinyactors/scxmljs/trusted'
 import { emptyDoc, type ProjectDoc } from '../src/core/model'
+import { setInternalOnlyEvent } from '../src/core/event-visibility'
 import { serializeToScxml } from '../src/core/serializer'
 import { createEditor, type CreateEditorOptions } from '../src/vue/editor-store'
 import { matchTransitionId } from '../src/vue/canvas-select'
@@ -450,6 +451,184 @@ console.log('── G) 编辑器模块契约 ──')
   await e2.ready
   assert(e2.sim.log.some((l) => l.kind === 'error' && l.text.includes('test.bad')), '模块 setup 抛错被隔离并记录')
   await e2.destroy()
+}
+
+console.log('── P2) 仅内部：扫描 / 弹窗 / 修复 / 校验错误 ──')
+{
+  const doc = emptyDoc('legacy-external')
+  doc.states = [
+    { uid: 's1', id: 'a', label: 'a', kind: 'atomic', parent: null, entryActions: [], exitActions: [] },
+    { uid: 's2', id: 'b', label: 'b', kind: 'atomic', parent: null, entryActions: [], exitActions: [] },
+  ]
+  doc.initial = 's1'
+  doc.transitions = [{ id: 't1', source: 's1', target: 's2', event: 'go', cond: '', actions: [] }]
+  doc.eventVisibility = { go: 'external' }
+  const { editor } = makeEditor({ initialDoc: doc })
+  await editor.ready
+  assert(!editor.doc.eventVisibility?.['go'], '旧 external 草稿在编辑器内降级为双向')
+  await editor.destroy()
+}
+{
+  const st = (uid: string, id: string, entryActions: string[] = []) => ({
+    uid,
+    id,
+    label: id,
+    kind: 'atomic' as const,
+    parent: null,
+    entryActions,
+    exitActions: [],
+  })
+  async function internalEditor(
+    entry: string[],
+    build?: (doc: ProjectDoc) => void,
+  ) {
+    const doc = emptyDoc('internal-p2')
+    doc.states = [st('s1', 'a', entry), st('s2', 'b')]
+    doc.initial = 's1'
+    doc.transitions = [{ id: 't1', source: 's1', target: 's2', event: 'go', cond: '', actions: [] }]
+    build?.(doc)
+    const { editor } = makeEditor({ initialDoc: doc })
+    await editor.ready
+    return editor
+  }
+
+  // 1) 干净的生产者：弹窗可直接确认
+  {
+    const editor = await internalEditor(['raise go'])
+    editor.requestInternalOnly('go')
+    assert(
+      editor.internalEventDialog?.scan.canConfirm === true &&
+        editor.internalEventDialog.scan.conflicts === 0,
+      'raise 生产者：扫描无冲突',
+    )
+    editor.confirmInternalOnly()
+    assert(
+      editor.isInternalOnly('go') && editor.doc.internalOnlyEvents?.includes('go'),
+      '确认后写入 internalOnlyEvents',
+    )
+    assert(editor.internalEventDialog === null, '确认后关闭弹窗')
+    await editor.destroy()
+  }
+
+  // 2) 普通 send：弹窗冲突，一键改内部发送后可确认
+  {
+    const editor = await internalEditor(['send go'])
+    editor.requestInternalOnly('go')
+    const producer = editor.internalEventDialog?.scan.producers[0]
+    assert(
+      editor.internalEventDialog?.scan.canConfirm === false &&
+        producer?.conflict === true &&
+        producer.canFix === true,
+      '普通 send：扫描报冲突且可一键修复',
+    )
+    editor.confirmInternalOnly()
+    assert(!editor.isInternalOnly('go') && editor.internalEventDialog !== null, '冲突时确认不生效')
+    editor.fixInternalOnlyProducer(producer!.id)
+    assert(
+      editor.doc.states[0]?.entryActions[0] === 'send go target #_internal',
+      '一键修复写入 target="#_internal"',
+    )
+    assert(editor.internalEventDialog?.scan.canConfirm === true, '修复后扫描通过')
+    editor.confirmInternalOnly()
+    assert(editor.isInternalOnly('go'), '修复后确认生效')
+    await editor.destroy()
+  }
+
+  // 3) send delay：不可自动修复
+  {
+    const editor = await internalEditor(['send go delay 1s id go'])
+    editor.requestInternalOnly('go')
+    const producer = editor.internalEventDialog?.scan.producers[0]
+    assert(
+      producer?.conflict === true && producer.canFix === false,
+      'send delay：报冲突且不能自动修复',
+    )
+    editor.confirmInternalOnly()
+    assert(!editor.isInternalOnly('go'), 'send delay：冲突时确认不生效')
+    await editor.destroy()
+  }
+
+  // 4) 混合监听者：需拆分转移
+  {
+    const editor = await internalEditor(['raise go'], (doc) => {
+      doc.transitions.push({ id: 't2', source: 's1', target: 's2', event: 'go other', cond: '', actions: [] })
+    })
+    editor.requestInternalOnly('go')
+    const listener = editor.internalEventDialog?.scan.listeners.find((x) => x.transitionId === 't2')
+    assert(listener?.mixed === true, '混合事件监听者被标为 mixed')
+    assert(editor.internalEventDialog?.scan.canConfirm === false, '混合监听者阻止确认')
+    await editor.destroy()
+  }
+
+  // 5) #_internal + delay：引擎会丢弃，扫描报冲突
+  {
+    const editor = await internalEditor(['send go target #_internal delay 1s id go'])
+    editor.requestInternalOnly('go')
+    const producer = editor.internalEventDialog?.scan.producers[0]
+    assert(
+      producer?.reason === 'internal-delay' && producer.conflict && !producer.canFix,
+      '#_internal + delay：扫描报 internal-delay 冲突',
+    )
+    await editor.destroy()
+  }
+
+  // 6) 会话内不再提示
+  {
+    const editor = await internalEditor(['raise go'])
+    editor.requestInternalOnly('go')
+    editor.confirmInternalOnly(true)
+    assert(editor.internalOnlySuppressed === true, '勾选后写入会话内抑制状态')
+    editor.clearInternalOnly('go')
+    assert(!editor.isInternalOnly('go'), '取消仅内部')
+    editor.requestInternalOnly('go')
+    assert(
+      editor.internalEventDialog === null && editor.isInternalOnly('go'),
+      '抑制后干净事件直接生效、不再弹窗',
+    )
+    await editor.destroy()
+  }
+
+  // 7) 校验错误：外部生产者 / 混合事件 / 内部延时
+  {
+    const editor = await internalEditor(['send go'])
+    setInternalOnlyEvent(editor.doc, 'go', true)
+    const ok = await editor.validate()
+    assert(!ok, '普通 send + 仅内部：校验失败')
+    assert(
+      editor.validationDialog?.issues.some(
+        (i) => i.code === 'structure.event.internal-only-with-external-producer',
+      ) === true,
+      '校验弹窗报 internal-only-with-external-producer',
+    )
+    await editor.destroy()
+  }
+  {
+    const editor = await internalEditor(['raise go'], (doc) => {
+      doc.transitions.push({ id: 't2', source: 's1', target: 's2', event: 'go other', cond: '', actions: [] })
+    })
+    setInternalOnlyEvent(editor.doc, 'go', true)
+    const ok = await editor.validate()
+    assert(!ok, '混合事件：校验失败')
+    assert(
+      editor.validationDialog?.issues.some(
+        (i) => i.code === 'structure.transition.mixed-event-visibility',
+      ) === true,
+      '校验弹窗报 mixed-event-visibility',
+    )
+    await editor.destroy()
+  }
+  {
+    const editor = await internalEditor(['send go target #_internal delay 1s id go'])
+    const ok = await editor.validate()
+    assert(!ok, '#_internal + delay：校验失败')
+    assert(
+      editor.validationDialog?.issues.some(
+        (i) => i.code === 'structure.action.internal-delay-unsupported',
+      ) === true,
+      '校验弹窗报 internal-delay-unsupported',
+    )
+    await editor.destroy()
+  }
 }
 
 console.log(`\n结果：${pass} 通过 / ${fail} 失败`)

@@ -29,14 +29,19 @@ import {
 } from '../core/model'
 import { NCNAME_RE } from '../core/validate-structure'
 import { serializeToScxml } from '../core/serializer'
-import { setEventVisibility as setDocEventVisibility } from '../core/event-visibility'
+import {
+  isInternalOnlyEvent,
+  setEventVisibility as setDocEventVisibility,
+  setInternalOnlyEvent,
+} from '../core/event-visibility'
 import { checkEventName, checkVarName } from '../core/naming'
-import { parseActionLine, scanScriptActions } from '../core/action-parse'
+import { actionToLine, parseActionLine, scanScriptActions } from '../core/action-parse'
 import { scriptHitsToIssues, validateDocument, type ValidationIssue } from '../engine/validator'
 import { SessionRunner, type SimLogEntry, type VariableWriteResult } from '../engine/session-runner'
 import { DEFAULT_LABELS, DEFAULT_LABELS_EN, type EditorLabels } from './labels'
 import { resolveFeatures, type EditorFeatures } from './features'
 import { buildEditorEventOptions, type EditorEventOption } from './events'
+import { scanInternalOnly, type InternalEventDialogState } from './internal-only'
 import {
   formatImportWarning,
   formatNamingIssue,
@@ -96,6 +101,10 @@ export interface EditorState {
   saving: boolean
   deploying: boolean
   confirm: EditorConfirmRequest | null
+  /** 「仅内部」定义/约束弹窗；null = 关闭 */
+  internalEventDialog: InternalEventDialogState | null
+  /** 本次会话不再提示「仅内部」定义框（仅内存；冲突时仍弹） */
+  internalOnlySuppressed: boolean
   revision: number
   /** 校验弹窗「定位」：滚动并 flash 对应动作行 */
   actionFocus: { uid: string; slot: 'entry' | 'exit' | 'transition'; index: number; nonce: number } | null
@@ -202,6 +211,8 @@ export interface EditorStore {
   get validation(): EditorState['validation']
   get validationDialog(): ValidationDialogState | null
   get confirmRequest(): EditorConfirmRequest | null
+  get internalEventDialog(): InternalEventDialogState | null
+  get internalOnlySuppressed(): boolean
   get selectedState(): StateNode | null
   get selectedTransition(): TransitionEdge | null
   get canUndo(): boolean
@@ -251,6 +262,14 @@ export interface EditorStore {
   setVariableAttr(index: number, key: string, value: MetaValue | undefined): void
   setEventAttr(event: string, key: string, value: MetaValue | undefined): void
   setEventVisibility(event: string, visibility: EventVisibility): void
+  isInternalOnly(event: string): boolean
+  /** 勾选「仅内部」：干净则直接写入；有冲突或未抑制则打开定义/约束弹窗 */
+  requestInternalOnly(event: string): void
+  clearInternalOnly(event: string): void
+  confirmInternalOnly(suppress?: boolean): void
+  cancelInternalOnly(): void
+  /** 把可修复的外部 send 改成 target="#_internal"（弹窗内） */
+  fixInternalOnlyProducer(producerId: string): void
   removeVariable(index: number): void
   setDocMeta(patch: { name?: string; initial?: string | null }): void
   select(kind: SelectionKind, id: string | null): void
@@ -319,6 +338,8 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     saving: false,
     deploying: false,
     confirm: null,
+    internalEventDialog: null,
+    internalOnlySuppressed: false,
     revision: 0,
     actionFocus: null,
     moduleTabs: [],
@@ -643,6 +664,7 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     state.selection = { kind: null, id: null }
     state.validation = null
     state.validationDialog = null
+    state.internalEventDialog = null
     state.revision++
     adapter.onDocChange?.(state.doc)
     if (opts.persist === false) setDirty(false)
@@ -1080,6 +1102,81 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     touch()
   }
 
+  function isInternalOnly(event: string): boolean {
+    return isInternalOnlyEvent(state.doc, event)
+  }
+
+  function applyInternalOnly(name: string): void {
+    captureUndo(`internalOnly:${name}`)
+    setInternalOnlyEvent(state.doc, name, true)
+    touch()
+    state.internalEventDialog = null
+  }
+
+  function requestInternalOnly(event: string): void {
+    if (readOnly() || state.sim.running) return
+    const name = event.trim()
+    if (!name || isInternalOnlyEvent(state.doc, name)) return
+    const scan = scanInternalOnly(state.doc, name)
+    if (state.internalOnlySuppressed && scan.canConfirm) {
+      applyInternalOnly(name)
+      return
+    }
+    state.internalEventDialog = { event: name, scan }
+  }
+
+  function clearInternalOnly(event: string): void {
+    if (readOnly() || state.sim.running) return
+    const name = event.trim()
+    if (!name) return
+    captureUndo(`internalOnly:${name}`)
+    // both 会同时清掉 internalOnlyEvents 与 legacy internal/external 映射。
+    setDocEventVisibility(state.doc, name, 'both')
+    touch()
+    if (state.internalEventDialog?.event === name) state.internalEventDialog = null
+  }
+
+  function confirmInternalOnly(suppress = false): void {
+    const dialog = state.internalEventDialog
+    if (!dialog || !dialog.scan.canConfirm || readOnly() || state.sim.running) return
+    state.internalOnlySuppressed = suppress
+    applyInternalOnly(dialog.event)
+  }
+
+  function cancelInternalOnly(): void {
+    state.internalEventDialog = null
+  }
+
+  function fixInternalOnlyProducer(producerId: string): void {
+    const dialog = state.internalEventDialog
+    if (!dialog) return
+    const producer = dialog.scan.producers.find((p) => p.id === producerId)
+    if (!producer?.canFix || producer.actionIndex === undefined) return
+    const index = producer.actionIndex - 1
+    if (index < 0) return
+    let actions: string[] | null = null
+    if (producer.kind === 'state-action' && producer.stateUid && producer.slot) {
+      const s = state.doc.states.find((x) => x.uid === producer.stateUid)
+      if (s) {
+        actions = producer.slot === 'entry' ? s.entryActions : producer.slot === 'exit' ? s.exitActions : null
+      }
+    } else if (producer.kind === 'transition-action' && producer.transitionId) {
+      const t = state.doc.transitions.find((x) => x.id === producer.transitionId)
+      if (t) actions = t.actions
+    }
+    const line = actions?.[index]
+    if (!actions || line === undefined) return
+    const parsed = parseActionLine(line)
+    if (parsed.type !== 'send' || parsed.target !== undefined || parsed.delay) return
+    captureUndo(`internalOnlyFix:${producerId}`)
+    actions[index] = actionToLine({ ...parsed, target: '#_internal' })
+    touch()
+    state.internalEventDialog = {
+      event: dialog.event,
+      scan: scanInternalOnly(state.doc, dialog.event),
+    }
+  }
+
   function setEventAttr(event: string, key: string, value: MetaValue | undefined): void {
     if (readOnly() || state.sim.running) return
     const name = event.trim()
@@ -1210,37 +1307,58 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     }
   }
 
-  /** 定位校验问题：选中状态/转移，必要时聚焦动作行 */
+  function focusAction(
+    uid: string,
+    slot: 'entry' | 'exit' | 'transition',
+    index: number,
+  ): void {
+    state.actionFocus = {
+      uid,
+      slot,
+      index,
+      nonce: (state.actionFocus?.nonce ?? 0) + 1,
+    }
+    if (actionFocusTimer) clearTimeout(actionFocusTimer)
+    actionFocusTimer = setTimeout(() => {
+      state.actionFocus = null
+    }, 2500)
+  }
+
+  /** 定位校验问题：优先转移/状态动作行，其次事件的第一条监听转移。 */
   function locateIssue(issue: ValidationIssue): void {
     if (issue.transitionId) {
       const t = state.doc.transitions.find((x) => x.id === issue.transitionId)
       if (t) {
         select('transition', t.id)
+        if (issue.slot === 'transition' && issue.actionIndex !== undefined) {
+          focusAction(t.source, 'transition', issue.actionIndex)
+        }
+        return
+      }
+    }
+    if (issue.stateId && issue.slot && issue.actionIndex !== undefined) {
+      const s = state.doc.states.find((x) => x.id === issue.stateId)
+      if (s) {
+        select('state', s.uid)
+        focusAction(s.uid, issue.slot, issue.actionIndex)
+        return
+      }
+    }
+    if (issue.stateId) {
+      const s = state.doc.states.find((x) => x.id === issue.stateId)
+      if (s) {
+        select('state', s.uid)
         return
       }
     }
     if (issue.event) {
-      const t = state.doc.transitions.find((x) => x.event === issue.event)
+      const t = state.doc.transitions.find((x) =>
+        x.event.split(/\s+/).filter(Boolean).includes(issue.event!),
+      )
       if (t) {
         select('transition', t.id)
         return
       }
-    }
-    if (!issue.stateId) return
-    const s = state.doc.states.find((x) => x.id === issue.stateId)
-    if (!s) return
-    select('state', s.uid)
-    if (issue.slot && issue.actionIndex !== undefined) {
-      state.actionFocus = {
-        uid: s.uid,
-        slot: issue.slot,
-        index: issue.actionIndex,
-        nonce: (state.actionFocus?.nonce ?? 0) + 1,
-      }
-      if (actionFocusTimer) clearTimeout(actionFocusTimer)
-      actionFocusTimer = setTimeout(() => {
-        state.actionFocus = null
-      }, 2500)
     }
   }
 
@@ -1387,6 +1505,12 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     get confirmRequest() {
       return state.confirm
     },
+    get internalEventDialog() {
+      return state.internalEventDialog
+    },
+    get internalOnlySuppressed() {
+      return state.internalOnlySuppressed
+    },
     get selectedState() {
       if (state.selection.kind !== 'state') return null
       return state.doc.states.find((s) => s.uid === state.selection.id) ?? null
@@ -1482,6 +1606,12 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     setVariableAttr,
     setEventAttr,
     setEventVisibility,
+    isInternalOnly,
+    requestInternalOnly,
+    clearInternalOnly,
+    confirmInternalOnly,
+    cancelInternalOnly,
+    fixInternalOnlyProducer,
     removeVariable,
     setDocMeta,
     select,
@@ -1518,6 +1648,7 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
           /* 模块清理失败不影响编辑器销毁 */
         }
       }
+      state.internalEventDialog = null
       if (saveTimer) clearTimeout(saveTimer)
       if (actionFocusTimer) clearTimeout(actionFocusTimer)
       offRunner?.()

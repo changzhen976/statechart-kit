@@ -101,6 +101,25 @@ if (!host.querySelector('.sce-pane-left.collapsed') || !host.querySelector('.sce
 leftToggle.click()
 await new Promise((r) => setTimeout(r, 20))
 if (host.querySelector('.sce-pane-left.collapsed') || host.querySelector('.sce-side-left.collapsed')) throw new Error('左侧栏展开未生效')
+
+// 仅内部弹窗：外部 send 是冲突生产者 → 弹窗出现、确认禁用、取消可关闭
+mounted.editor.addState('atomic')
+const secondUid = mounted.editor.selection.id
+mounted.editor.addTransition(probeUid, secondUid, { event: 'probe.event' })
+await new Promise((r) => setTimeout(r, 20))
+const onlyInternal = host.querySelector('.sce-events .visibility input[type="checkbox"]')
+if (!onlyInternal) throw new Error('事件面板未渲染「仅内部」复选框')
+onlyInternal.checked = true
+onlyInternal.dispatchEvent(new window.Event('change', { bubbles: true }))
+await new Promise((r) => setTimeout(r, 20))
+const internalDialog = host.querySelector('.sce-internal-dialog')
+if (!internalDialog) throw new Error('仅内部定义弹窗未渲染')
+if (!internalDialog.textContent.includes('冲突')) throw new Error('仅内部弹窗未显示冲突说明')
+const confirmOnlyInternal = internalDialog.querySelector('.sce-dialog-btns .sce-primary')
+if (!confirmOnlyInternal || !confirmOnlyInternal.disabled) throw new Error('有冲突时「设为仅内部」应禁用')
+internalDialog.querySelector('.sce-dialog-btns button').click()
+await new Promise((r) => setTimeout(r, 20))
+if (host.querySelector('.sce-internal-dialog')) throw new Error('取消后仅内部弹窗未关闭')
 mounted.unmount()
 
 // Explorer：编辑态预览 session + 状态/转移选中桥接。官方 explorer 依赖
@@ -142,11 +161,12 @@ explorerButton.click()
 await new Promise((r) => setTimeout(r, 900))
 const explorerEl = explorerHost.querySelector('scxml-explorer')
 if (!explorerEl || !explorerEl.shadowRoot) throw new Error('Explorer 未升级/挂载')
-const visibilitySelect = explorerHost.querySelector('.sce-events select')
-if (!visibilitySelect || visibilitySelect.value !== 'internal') throw new Error('事件可见性下拉未显示 internal')
+const onlyInternalBox = explorerHost.querySelector('.sce-events .visibility input[type="checkbox"]')
+if (!onlyInternalBox || !onlyInternalBox.checked) throw new Error('事件面板未显示「仅内部」复选框')
+if (explorerHost.querySelector('.sce-events select')) throw new Error('事件面板不应再有可见性下拉')
+if (explorerHost.querySelector('.sce-events')?.textContent.includes('仅外部')) throw new Error('事件面板不应再显示仅外部')
 if (!explorerHost.querySelector('.sce-events')?.textContent.includes('内部 raise')) throw new Error('事件来源列未显示内部 raise')
 if (!explorerHost.querySelector('.sce-events')?.textContent.includes('内部发出')) throw new Error('内部发出区块未渲染')
-if (![...explorerHost.querySelectorAll('.sce-events option')].some((o) => o.textContent.trim() === '仅外部')) throw new Error('可见性下拉未包含仅外部')
 explorerEl.dispatchEvent(
   new window.CustomEvent('scxml-select', {
     detail: { state: { id: 'a' } },

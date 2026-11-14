@@ -141,13 +141,15 @@ export function docEventFacts(doc: ProjectDoc): DocEventFacts {
   }
 
   for (const t of doc.transitions) {
-    if (!t.event) continue
-    facts.listens.add(t.event)
-    const list = facts.listenEdges.get(t.event) ?? []
-    if (!list.some((e) => e.transitionId === t.id)) {
-      list.push({ transitionId: t.id, source: ref(t.source), target: refOrNull(t.target) })
+    // 一条转移可以监听多个空格分隔的事件；目录按事件名拆分，而不是整体字符串。
+    for (const name of t.event.split(/\s+/).filter(Boolean)) {
+      facts.listens.add(name)
+      const list = facts.listenEdges.get(name) ?? []
+      if (!list.some((e) => e.transitionId === t.id)) {
+        list.push({ transitionId: t.id, source: ref(t.source), target: refOrNull(t.target) })
+      }
+      facts.listenEdges.set(name, list)
     }
-    facts.listenEdges.set(t.event, list)
   }
   for (const s of doc.states) {
     const state = ref(s.uid)
@@ -273,7 +275,9 @@ export function collectDocEvents(doc: ProjectDoc): string[] {
       if ((a.type === 'send' || a.type === 'raise') && a.event) names.add(a.event)
     }
   }
-  for (const t of doc.transitions) if (t.event) names.add(t.event)
+  for (const t of doc.transitions) {
+    for (const name of t.event.split(/\s+/).filter(Boolean)) names.add(name)
+  }
   for (const s of doc.states) {
     scan(s.entryActions)
     scan(s.exitActions)

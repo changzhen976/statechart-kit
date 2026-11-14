@@ -99,6 +99,8 @@ src/vue/                 Vue 3 编辑器（Vite 构建，vue 为 optional peer�
   browser-adapter.ts     浏览器默认 adapter
   events.ts / labels.ts / format.ts / styles.css（含 DEFAULT_LABELS_EN）
   DoneDataEditor.vue     doneData 的 content/expr/param 编辑器
+  InternalEventDialog.vue 「仅内部」定义/约束弹窗
+  internal-only.ts       弹窗扫描：生产者/监听者/冲突（纯函数）
   canvas-select.ts       画布标签 → 转移匹配（纯函数）
   *.vue                  EditorHost/Toolbar/Structure/Canvas/Property/Variables/Sim
 
@@ -159,7 +161,7 @@ const runner = new SessionRunner({ engine: 'sandboxed', domParser })
 | `test/verify-validation.ts` | 结构/引擎校验、严格序列化、CDATA |
 | `test/verify-engine.ts` | 懒加载、两种数据模型、生命周期竞态 |
 | `test/verify-host-events.ts` | typed send/done/error、done.states、error 定位 |
-| `test/verify-editor.ts` | adapter、CRUD/undo、Explorer 匹配、doneData、locale/diagnostics、canvas-fit、运行/校验脚本提示 |
+| `test/verify-editor.ts` | adapter、CRUD/undo、Explorer 匹配、doneData、locale/diagnostics、canvas-fit、运行/校验脚本提示、仅内部弹窗/扫描/修复与校验错误 |
 | `test/verify-event-visibility.ts` | raise、internal/external 守卫、自动延时例外、`#_internal`、round-trip、混合 error、`internalOnlyEvents`、生产者冲突、根级元数据 |
 
 发布前必须 `npm run verify:all` 全绿。`check:baseline -- --donor` 需要本地

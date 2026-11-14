@@ -103,6 +103,7 @@ import {
 | `import.transition.type-invalid` | `at`, `type` | type 不是 internal/external，已忽略 |
 | `import.event-visibility-invalid` | `detail` | 根级 `data-kit-internal-events` 不是合法 JSON 数组，已退回转移级 |
 | `import.event-visibility-mismatch` | `root`, `transition` | 根级集合与转移可见性元数据不一致，以根级为准 |
+| `import.event-visibility-external-removed` | `event` | 旧 `data-kit-visibility="external"` 已剥离并降级为双向（0.15 不再支持仅外部） |
 | `import.root-initial.missing-target` | `initial` | 根 initial 指向不存在状态 |
 | `import.no-dom-parser` | — | Node 环境未注入 DOMParser（异常） |
 | `import.parse-error` | `detail` | XML 解析失败（异常） |

@@ -162,9 +162,23 @@ internal.ping    left · 进入动作              1 条转移
 | 列 | 内容 |
 | --- | --- |
 | 来源 | `内部 raise/send` / `本机 send` / `自动延时` / `外部来源` / `仅监听` |
-| 可见性 | `双向`（默认）/ `仅内部` / `仅外部` |
+| 仅内部 | 复选框；默认双向 |
 
-设置为「仅内部」或「仅外部」后，序列化器会给该事件的所有转移加对应标准 SCXML 守卫：
+勾选「仅内部」时先弹出**定义/约束弹窗**：显示定义、允许/不允许的生产者、当前
+生产者与监听者扫描结果；有冲突时禁止确认，普通 `send` 可一键改为
+`target="#_internal"`。勾选「本次会话不再提示」后，本次会话内干净事件不再弹窗
+（仅内存；有冲突仍会弹出）。
+
+仅内部事件必须满足：
+
+- 所有生产者都是 `raise <event>` 或 `send <event> target #_internal`（不带 delay）；
+- 监听它的转移只能包含仅内部事件；与双向事件混用会报
+  `structure.transition.mixed-event-visibility` error；
+- 普通 `send`、`send … delay`、`delayMs` 自动事件、自定义 JS 都不能作为仅内部生产者；
+- 延时事件不是 internal 类型：需要“到点触发内部事件”时，用无目标 `delayMs`
+  转移 + `raise <event>` 中继；不要把 `send … delay` 设成仅内部。
+
+设置后序列化器给该事件的所有转移加标准 SCXML 守卫：
 
 ```xml
 <transition
@@ -176,12 +190,11 @@ internal.ping    left · 进入动作              1 条转移
 ```
 
 - 内部事件用 `raise <event>` 或 `send <event> target #_internal` 产生，动作编辑器提供「内部事件 raise」和「内部发送」；
-- internal-only 会拦截外部注入的同名事件；external-only 会拦截内部 `raise`；
-- 编辑器仿真面板也会拒绝 external 注入 internal-only 事件；
+- 仅内部会拦截外部注入的同名事件；编辑器仿真面板也会拒绝外部注入；
 - 自动延时事件不参与该守卫：引擎里 `<send delay>` 的 `_event.type` 是 `external`；
-- 一条转移包含多个事件时，只有全部事件都是同一非双向可见性才加守卫，否则产生
-  `structure.transition.mixed-event-visibility` error（0.15 起，不再只是 warning）；
-- `ProjectDoc.eventVisibility` 是可选字段，缺省全部为双向。
+- `ProjectDoc.internalOnlyEvents` 是可选字段；旧 `eventVisibility` 会迁移，
+  其中 `external` 在编辑器内降级为双向；
+- 自定义 JS 里没有 `send` / `raise` / `setTimeout`，事件只能来自动作行。
 
 `raise` 动作的 DSL：
 
