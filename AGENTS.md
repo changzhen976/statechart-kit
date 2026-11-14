@@ -23,7 +23,7 @@ Node-RED 节点与总线、部署与草稿锁都不在本包范围内。
 
 | 项 | 值 |
 | --- | --- |
-| 版本 | `0.14.0` |
+| 版本 | `0.15.0`（开发中；npm 最新 `0.13.1`，`0.14.0` 未发布） |
 | 分支 | `main` |
 | 入口 | `.` / `./engine` / `./vue` / `./diagnostics/zh` |
 | Node | `>=20` |
@@ -125,6 +125,10 @@ preview/                 只读预览容器（Docker，不属于 npm 包）
 8. **trusted 不是安全沙箱**：默认 `sandboxed`；用户可编辑图表必须 sandboxed。
 9. **baseline**：`docs/baseline.json` 的 `mirrored` 文件必须与 donor 同字节；
    改源码后执行 `npm run freeze:baseline`。
+10. **仅内部事件的生产端一致（0.15 起）**：可见性只有双向/仅内部；internal-only
+    要求所有生产者是 `raise` 或 `send … target="#_internal"`（无 delay）。普通
+    `send`、`send delay`、`delayMs` 自动事件不得标仅内部；混合事件是 error。
+    详见 [`docs/internal/event-visibility.md`](docs/internal/event-visibility.md)。
 
 ## 6. 诊断 / API 速查
 
@@ -179,9 +183,10 @@ const runner = new SessionRunner({ engine: 'sandboxed', domParser })
 
 以下文档保留历史阶段、架构复盘、需求与发布细节，**不作为宿主集成入口**：
 
+- [`docs/internal/event-visibility.md`](docs/internal/event-visibility.md)：仅内部事件（internal-only）设计、生产端校验与迁移（0.15）；
 - [`docs/internal/roadmap.md`](docs/internal/roadmap.md)：阶段历史与迁移清单；
 - [`docs/internal/architecture-review.md`](docs/internal/architecture-review.md)：历史架构分层与风险；
-- [`docs/internal/kit-requirements.md`](docs/internal/kit-requirements.md)：KIT-001–016 需求记录（KIT-011 已在 0.14.0、KIT-012–014 已在 0.12.0、KIT-015 已在 0.13.0 实现；KIT-016 已在 0.12.1/0.13.0 修复）；
+- [`docs/internal/kit-requirements.md`](docs/internal/kit-requirements.md)：KIT-001–016 需求记录（KIT-011 已在 0.15.0、KIT-012–014 已在 0.12.0、KIT-015 已在 0.13.0 实现；KIT-016 已在 0.12.1/0.13.0 修复）；
 - [`docs/internal/releasing.md`](docs/internal/releasing.md)：npm 发布与 creator 切换；
 - [`docs/internal/work-items/`](docs/internal/work-items/)：历史工作项。
 
@@ -197,6 +202,11 @@ donor / baseline 说明：`docs/baseline.json` 记录受保护文件哈希；`mi
 - 同一包被 bundler 复制成多份时各自有 loader 缓存；构建侧去重。
 - KIT-002 / KIT-005 属于 `@tinyactors/scxmljs` 上游问题，不在 kit 修复。
 - 事件可见性依赖 SCXML 标准 `_event.type`；自动延时是 external 类型，必须继续排除守卫。
+- 事件只能由 `raise` / `send` 动作行产生；自定义 JS 里没有 `send` / `raise` /
+  `setTimeout`（trusted 数据模型实测），不能发事件或做定时器。
+- `delayMs` 是单次 `after` 语义：无目标转移不会自动重布防，周期任务必须靠重入。
+- `0.14.0` 从未发布（无远端 tag、npm 无该版本）；版本线从 `0.13.1` 直接到
+  `0.15.0`，不要补推 `v0.14.0`。
 
 ## 11. 远程 / 环境
 

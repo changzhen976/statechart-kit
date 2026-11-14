@@ -2,26 +2,42 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
-## [0.14.0] - 2026-11-14
+## [0.15.0] - Unreleased
+
+> `0.14.0` 从未发布：其可用内容（`trySend`、`#_internal`、内部发出区块）并入本版本；
+> `external-only` 从未对外提供，0.15.0 不包含。仅内部事件的目标设计与迁移见
+> [`docs/internal/event-visibility.md`](docs/internal/event-visibility.md)。
 
 ### Added
 
-- `eventVisibility` 新增 `external`（仅外部）：转移生成
-  `_event.type === 'external'` 标准 SCXML 守卫；外部事件可触发，内部 `raise` 被拦截；
 - `trySend()`：返回 `{ ok, code, params }`，区分 `session-not-running` /
   `session-done` / `send-failed`，`send()` 继续返回 boolean；
 - `send <event> target #_internal`：动作解析、序列化、导入和事件目录支持
   `<send target="#_internal">`；编辑器动作行提供「内部」开关和「内部发送」快捷项；
 - 事件面板内部发出区块同时覆盖 `raise` 和 `<send target="#_internal">`。
 
+### Planned (0.15.0)
+
+> 以下为设计目标，随实现逐条并入 Added / Changed / Removed；发布前删除本节。
+
+- 可见性收敛为「双向 / 仅内部」：新增 `ProjectDoc.internalOnlyEvents`，
+  删除 `EventVisibility` / `eventVisibility` / `external`；
+- internal-only 生产端一致性校验：普通 `send`、`send delay`、`delayMs` 自动事件
+  冲突报错；混合事件从 warning 升为 error；
+- 根级 `data-kit-internal-events` 往返保存可见性；事件改名迁移
+  `internalOnlyEvents` 与 `eventAttrs`；
+- 事件面板「仅内部」复选框 + 定义/约束弹窗（含会话内不再提示、冲突禁用、
+  普通 send 一键改内部发送）；
+- 动作编辑器移除「延时发送」与 delay 输入；旧 `send delay` 行只读，自动转换器
+  延后到 0.15.x；
+- 内置示例改写为 `delayMs` / `raise` 中继；用户文档与 CHANGELOG 同步。
+
 ### Changed
 
-- 混合事件可见性 warning 现在覆盖 internal / external / both 任意混合；
 - 自动延时转移仍不生成可见性守卫，避免破坏延时行为。
 
 ### Tests
 
-- `verify-event-visibility` 覆盖 external-only、`#_internal` 导入/序列化/目录通道；
 - `verify-host-events` 覆盖 `trySend` 的未启动/终态结果。
 
 ## [0.13.1] - 2026-11-14

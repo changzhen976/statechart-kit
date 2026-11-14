@@ -26,7 +26,7 @@
 | KIT-008 | `statechart-kit` 编辑器 | P2 | `formatValidationIssue` / `formatStructureIssue` / `formatImportWarning` 等硬编码中文，英文宿主的全页编辑器仍显示中文诊断 | 已实现（0.11.0） |
 | KIT-009 | `statechart-kit` 编辑器 | P2 | `EditorLabels` 默认中文且约 140 个键，英文宿主只能整份复制；缺少 `labels/en` 或 `locale` 预设 | 已实现（0.11.0） |
 | KIT-010 | `statechart-kit` 诊断 | P2 | 没有导出诊断 code 目录，宿主只能手工维护映射；kit 新增 code 时容易漏翻并显示原始 code | 已实现（0.11.0） |
-| KIT-011 | `statechart-kit` engine | P3 | `send()` 只返回 boolean，done / not-running / queue-full 都表现为 `false`，宿主无法给出准确错误 | 已实现（0.14.0）：`trySend()` 返回 `session-not-running` / `session-done` / `send-failed`；queue-full 尚未由引擎暴露 |
+| KIT-011 | `statechart-kit` engine | P3 | `send()` 只返回 boolean，done / not-running / queue-full 都表现为 `false`，宿主无法给出准确错误 | 已实现（0.15.0；0.14.0 未发布）：`trySend()` 返回 `session-not-running` / `session-done` / `send-failed`；queue-full 尚未由引擎暴露 |
 | KIT-012 | `statechart-kit` 编辑器 | P2 | 结构树的组合/并行状态不能折叠，复杂状态机左栏变成超长列表，难以按层次梳理 | 已实现（0.12.0） |
 | KIT-013 | `statechart-kit` 编辑器 | P2 | 左右侧栏折叠按钮位于侧栏顶部，容易被当成普通工具按钮且左栏滚动后消失；应放到分割线纵向中点 | 已实现（0.12.0） |
 | KIT-014 | `statechart-kit` 编辑器 | P1 | 横向布局切换后状态机左右溢出画布，左键/滚轮无法露出被裁内容，只有中键原生自动滚动可用 | 已实现（0.12.0） |
@@ -1179,7 +1179,10 @@ serializer fallback。回归要覆盖顶层、compound、parallel、history、�
 - `verify-editor` 增加 KIT-016 回归（首个顶层、首个子状态、删除、移动、history）。
 
 
-## 0.14.0 实现记录
+## 0.15.0 实现记录（含未发布的 0.14.0）
+
+> 0.14.0 从未发布；本节记录并入 0.15.0。
+
 
 - `SessionRunner.trySend()` 返回 `{ ok, code, params }`；
 - code：`session-not-running` / `session-done` / `send-failed`；

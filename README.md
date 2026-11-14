@@ -227,15 +227,15 @@ import {
 
 ## 兼容性
 
-- 版本 `0.14.0`，Node.js >= 20，ESM only；
+- 版本 `0.15.0`，Node.js >= 20，ESM only；
 - `vue` 是 optional peer；
-- `ProjectDoc` / SCXML 输出在 0.14 线保持稳定；
+- `ProjectDoc` / SCXML 输出在 0.15 线保持稳定；
 - `TransitionEdge.target` 可为 `null`，`ListenEdge.target` / `EventOrigin.target` 同步可空；
 - `done` 事件新增 `states`；`error` 事件新增可选定位字段（见[会话事件](docs/session-events.md)）；
 - 序列化器会给转移写 `data-kit-transition-id`，导入器会保留；
 - `features.explorer` / `resizablePanes` 默认 `false`，不改变现有宿主行为；
 - 结构树折叠是编辑器会话内 UI；横向/纵向切换后会自动 fit 一次，侧栏 resize 不强制重置缩放；
-- 事件可设置「仅内部/仅外部」：转移生成对应 `_event.type` 守卫；`raise` 和 `send target="#_internal"` 是内部事件动作。
+- 事件可设置「仅内部」：转移生成 `_event.type === 'internal'` 守卫；`raise` 和 `send target="#_internal"` 是内部事件动作。
 
 ## 文档
 
