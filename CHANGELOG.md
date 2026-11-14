@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.15.1] - 2026-11-14
+
+### Added
+
+- `EditorAdapter.lockedInternalOnly(name)`：宿主声明不可标记为「仅内部」的事件
+  （服务端时钟 `t_`、系统 `sys.` 等）；事件面板禁用复选框并显示锁定提示，
+  `requestInternalOnly` 直接忽略。
+
+### Fixed
+
+- 事件面板「仅内部」复选框在弹窗取消 / 只读 / 宿主锁定时仍显示勾选的受控输入 bug：
+  状态未变化时立即把 DOM 同步回真实值。
+
+### Tests
+
+- `verify-editor` 覆盖宿主锁定事件（不弹窗、不写入 `internalOnlyEvents`）。
+
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
 ## [0.15.0] - 2026-11-14

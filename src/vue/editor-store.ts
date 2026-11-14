@@ -257,6 +257,8 @@ export interface EditorStore {
   setVariableAttr(index: number, key: string, value: MetaValue | undefined): void
   setEventAttr(event: string, key: string, value: MetaValue | undefined): void
   isInternalOnly(event: string): boolean
+  /** 该事件是否被宿主锁定（时钟/系统事件等不可标记为仅内部） */
+  isInternalOnlyLocked(event: string): boolean
   /** 勾选「仅内部」：干净则直接写入；有冲突或未抑制则打开定义/约束弹窗 */
   requestInternalOnly(event: string): void
   clearInternalOnly(event: string): void
@@ -1109,6 +1111,11 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     return isInternalOnlyEvent(state.doc, event)
   }
 
+  /** 宿主锁定的事件（服务端时钟 t_ 前缀、系统 sys. 前缀等）：不允许勾选「仅内部」 */
+  function isInternalOnlyLocked(event: string): boolean {
+    return adapter.lockedInternalOnly?.(event) === true
+  }
+
   function applyInternalOnly(name: string): void {
     captureUndo(`internalOnly:${name}`)
     setInternalOnlyEvent(state.doc, name, true)
@@ -1120,6 +1127,8 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     if (readOnly() || state.sim.running) return
     const name = event.trim()
     if (!name || isInternalOnlyEvent(state.doc, name)) return
+    // 宿主注入的时钟/系统事件不能标成仅内部（否则宿主投递会被守卫拦掉）
+    if (isInternalOnlyLocked(name)) return
     const analysis = analyzeInternalOnly(state.doc, name)
     if (state.internalOnlySuppressed && analysis.canConfirm) {
       applyInternalOnly(name)
@@ -1605,6 +1614,7 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     setVariableAttr,
     setEventAttr,
     isInternalOnly,
+    isInternalOnlyLocked,
     requestInternalOnly,
     clearInternalOnly,
     confirmInternalOnly,

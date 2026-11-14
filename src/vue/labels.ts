@@ -83,6 +83,7 @@ export interface EditorLabels {
   noEvents: string
   internalOnly: string
   internalOnlyHint: string
+  internalOnlyLockedHint: string
   internalOnlyTitle: string
   internalOnlyDefinition: string
   internalOnlyAllowed: string
@@ -250,6 +251,7 @@ export const DEFAULT_LABELS: EditorLabels = {
   noEvents: '还没有事件：先给转移或 send 动作设置事件名。',
   internalOnly: '仅内部',
   internalOnlyHint: '只允许 raise / send target="#_internal" 产生',
+  internalOnlyLockedHint: '该事件由宿主注入（时钟/系统事件），不能标记为仅内部',
   internalOnlyTitle: '仅内部事件',
   internalOnlyDefinition:
     '仅内部事件只允许由本会话内部的 raise 或 send target="#_internal" 产生；监听它的转移会加 _event.type === "internal" 守卫。',
@@ -420,6 +422,7 @@ export const DEFAULT_LABELS_EN: EditorLabels = {
   noEvents: 'No events yet: set an event on a transition or a send action.',
   internalOnly: 'Internal only',
   internalOnlyHint: 'Only raise / send target="#_internal" may produce it',
+  internalOnlyLockedHint: 'Injected by the host (clock/system events); cannot be internal-only',
   internalOnlyTitle: 'Internal-only event',
   internalOnlyDefinition:
     'An internal-only event may only be produced by raise or send target="#_internal"; transitions listening to it get the _event.type === "internal" guard.',

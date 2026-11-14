@@ -648,6 +648,24 @@ console.log('── P2) 仅内部：扫描 / 弹窗 / 修复 / 校验错误 ─�
     await editor.destroy()
   }
 
+  // 7) 宿主锁定事件（时钟/系统）：不可标记仅内部
+  {
+    const doc = emptyDoc('locked')
+    doc.states = [st('s1', 'a'), st('s2', 'b')]
+    doc.initial = 's1'
+    doc.transitions = [{ id: 't1', source: 's1', target: 's2', event: 't_5s', cond: '', actions: [] }]
+    const { editor } = makeEditor({ initialDoc: doc }, { lockedInternalOnly: (n) => n.startsWith('t_') })
+    await editor.ready
+    assert(editor.isInternalOnlyLocked('t_5s'), 'isInternalOnlyLocked 命中宿主锁定事件')
+    editor.requestInternalOnly('t_5s')
+    assert(
+      editor.isInternalOnly('t_5s') === false && editor.internalEventDialog === null,
+      '锁定事件不弹窗、不写入 internalOnlyEvents',
+    )
+    assert(!editor.isInternalOnlyLocked('go'), '未锁定事件不受影响')
+    await editor.destroy()
+  }
+
   // 7) 校验错误：外部生产者 / 混合事件 / 内部延时
   {
     const editor = await internalEditor(['send go'])

@@ -82,9 +82,12 @@ const raiseRows = computed(() => {
 })
 
 function setInternalOnly(name: string, e: Event): void {
-  const checked = (e.target as HTMLInputElement).checked
-  if (checked) editor.requestInternalOnly(name)
+  const input = e.target as HTMLInputElement
+  if (input.checked) editor.requestInternalOnly(name)
   else editor.clearInternalOnly(name)
+  // 弹窗取消 / 只读 / 宿主锁定：状态未变但浏览器已翻转 DOM，立刻同步回真实值
+  // （kits: 之前取消后复选框仍显示勾选，见 0.15.1 修复）
+  input.checked = editor.isInternalOnly(name)
 }
 
 function delayLabel(ms: number | undefined, unit: 's' | 'ms' | undefined): string {
@@ -209,11 +212,18 @@ const hasAny = computed(
             <td class="name" :title="row.name">{{ row.name }}</td>
             <td class="source">{{ row.sources.join(' · ') }}</td>
             <td class="visibility">
-              <label class="sce-var-flag" :title="editor.labels.internalOnlyHint">
+              <label
+                class="sce-var-flag"
+                :title="
+                  editor.isInternalOnlyLocked(row.name)
+                    ? editor.labels.internalOnlyLockedHint
+                    : editor.labels.internalOnlyHint
+                "
+              >
                 <input
                   type="checkbox"
                   :checked="editor.isInternalOnly(row.name)"
-                  :disabled="editor.locked"
+                  :disabled="editor.locked || editor.isInternalOnlyLocked(row.name)"
                   :aria-label="`${row.name} ${editor.labels.internalOnly}`"
                   @change="setInternalOnly(row.name, $event)"
                 />

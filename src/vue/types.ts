@@ -39,6 +39,8 @@ export interface EditorAdapter {
   examples?: EditorExample[]
   /** 时钟/路由/MQTT 等外部事件来源（编辑器事件下拉用） */
   externalEvents?(): ExternalEventSource[] | Promise<ExternalEventSource[]>
+  /** 宿主声明「不可标记为仅内部」的事件（服务端时钟/系统事件等）；事件面板禁用复选框 */
+  lockedInternalOnly?(name: string): boolean
   /** 会话选项（引擎/damParser/timeout/data）；domParser 也可单独提供 */
   runner?: SessionRunnerOptions
   /** `features.explorer` 打开时的界面文案覆盖（未提供的键用官方英文默认值） */
