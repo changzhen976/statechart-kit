@@ -227,7 +227,7 @@ export const DEFAULT_LABELS: EditorLabels = {
   eventSource: '来源',
   transitionListen: '转移监听',
   internalEvents: '自动延时转移',
-  internalEventHint: '由 delayMs 转移自动生成；本机计时器，不参与广播、路由或 MQTT。',
+  internalEventHint: '由 delayMs 转移自动生成；引擎事件类型为 external。',
   raiseEvents: '内部发出',
   listeners: '监听数',
   eventSourceInternal: '内部 raise/send',
@@ -397,7 +397,7 @@ export const DEFAULT_LABELS_EN: EditorLabels = {
   transitionListen: 'Transition listeners',
   internalEvents: 'Auto-delay transitions',
   internalEventHint:
-    'Generated from delayMs transitions; a local timer, not broadcast, routed, or sent over MQTT.',
+    'Generated from delayMs transitions; the engine treats it as an external event.',
   raiseEvents: 'Internal emissions',
   listeners: 'Listeners',
   eventSourceInternal: 'internal raise/send',

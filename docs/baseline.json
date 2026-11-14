@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "generatedAt": "2026-11-14T03:49:11.090Z",
+  "generatedAt": "2026-11-14T04:04:43.556Z",
   "package": "statechart-kit",
   "phase": "P4 (core/editor boundary, BASE_POLICY, EditorModule)",
   "donor": {
@@ -41,7 +41,7 @@
     "src/vue/index.ts": "f93e0b46d8e36caa1f381194f07b4c01325e7c3780c910975544671c205d691d",
     "src/vue/types.ts": "b43c2cb02e391074ca6641272fba38d762b89d40b6d5b28b851843d216c46b8a",
     "src/vue/features.ts": "b7a615bcfd05c31e3075a6f842a0151ec558ab7594f7e0725190b4bc50347f99",
-    "src/vue/labels.ts": "9dd205e8ca9f027156d205d145e1600a46236b348d965175baa34ff26d84ec50",
+    "src/vue/labels.ts": "1a8868e6c16fdbe6293784c1fda2c7e9a3414a01ed9d8fa111d889a2cab683c4",
     "src/vue/format.ts": "dbdae06d8eca5ea29a1c15baaf688518fbd96af0516a308dd531d45a934181c5",
     "src/vue/events.ts": "2e23c991cc1f1a1f37e4c89a6963d6a01dcc126e5a1ac34a0ef89c12c664c1a3",
     "src/vue/browser-adapter.ts": "bb7bfa00f8979dc38a4dcaaa095ae518a8789af3575c3a6c9abed9bf87115516",
@@ -60,7 +60,7 @@
     "src/vue/DoneDataEditor.vue": "ca19edd2ec139303557048015b2bb4da6eda7d22c7d7837a0cdefe853dec73cd",
     "src/vue/EventCombo.vue": "244035ac3990db3e99f4cc51d7a8134b96c8d86d271ff7989b2be7b8caac0e55",
     "src/vue/VariablesPanel.vue": "e603a72417dc1eda98109c93659b1223924970d504adb5f1978ec735e24857d1",
-    "src/vue/EventAttrsPanel.vue": "d093e7226411437effc59b31313d0737618c1315f371ef2d837fb30c960b1cf8",
+    "src/vue/EventAttrsPanel.vue": "a49edcda0834ddf8d78cd76c22eb309d8caa4910fcdf83d28bc621ef4a5d6039",
     "src/vue/InternalEventDialog.vue": "13c3f1c0bcc67b9cd18b63f444055343b7835d0544053ac4effb281e6b72b017",
     "src/vue/SimPanel.vue": "e2bafed9622dc40f7cf388f231521516ca978658fda19c509c2abe5683203a4a",
     "src/vue/SimBar.vue": "60c23e8d9a9b53bb86149207fa3c6eef60860b4700211e78810c0afb6079f539",
