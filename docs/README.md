@@ -14,6 +14,7 @@
 
 以下内容保留历史阶段、架构复盘、需求记录与发布细节，不作为宿主集成入口：
 
+- [事件可见性设计（仅内部事件）](internal/event-visibility.md)
 - [阶段路线图与迁移记录](internal/roadmap.md)
 - [架构复盘与风险](internal/architecture-review.md)
 - [KIT-001–005 需求记录](internal/kit-requirements.md)
