@@ -462,13 +462,7 @@ export function validateStructure(doc: ProjectDoc): StructureReport {
     }
     if (t.delayMs === undefined) {
       const names = t.event.split(/\s+/).filter(Boolean)
-      const visibilities = names.map((name) =>
-        isInternalOnlyEvent(doc, name)
-          ? 'internal'
-          : doc.eventVisibility?.[name] === 'external'
-            ? 'external'
-            : 'both',
-      )
+      const visibilities = names.map((name) => (isInternalOnlyEvent(doc, name) ? 'internal' : 'both'))
       if (names.length > 1 && new Set(visibilities).size > 1) {
         add({
           severity: 'error',

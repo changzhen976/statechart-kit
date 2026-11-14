@@ -1,11 +1,10 @@
 /**
  * 内置示例工程：交通灯（与 scxmljs 官方 README 示例一致，便于对照验证）。
- * 动作使用本项目的动作 DSL（见 serializer.ts 头注释）：
- *   - entry 的 `send timer delay 3s id timer` → <send event="timer" delay="3s" id="timer"/>
- *   - exit  的 `cancel timer`                 → <cancel sendid="timer"/>
+ * 延时使用转移上的 delayMs（serializer 注入 entry send / exit cancel）：
+ *   - red→green delayMs 3000 → <send event="delay3s_red_to_green" delay="3s" .../>
  *   - yellow→red 的 `assign cycles = cycles + 1` → <assign .../>
  */
-import { emptyDoc, newUid, type ProjectDoc, type StateKind, type StateNode } from './model'
+import { autoDelayEventName, emptyDoc, newUid, type ProjectDoc, type StateKind, type StateNode } from './model'
 
 function st(uid: string, id: string, label: string, kind: StateKind, parent: string | null, extra: Partial<StateNode> = {}): StateNode {
   return { uid, id, label, kind, parent, initial: null, entryActions: [], exitActions: [], ...extra }
@@ -18,16 +17,19 @@ export function trafficLightDoc(): ProjectDoc {
   doc.initial = uOn
   doc.states = [
     st(uOn, 'on', '运行', 'compound', null, { initial: uRed }),
-    st(uRed, 'red', '红灯 3s', 'atomic', uOn, { entryActions: ['send timer delay 3s id timer'], exitActions: ['cancel timer'] }),
-    st(uGreen, 'green', '绿灯 3s', 'atomic', uOn, { entryActions: ['send timer delay 3s id timer'], exitActions: ['cancel timer'] }),
-    st(uYellow, 'yellow', '黄灯 1s', 'atomic', uOn, { entryActions: ['send timer delay 1s id timer'], exitActions: ['cancel timer'] }),
+    st(uRed, 'red', '红灯 3s', 'atomic', uOn),
+    st(uGreen, 'green', '绿灯 3s', 'atomic', uOn),
+    st(uYellow, 'yellow', '黄灯 1s', 'atomic', uOn),
     st(uOff, 'off', '停止', 'final', null),
   ]
+  const evR2G = autoDelayEventName(doc, 'red', 'green', 3000, 's')
+  const evG2Y = autoDelayEventName(doc, 'green', 'yellow', 3000, 's')
+  const evY2R = autoDelayEventName(doc, 'yellow', 'red', 1000, 's')
   doc.transitions = [
     { id: 'ex-power', source: uOn, target: uOff, event: 'power.off', cond: '', actions: [] },
-    { id: 'ex-r2g', source: uRed, target: uGreen, event: 'timer', cond: '', actions: [] },
-    { id: 'ex-g2y', source: uGreen, target: uYellow, event: 'timer', cond: '', actions: [] },
-    { id: 'ex-y2r', source: uYellow, target: uRed, event: 'timer', cond: '', actions: ['assign cycles = cycles + 1'] },
+    { id: 'ex-r2g', source: uRed, target: uGreen, event: evR2G, cond: '', actions: [], delayMs: 3000, delayUnit: 's' },
+    { id: 'ex-g2y', source: uGreen, target: uYellow, event: evG2Y, cond: '', actions: [], delayMs: 3000, delayUnit: 's' },
+    { id: 'ex-y2r', source: uYellow, target: uRed, event: evY2R, cond: '', actions: ['assign cycles = cycles + 1'], delayMs: 1000, delayUnit: 's' },
   ]
   // 初始布局：on 容器包住三个灯；off 在右侧
   doc.layout = {
@@ -71,10 +73,10 @@ export function entryExitDoc(): ProjectDoc {
 }
 
 /**
- * 延时发送与取消演示：entry 布防 3 秒闹钟（send alarm delay 3s id alarm），
- * exit 撤防（cancel alarm）——等价于 Stateflow 的 after(n, sec) 与其撤销。
- * 仿真：运行后 3 秒内注入 pause → 闹钟被取消不超时；resume 重新布防，
- * 若不 pause，3 秒后 alarm 触发进入超时态。
+ * 内部延时与取消演示：运行态的 delayMs 转移在 entry 布防 3 秒闹钟，
+ * exit 自动撤销——等价于 Stateflow 的 after(n, sec) 与其撤销。
+ * 仿真：运行后 3 秒内注入 pause → 定时器被撤销不超时；resume 重入 run
+ * 重新布防，若不 pause，3 秒后进入超时态。
  */
 export function sendCancelDoc(): ProjectDoc {
   const doc = emptyDoc('send-cancel-demo')
@@ -87,8 +89,8 @@ export function sendCancelDoc(): ProjectDoc {
   doc.states = [
     st(uWatch, 'watching', '监视中', 'compound', null, { initial: uRun }),
     st(uRun, 'running', '运行（已布防）', 'atomic', uWatch, {
-      entryActions: ['send alarm delay 3s id alarm', 'log "已布防：3 秒内不 pause 将超时"'],
-      exitActions: ['cancel alarm', 'log "退出：撤防"'],
+      entryActions: ['log "已布防：3 秒内不 pause 将超时"'],
+      exitActions: ['log "退出：撤防"'],
     }),
     st(uPause, 'paused', '已暂停', 'atomic', uWatch),
     st(uTime, 'timedout', '超时！', 'atomic', uWatch, {
@@ -96,10 +98,11 @@ export function sendCancelDoc(): ProjectDoc {
     }),
     st(uDone, 'done', '结束', 'final', null),
   ]
+  const evAlarm = autoDelayEventName(doc, 'running', 'timedout', 3000, 's')
   doc.transitions = [
     { id: 'ex-pause', source: uRun, target: uPause, event: 'pause', cond: '', actions: [] },
     { id: 'ex-resume', source: uPause, target: uRun, event: 'resume', cond: '', actions: [] },
-    { id: 'ex-alarm', source: uRun, target: uTime, event: 'alarm', cond: '', actions: [] },
+    { id: 'ex-alarm', source: uRun, target: uTime, event: evAlarm, cond: '', actions: [], delayMs: 3000, delayUnit: 's' },
     { id: 'ex-retry', source: uTime, target: uRun, event: 'retry', cond: '', actions: [] },
     { id: 'ex-stop', source: uWatch, target: uDone, event: 'stop', cond: '', actions: [] },
   ]
@@ -178,11 +181,11 @@ export function faultCondDoc(): ProjectDoc {
 
 /**
  * 动作演示（结构化动作编辑器的展示/验证案例）：
- * - 开机转移动作完成初始化（温度/次数清零）并布防采样定时器（send delay）；
+ * - 运行态用一条无目标 delayMs 转移当采样闹钟：到点只 raise 「采样」；
  * - 「采样」同名事件两条转移按条件先后生效（文档顺序优先级）：温度 < 60 时
- *   自环升温并重发定时器；温度 >= 60 时跳转「达标」，其 entry 撤销定时器（cancel）；
- * - ⚠ 教学点：自环是外部转移（退出重入），entry 会在每次重入时重跑——因此
- *   初始化放在「开机」转移动作里而不是运行态 entry（否则温度每次被清零、永不达标）。
+ *   自环升温（退出重入，重新布防闹钟）；温度 >= 60 时跳转「达标」；
+ * - ⚠ 教学点：自环是外部转移（退出重入），entry 会在每次重入时重跑并重新布防；
+ *   初始化放在「开机」转移动作里而不是运行态 entry（否则温度每次被清零）。
  */
 export function actionDemoDoc(): ProjectDoc {
   const doc = emptyDoc('action-demo')
@@ -197,12 +200,13 @@ export function actionDemoDoc(): ProjectDoc {
   doc.states = [
     st(uStop, '停机', '停机', 'atomic', null),
     st(uRun, '运行', '运行', 'atomic', null, {
-      exitActions: ['cancel 采样', 'log "关机"'],
+      exitActions: ['log "关机"'],
     }),
     st(uOk, '达标', '达标', 'atomic', null, {
-      entryActions: ['cancel 采样', 'log "达标：温度 >= 60"'],
+      entryActions: ['log "达标：温度 >= 60"'],
     }),
   ]
+  const evSampling = autoDelayEventName(doc, '运行', null, 1000, 's')
   doc.transitions = [
     {
       id: 'ex-boot',
@@ -210,7 +214,18 @@ export function actionDemoDoc(): ProjectDoc {
       target: uRun,
       event: '开机',
       cond: '',
-      actions: ['assign 温度 = 0', 'assign 次数 = 0', 'send 采样 delay 1s id 采样'],
+      actions: ['assign 温度 = 0', 'assign 次数 = 0'],
+    },
+    // 采样闹钟：无目标、到点只 raise；自环重入 run 时重新布防。
+    {
+      id: 'ex-arm',
+      source: uRun,
+      target: null,
+      event: evSampling,
+      cond: '',
+      actions: ['raise 采样'],
+      delayMs: 1000,
+      delayUnit: 's',
     },
     {
       id: 'ex-sample-up',
@@ -218,7 +233,7 @@ export function actionDemoDoc(): ProjectDoc {
       target: uRun,
       event: '采样',
       cond: '温度 < 60',
-      actions: ['assign 温度 = 温度 + 20', 'assign 次数 = 次数 + 1', 'send 采样 delay 1s id 采样'],
+      actions: ['assign 温度 = 温度 + 20', 'assign 次数 = 次数 + 1'],
     },
     { id: 'ex-sample-ok', source: uRun, target: uOk, event: '采样', cond: '温度 >= 60', actions: [] },
     { id: 'ex-off', source: uRun, target: uStop, event: '关机', cond: '', actions: [] },
@@ -233,7 +248,7 @@ export const EXAMPLES: { name: string; make: () => ProjectDoc }[] = [
   { name: '交通灯（官方示例）', make: trafficLightDoc },
   { name: '并行加热/搅拌 + 深历史恢复', make: parallelHistoryDoc },
   { name: '进入/退出动作演示', make: entryExitDoc },
-  { name: '延时发送与取消（send delay / cancel）', make: sendCancelDoc },
+  { name: '内部延时与取消（delayMs）', make: sendCancelDoc },
   { name: '故障全局转移 + 条件与或非', make: faultCondDoc },
   { name: '动作演示（采样升温循环）', make: actionDemoDoc },
   { name: '极限演示：并行 + 深浅历史 + 自定义 JS', make: extremeDemoDoc },
@@ -297,18 +312,13 @@ export function extremeDemoDoc(): ProjectDoc {
     st(uWork, 'work', '作业区（并行：机械臂 ∥ 传送带 ∥ 质检位）', 'parallel', uMain),
     st(uArm, 'arm', '机械臂', 'compound', uWork, { initial: uArmIdle }),
     st(uArmIdle, 'armIdle', '机械臂·待机', 'atomic', uArm),
-    st(uArmBusy, 'armBusy', '机械臂·夹取中', 'atomic', uArm, {
-      entryActions: ['send 臂落料 delay 2s id 臂T'],
-      exitActions: ['cancel 臂T'],
-    }),
+    st(uArmBusy, 'armBusy', '机械臂·夹取中', 'atomic', uArm),
     st(uBelt, 'belt', '传送带', 'compound', uWork, { initial: uBeltStop }),
     st(uBeltStop, 'beltStop', '传送带·停', 'atomic', uBelt),
     st(uBeltRun, 'beltRun', '传送带·运转', 'atomic', uBelt, {
       entryActions: [
         '/* JS：记录启动时刻\n   （每次重入都会刷新） */\n带启动时刻 = new Date().toISOString()',
-        'send 带步进 delay 1s id 带T',
       ],
-      exitActions: ['cancel 带T'],
     }),
     st(uQc, 'qc', '质检位', 'compound', uWork, { initial: uQcWait }),
     st(uQcWait, 'qcWait', '质检位·待检', 'atomic', uQc),
@@ -317,10 +327,7 @@ export function extremeDemoDoc(): ProjectDoc {
         '/* JS：模拟质检波动（Math.random）\n   良品率决定下一跳：≥90 合格 / 否则返修 */\n良品率 = Math.round(75 + Math.random() * 25)',
       ],
     }),
-    st(uQcRework, 'qcRework', '质检位·返修中', 'atomic', uQc, {
-      entryActions: ['send 返修完 delay 1.2s id 返T'],
-      exitActions: ['cancel 返T'],
-    }),
+    st(uQcRework, 'qcRework', '质检位·返修中', 'atomic', uQc),
     st(uCrash, 'crashed', '故障停机', 'atomic', null),
     st(uDone, 'done', '批次完成', 'atomic', null, {
       entryActions: [
@@ -331,6 +338,9 @@ export function extremeDemoDoc(): ProjectDoc {
     st(uHd, 'hd', '深历史', 'history', uMain, { historyType: 'deep' }),
     st(uHs, 'hs', '浅历史', 'history', uMain, { historyType: 'shallow' }),
   ]
+  const evArmDrop = autoDelayEventName(doc, 'armBusy', 'armIdle', 2000, 's')
+  const evBeltStep = autoDelayEventName(doc, 'beltRun', 'beltRun', 1000, 's')
+  const evReworkDone = autoDelayEventName(doc, 'qcRework', 'qcWait', 1200, 'ms')
   doc.transitions = [
     // 机械臂：件到 → 夹取（2s 后落料回待机）；JS 统计节拍
     { id: 'xm-grab', source: uArmIdle, target: uArmBusy, event: '件到', cond: '', actions: [] },
@@ -338,12 +348,14 @@ export function extremeDemoDoc(): ProjectDoc {
       id: 'xm-drop',
       source: uArmBusy,
       target: uArmIdle,
-      event: '臂落料',
+      event: evArmDrop,
       cond: '',
       actions: [
         'assign 夹取数 = 夹取数 + 1',
         '/* JS：节拍统计 */\n累计节拍 = 累计节拍 + 1\n报告 = "最近节拍 #" + 累计节拍',
       ],
+      delayMs: 2000,
+      delayUnit: 's',
     },
     // 传送带：无事件自动启动（初始化/浅恢复回到"停"都会再拉起）；暂停手动、恢复用事件
     { id: 'xm-belt-auto', source: uBeltStop, target: uBeltRun, event: '', cond: '', actions: [] },
@@ -354,9 +366,11 @@ export function extremeDemoDoc(): ProjectDoc {
       id: 'xm-belt-step',
       source: uBeltRun,
       target: uBeltRun,
-      event: '带步进',
+      event: evBeltStep,
       cond: '',
       actions: ['assign 步进数 = 步进数 + 1', 'send 件到'],
+      delayMs: 1000,
+      delayUnit: 's',
     },
     // 质检：待检 --件到→ 检测中；JS 定良品率后无事件分派（≥90 合格 / 否则返修）
     { id: 'xm-qc-in', source: uQcWait, target: uQcCheck, event: '件到', cond: '', actions: [] },
@@ -369,7 +383,16 @@ export function extremeDemoDoc(): ProjectDoc {
       actions: ['assign 合格数 = 合格数 + 1'],
     },
     { id: 'xm-qc-fail', source: uQcCheck, target: uQcRework, event: '', cond: '良品率 < 90', actions: [] },
-    { id: 'xm-qc-reworked', source: uQcRework, target: uQcWait, event: '返修完', cond: '', actions: [] },
+    {
+      id: 'xm-qc-reworked',
+      source: uQcRework,
+      target: uQcWait,
+      event: evReworkDone,
+      cond: '',
+      actions: [],
+      delayMs: 1200,
+      delayUnit: 'ms',
+    },
     // 祖先转移（层级转移）：并行区任意深处发 故障 → 整体进入故障停机
     {
       id: 'xm-fault',

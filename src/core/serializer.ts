@@ -15,7 +15,7 @@
  */
 import type { DoneData, ProjectDoc, StateNode, TransitionEdge } from './model'
 import { childrenOf, uidMap } from './model'
-import { internalOnlyNames, transitionVisibility, withVisibilityGuard } from './event-visibility'
+import { internalOnlyNames, transitionVisibility, withInternalGuard } from './event-visibility'
 
 /** XML 属性值转义 */
 const esc = (v: string) =>
@@ -83,8 +83,8 @@ function transitionXml(doc: ProjectDoc, t: TransitionEdge, idOf: (uid: string) =
   if (t.target !== null) attrs.push(`target="${esc(idOf(t.target))}"`)
   if (t.transitionType) attrs.push(`type="${esc(t.transitionType)}"`)
   attrs.push(`data-kit-transition-id="${esc(t.id)}"`)
-  if (visibility && visibility !== 'both') attrs.push(`data-kit-visibility="${visibility}"`)
-  const cond = visibility && visibility !== 'both' ? withVisibilityGuard(t.cond, visibility) : t.cond
+  if (visibility) attrs.push(`data-kit-visibility="${visibility}"`)
+  const cond = visibility ? withInternalGuard(t.cond) : t.cond
   if (cond) attrs.push(`cond="${esc(cond)}"`)
   const open = `${pad}<transition ${attrs.join(' ')}`
   const body = actionsBlock(t.actions, pad + '  ')
@@ -160,7 +160,6 @@ function stateToScxml(doc: ProjectDoc, s: StateNode, idOf: (uid: string) => stri
 export function serializeToDisplayScxml(doc: ProjectDoc): string {
   const displayDoc: ProjectDoc = { ...doc }
   // 实现细节不进画布：守卫、转移元数据、根级可见性集合都隐藏。
-  delete displayDoc.eventVisibility
   delete displayDoc.internalOnlyEvents
   return serializeToScxml(displayDoc)
 }

@@ -513,3 +513,4 @@ scxml-view::part(canvas)::-webkit-scrollbar { width: 0; height: 0; display: none
 .sce-internal-list .mini { font-size: 10.5px; padding: 1px 6px; }
 .sce-internal-ok { margin: 8px 0 0; color: var(--scxml-running); font-size: 11.5px; }
 .sce-internal-suppress { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 11px; color: var(--scxml-fg-muted); }
+.ale-legacy-delay { font-size: 11px; color: var(--scxml-waiting); white-space: nowrap; }

@@ -94,7 +94,7 @@ export function actionToLine(a: ActionStruct): string {
   }
 }
 
-/** 动作类型清单（编辑器"添加动作"用；send 分立即/延时两个快捷入口）。
+/** 动作类型清单（编辑器"添加动作"用）。
  *  `label` 是**消息 code**，由宿主本地化（P1 起 core 不再带界面文案）。 */
 export const ACTION_KINDS: {
   type: ActionStruct['type']
@@ -109,11 +109,6 @@ export const ACTION_KINDS: {
     template: { type: 'send', event: 'event', target: '#_internal' },
   },
   { type: 'raise', label: 'action.raise', template: { type: 'raise', event: 'event' } },
-  {
-    type: 'send',
-    label: 'action.send-delayed',
-    template: { type: 'send', event: 'event', delay: '1s', id: 'timer' },
-  },
   { type: 'cancel', label: 'action.cancel' },
   { type: 'assign', label: 'action.assign' },
   { type: 'log', label: 'action.log' },

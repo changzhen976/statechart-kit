@@ -31,18 +31,20 @@
 
 - 混合可见性转移从 warning 升为 **error**（不会生成守卫，`serializeChecked` 拒绝）；
 - 自动延时转移仍不生成可见性守卫，避免破坏延时行为；
-- 事件改名时同时清理 `internalOnlyEvents` 与 legacy `eventVisibility`；
+- 事件改名时迁移 `eventAttrs` 并清理 `internalOnlyEvents`；
 - 旧 `external` 草稿在 `normalizeDoc` / SCXML 导入 / 编辑器加载时降级为双向（导入给
-  `import.event-visibility-external-removed` warning）；事件面板不再提供「仅外部」。
+  `import.event-visibility-external-removed` warning）；事件面板不再提供「仅外部」；
+- 内置示例全部改为 `delayMs` / `raise` 中继：交通灯、内部延时与取消、采样升温、
+  机器人产线。
 
-### Planned (0.15.0)
+### Removed
 
-> 以下为剩余设计目标，随实现逐条并入 Added / Changed / Removed；发布前删除本节。
-
-- 删除 `external` 可见性与 `EventVisibility` / `eventVisibility` / 旧 API；
-- 动作编辑器移除「延时发送」与 delay 输入；旧 `send delay` 行只读，自动转换器
-  延后到 0.15.x；
-- 内置示例改写为 `delayMs` / `raise` 中继；用户文档与 CHANGELOG 同步。
+- `EventVisibility` / `ProjectDoc.eventVisibility` / `setEventVisibility()` 与
+  `external` 守卫/API 删除；旧 JSON 在 `normalizeDoc` 迁移，旧 SCXML 的
+  `data-kit-visibility="external"` 降级为双向；
+- 动作编辑器移除「延时发送」入口与 delay 输入；旧 `send delay` 行只读显示
+  「旧写法」并提示改用无目标延迟转移 + raise 中继。模型/解析/序列化/导入仍保留
+  `send delay` 以兼容旧 SCXML。
 
 ### Tests
 
@@ -50,7 +52,8 @@
 - `verify-event-visibility` 覆盖 `internalOnlyEvents`、根级元数据往返、生产者
   冲突、混合 error、`#_internal+delay`、无生产者 warning、导入优先级；
 - `verify-editor` 覆盖 `internalOnlyEvents` 改名清理、仅内部弹窗/扫描/一键修复/
-  会话内抑制，以及外部生产者、混合事件、`#_internal+delay` 的校验错误。
+  会话内抑制，以及外部生产者、混合事件、`#_internal+delay` 的校验错误；
+- `smoke-engine` / `verify-import` 覆盖 delayMs 化后的四个内置示例。
 
 ## [0.13.1] - 2026-11-14
 

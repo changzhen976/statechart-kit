@@ -162,7 +162,7 @@ const runner = new SessionRunner({ engine: 'sandboxed', domParser })
 | `test/verify-engine.ts` | 懒加载、两种数据模型、生命周期竞态 |
 | `test/verify-host-events.ts` | typed send/done/error、done.states、error 定位 |
 | `test/verify-editor.ts` | adapter、CRUD/undo、Explorer 匹配、doneData、locale/diagnostics、canvas-fit、运行/校验脚本提示、仅内部弹窗/扫描/修复与校验错误 |
-| `test/verify-event-visibility.ts` | raise、internal/external 守卫、自动延时例外、`#_internal`、round-trip、混合 error、`internalOnlyEvents`、生产者冲突、根级元数据 |
+| `test/verify-event-visibility.ts` | raise、internal-only 守卫、自动延时例外、`#_internal`、round-trip、混合 error、`internalOnlyEvents`、生产者冲突、根级元数据、旧 external 导入降级 |
 
 发布前必须 `npm run verify:all` 全绿。`check:baseline -- --donor` 需要本地
 `../scxml-creator` donor 工作区，仅开发机可用。

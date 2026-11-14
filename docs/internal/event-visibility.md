@@ -701,7 +701,7 @@ transition sys.tick → timeout      # 仅内部
 | 示例 | 现写法 | 目标写法 |
 | --- | --- | --- |
 | 交通灯 | entry `send timer delay …` + `cancel` | 各状态 `delayMs` 转移（red→green→yellow→red） |
-| 延时发送与取消 | entry `send alarm delay 3s` + `cancel` | `delayMs` 转移 + pause 路由 |
+| 内部延时与取消 | entry `send alarm delay 3s` + `cancel` | `delayMs` 转移 + pause 路由 |
 | 动作演示（采样循环） | 转移动作 `send 采样 delay 1s` | 无目标 `delayMs` + `raise 采样` + 条件自环 |
 | 机器人产线 | 多处 entry `send … delay` + `cancel` | 对应 `delayMs` 转移 |
 

@@ -20,7 +20,6 @@ import {
   uidMap,
   uniqueStateId,
   type DataVar,
-  type EventVisibility,
   type MetaValue,
   type ProjectDoc,
   type StateKind,
@@ -29,11 +28,7 @@ import {
 } from '../core/model'
 import { NCNAME_RE } from '../core/validate-structure'
 import { serializeToScxml } from '../core/serializer'
-import {
-  isInternalOnlyEvent,
-  setEventVisibility as setDocEventVisibility,
-  setInternalOnlyEvent,
-} from '../core/event-visibility'
+import { isInternalOnlyEvent, setInternalOnlyEvent } from '../core/event-visibility'
 import { checkEventName, checkVarName } from '../core/naming'
 import { actionToLine, parseActionLine, scanScriptActions } from '../core/action-parse'
 import { scriptHitsToIssues, validateDocument, type ValidationIssue } from '../engine/validator'
@@ -261,7 +256,6 @@ export interface EditorStore {
   updateVariable(index: number, patch: Partial<DataVar>): string | null
   setVariableAttr(index: number, key: string, value: MetaValue | undefined): void
   setEventAttr(event: string, key: string, value: MetaValue | undefined): void
-  setEventVisibility(event: string, visibility: EventVisibility): void
   isInternalOnly(event: string): boolean
   /** 勾选「仅内部」：干净则直接写入；有冲突或未抑制则打开定义/约束弹窗 */
   requestInternalOnly(event: string): void
@@ -864,10 +858,12 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
         if (t.source !== s.uid && t.target !== s.uid) continue
         const srcId = state.doc.states.find((x) => x.uid === t.source)?.id ?? t.source
         const dstId = t.target === null ? null : (state.doc.states.find((x) => x.uid === t.target)?.id ?? t.target)
+        const previousEvent = t.event
         t.event = autoDelayEventName(state.doc, srcId, dstId, t.delayMs, t.delayUnit)
+        migrateEventAttrs(previousEvent, t.event)
       }
     }
-    pruneEventVisibility()
+    pruneInternalOnly()
     touch()
     return null
   }
@@ -889,7 +885,7 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     }
     for (const parentUid of affectedParents) ensureInitial(parentUid)
     ensureInitial(null)
-    pruneEventVisibility()
+    pruneInternalOnly()
     if (state.selection.id && doomed.has(state.selection.id)) select(null, null)
     touch()
     return true
@@ -984,9 +980,7 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     return null
   }
 
-  /** 删除已不在文档事件/动作中的 eventVisibility 键，避免事件改名后残留幽灵配置。 */
-  function pruneEventVisibility(): void {
-    if (!state.doc.eventVisibility) return
+  function collectUsedEvents(): Set<string> {
     const used = new Set<string>()
     const scan = (actions: string[]): void => {
       for (const line of actions) {
@@ -1002,15 +996,39 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
       scan(s.entryActions)
       scan(s.exitActions)
     }
-    const next = Object.fromEntries(
-      Object.entries(state.doc.eventVisibility).filter(([name]) => used.has(name)),
-    )
-    if (Object.keys(next).length) state.doc.eventVisibility = next
-    else delete state.doc.eventVisibility
+    return used
+  }
+
+  /** 事件改名时迁移宿主的 eventAttrs 键；旧名仍被使用时保留。 */
+  function migrateEventAttrs(from: string, to: string): void {
+    const oldNames = from.split(/\s+/).filter(Boolean)
+    const newNames = to.split(/\s+/).filter(Boolean)
+    if (oldNames.length !== 1 || newNames.length !== 1) return
+    const oldName = oldNames[0]!
+    const newName = newNames[0]!
+    if (oldName === newName || !state.doc.eventAttrs?.[oldName]) return
+    if (state.doc.eventAttrs[newName]) return
+    if (collectUsedEvents().has(oldName)) return
+    const attrs = state.doc.eventAttrs[oldName]!
+    const next = { ...state.doc.eventAttrs, [newName]: attrs }
+    delete next[oldName]
+    state.doc.eventAttrs = next
+  }
+
+  /** 清理不再被事件/动作引用的仅内部事件名与宿主事件属性。 */
+  function pruneInternalOnly(): void {
+    const used = collectUsedEvents()
     if (state.doc.internalOnlyEvents) {
       const names = state.doc.internalOnlyEvents.filter((name) => used.has(name))
       if (names.length) state.doc.internalOnlyEvents = names
       else delete state.doc.internalOnlyEvents
+    }
+    if (state.doc.eventAttrs) {
+      const attrs = Object.fromEntries(
+        Object.entries(state.doc.eventAttrs).filter(([name]) => used.has(name)),
+      )
+      if (Object.keys(attrs).length) state.doc.eventAttrs = attrs
+      else delete state.doc.eventAttrs
     }
   }
 
@@ -1035,6 +1053,7 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
       }
     }
     captureUndo(`updateTransition:${id}`)
+    const previousEvent = t.event
     Object.assign(t, patch)
     if (t.target === null && t.transitionType === undefined) t.transitionType = 'internal'
     if (t.delayMs !== undefined) {
@@ -1044,7 +1063,8 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     } else if (!t.event) {
       // 取消延时后保留用户之前填的事件（若有）；无事件转移合法
     }
-    pruneEventVisibility()
+    if (previousEvent !== t.event) migrateEventAttrs(previousEvent, t.event)
+    pruneInternalOnly()
     touch()
   }
 
@@ -1052,6 +1072,7 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     if (readOnly() || state.sim.running) return
     captureUndo(`removeTransition:${id}`)
     state.doc.transitions = state.doc.transitions.filter((t) => t.id !== id)
+    pruneInternalOnly()
     if (state.selection.id === id) select(null, null)
     touch()
   }
@@ -1093,15 +1114,6 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     touch()
   }
 
-  function setEventVisibility(event: string, visibility: EventVisibility): void {
-    if (readOnly() || state.sim.running) return
-    const name = event.trim()
-    if (!name) return
-    captureUndo(`eventVisibility:${name}`)
-    setDocEventVisibility(state.doc, name, visibility)
-    touch()
-  }
-
   function isInternalOnly(event: string): boolean {
     return isInternalOnlyEvent(state.doc, event)
   }
@@ -1130,8 +1142,7 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     const name = event.trim()
     if (!name) return
     captureUndo(`internalOnly:${name}`)
-    // both 会同时清掉 internalOnlyEvents 与 legacy internal/external 映射。
-    setDocEventVisibility(state.doc, name, 'both')
+    setInternalOnlyEvent(state.doc, name, false)
     touch()
     if (state.internalEventDialog?.event === name) state.internalEventDialog = null
   }
@@ -1422,7 +1433,7 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
 
   function sendEvent(name: string, data?: unknown): void {
     if (!state.sim.running || !name) return
-    if (state.doc.eventVisibility?.[name] === 'internal') {
+    if (isInternalOnlyEvent(state.doc, name)) {
       pushLog('error', labels.eventInternalBlocked.replace('{name}', name))
       return
     }
@@ -1605,7 +1616,6 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     updateVariable,
     setVariableAttr,
     setEventAttr,
-    setEventVisibility,
     isInternalOnly,
     requestInternalOnly,
     clearInternalOnly,

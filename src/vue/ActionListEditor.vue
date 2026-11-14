@@ -162,9 +162,7 @@ function add(kind: (typeof ACTION_KINDS)[number]): void {
   const struct: ActionStruct =
     kind.label === 'action.send'
       ? { type: 'send', event: '事件名' }
-      : kind.label === 'action.send-delayed'
-        ? { type: 'send', event: '事件名', delay: '1s', id: '定时器' }
-        : (kind.template ?? defaults[kind.type])
+      : (kind.template ?? defaults[kind.type])
   emit('update:modelValue', [...props.modelValue, actionToLine(struct)])
 }
 
@@ -173,7 +171,6 @@ const ACTION_LABELS: Record<string, string> = {
   'action.send': '发送事件',
   'action.send-internal': '内部发送',
   'action.raise': '内部事件 raise',
-  'action.send-delayed': '延时发送',
   'action.cancel': '撤销事件',
   'action.assign': '赋值',
   'action.log': '日志',
@@ -298,19 +295,11 @@ function setSendData(i: number, raw: string): void {
           />
           内部
         </label>
-        <input
-          class="f-small"
-          :value="row.delay ?? ''"
-          :disabled="disabled || row.target === '#_internal'"
-          placeholder="延时"
-          :title="row.target === '#_internal' ? '内部 target 不能使用延时' : '延时（如 3s / 500ms）'"
-          @change="
-            onInput(
-              i,
-              { target: row.target, event: row.event, delay: ($event.target as HTMLInputElement).value || undefined },
-            )
-          "
-        />
+        <span
+          v-if="row.delay"
+          class="ale-legacy-delay"
+          :title="editor.labels.legacyDelayHint"
+        >{{ editor.labels.legacyDelay }} · {{ row.delay }}</span>
         <input
           class="f-small"
           :value="row.id ?? ''"

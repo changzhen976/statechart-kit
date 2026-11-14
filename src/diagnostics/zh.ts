@@ -71,7 +71,7 @@ const STRUCTURE: Record<string, string> = {
   'structure.transition.internal-eventless': '内部转移「{id}」没有事件，可能形成自激循环',
   'structure.transition.delay-invalid': '转移「{id}」的 delayMs 非法（需 ≥ 10）',
   'structure.transition.delay-without-event': '转移「{id}」有延时但没有事件名',
-  'structure.transition.mixed-event-visibility': '转移「{id}」的事件列表混合了仅内部/仅外部/双向事件（{events}），可见性守卫不会生成',
+  'structure.transition.mixed-event-visibility': '转移「{id}」的事件列表混合了仅内部与双向事件（{events}），可见性守卫不会生成',
   'structure.event.internal-only-with-external-producer': '事件「{event}」被设为仅内部，但存在外部生产者（{channel}）',
   'structure.event.internal-only-without-producer': '事件「{event}」被设为仅内部，但没有任何生产者',
   'structure.action.internal-delay-unsupported': '事件「{event}」使用 send target="#_internal" + delay：当前引擎会丢弃该事件',

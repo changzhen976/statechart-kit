@@ -136,7 +136,7 @@ const explorerDoc = {
     { uid: 's1', id: 'a', label: 'a', kind: 'atomic', parent: null, initial: null, entryActions: ['raise go'], exitActions: [] },
     { uid: 's2', id: 'b', label: 'b', kind: 'atomic', parent: null, initial: null, entryActions: [], exitActions: [] },
   ],
-  eventVisibility: { go: 'internal' },
+  internalOnlyEvents: ['go'],
   transitions: [
     { id: 't1', source: 's1', target: 's2', event: 'go', cond: 'x > 0', actions: [] },
   ],

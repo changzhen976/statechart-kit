@@ -24,7 +24,7 @@ import type {
   StateKind,
 } from './model'
 import { emptyDoc, newTransitionId, newUid, normalizeDoc, uniqueStateId } from './model'
-import { setEventVisibility, setInternalOnlyEvent, stripVisibilityGuard } from './event-visibility'
+import { setInternalOnlyEvent, stripVisibilityGuard } from './event-visibility'
 import { isAutoDelayEvent } from './naming'
 import { actionToLine, type ActionStruct } from './action-parse'
 import { neutralizeCdata } from './cdata'
@@ -559,13 +559,8 @@ export function scxmlToDoc(xml: string, domParser?: DOMParser): ScxmlImportResul
         transition: missing.join(' '),
       })
     }
-    if (rootNames.length) {
-      ctx.doc.internalOnlyEvents = [...rootNames]
-      // P1 过渡：同步 legacy 映射，旧事件面板仍可读；P3 删除。
-      for (const name of rootNames) setEventVisibility(ctx.doc, name, 'internal')
-    } else {
-      delete ctx.doc.internalOnlyEvents
-    }
+    if (rootNames.length) ctx.doc.internalOnlyEvents = [...rootNames]
+    else delete ctx.doc.internalOnlyEvents
   }
 
   return { doc: normalizeDoc(ctx.doc), warnings: ctx.warnings }

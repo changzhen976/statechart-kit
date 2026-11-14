@@ -11,7 +11,7 @@
  */
 import { Window } from 'happy-dom'
 import type { DOMParserLike } from '@tinyactors/scxmljs/trusted'
-import { emptyDoc, normalizeDoc, type StateNode, type TransitionEdge } from '../src/core/model'
+import { emptyDoc, normalizeDoc, type ProjectDoc, type StateNode, type TransitionEdge } from '../src/core/model'
 import { internalOnlyNames, isInternalOnlyEvent, setInternalOnlyEvent } from '../src/core/event-visibility'
 import { serializeToDisplayScxml, serializeToScxml, actionLineToScxml } from '../src/core/serializer'
 import { actionToLine, parseActionLine } from '../src/core/action-parse'
@@ -56,7 +56,7 @@ console.log('── A) internal-only：raise 可触发，外部同名事件被�
   doc.states = [node('a', 'a', ['raise go']), node('b', 'b')]
   doc.initial = 'a'
   doc.transitions = [edge('a', 'b', 'go')]
-  doc.eventVisibility = { go: 'internal' }
+  setInternalOnlyEvent(doc, 'go', true)
   const xml = serializeToScxml(doc)
   assert(xml.includes('data-kit-visibility="internal"'), '序列化写入 visible 元数据')
   assert(!serializeToDisplayScxml(doc).includes('data-kit-visibility'), '画布展示序列化隐藏实现守卫')
@@ -75,7 +75,7 @@ console.log('── A) internal-only：raise 可触发，外部同名事件被�
   doc.states = [node('a', 'a'), node('b', 'b')]
   doc.initial = 'a'
   doc.transitions = [edge('a', 'b', 'go')]
-  doc.eventVisibility = { go: 'internal' }
+  setInternalOnlyEvent(doc, 'go', true)
   const runner = new SessionRunner({ engine: 'trusted', domParser })
   const events: string[] = []
   runner.on((e) => { if (e.type === 'active') events.push(e.ids.join(',')) })
@@ -93,7 +93,7 @@ console.log('── B) 自动延时保持 external，不被守卫误杀 ──')
   doc.states = [node('a', 'a'), node('b', 'b')]
   doc.initial = 'a'
   doc.transitions = [edge('a', 'b', 'auto.go', { delayMs: 20, delayUnit: 'ms' })]
-  doc.eventVisibility = { 'auto.go': 'internal' }
+  setInternalOnlyEvent(doc, 'auto.go', true)
   const xml = serializeToScxml(doc)
   assert(!xml.includes('data-kit-visibility="internal"'), '自动延时转移不写 internal 守卫')
   const runner = new SessionRunner({ engine: 'trusted', domParser })
@@ -112,11 +112,11 @@ console.log('── C) round-trip 保留 raise / visibility / 条件 ──')
   doc.states = [node('a', 'a', ['raise go']), node('b', 'b')]
   doc.initial = 'a'
   doc.transitions = [edge('a', 'b', 'go', { cond: 'x > 0' })]
-  doc.eventVisibility = { go: 'internal' }
+  setInternalOnlyEvent(doc, 'go', true)
   const xml = serializeToScxml(doc)
   const imported = scxmlToDoc(xml, domParser as unknown as DOMParser)
   assert(imported.doc.states[0]?.entryActions[0] === 'raise go', '导入保留 raise 动作')
-  assert(imported.doc.eventVisibility?.go === 'internal', '导入恢复事件可见性')
+  assert(isInternalOnlyEvent(imported.doc, 'go'), '导入恢复仅内部事件')
   assert(imported.doc.transitions[0]?.cond === 'x > 0', '导入剥离生成守卫、恢复用户条件')
   assert(serializeToScxml(imported.doc) === xml, 'serialize → import → serialize 逐字节一致')
 }
@@ -135,7 +135,7 @@ console.log('── D) event facts channel 与混合可见性 error ──')
   assert(facts.sendOrigins.get('timer')?.[0]?.channel === 'auto-delay', '自动延时来源标记为 auto-delay')
 
   doc.transitions.push(edge('a', 'b', 'go both', { id: 't-mixed' }))
-  doc.eventVisibility = { go: 'internal' }
+  setInternalOnlyEvent(doc, 'go', true)
   const report = validateStructure(doc)
   assert(
     report.issues.some(
@@ -146,59 +146,23 @@ console.log('── D) event facts channel 与混合可见性 error ──')
 }
 
 
-console.log('── E) external-only：外部可触发，内部 raise 被拦截 ──')
+console.log('── E) 旧 external 元数据：导入降级为双向 ──')
 {
-  const doc = emptyDoc('external-only')
-  doc.states = [node('a', 'a'), node('b', 'b')]
-  doc.initial = 'a'
-  doc.transitions = [edge('a', 'b', 'go')]
-  doc.eventVisibility = { go: 'external' }
-  const xml = serializeToScxml(doc)
-  assert(xml.includes('data-kit-visibility="external"'), '序列化写入 external 元数据')
-  assert(xml.includes("_event.type === 'external'"), '序列化写入 external 守卫')
-
-  const runner = new SessionRunner({ engine: 'trusted', domParser })
-  const events: string[] = []
-  runner.on((e) => { if (e.type === 'active') events.push(e.ids.join(',')) })
-  await runner.start(xml)
-  await runner.settled()
-  runner.send('go')
-  await runner.settled()
-  assert(events.at(-1) === 'b', '外部事件触发 external-only 转移')
-  await runner.stop()
-
-  const externalDoc = scxmlToDoc(xml, domParser as unknown as DOMParser)
-  assert(externalDoc.doc.eventVisibility?.go === undefined, '导入把 external 降级为双向')
-  assert(externalDoc.doc.transitions[0]?.cond === '', '导入剥离 external 守卫')
+  const xml = `<?xml version="1.0"?>
+<scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="a">
+  <state id="a">
+    <transition event="go" target="b" data-kit-visibility="external" cond="_event.type === 'external'"/>
+  </state>
+  <state id="b"/>
+</scxml>`
+  const imported = scxmlToDoc(xml, domParser as unknown as DOMParser)
   assert(
-    externalDoc.warnings.some((w) => w.code === 'import.event-visibility-external-removed'),
-    '导入 external 给降级 warning',
+    imported.warnings.some((w) => w.code === 'import.event-visibility-external-removed'),
+    '旧 external 元数据给降级 warning',
   )
+  assert(!isInternalOnlyEvent(imported.doc, 'go'), 'external 降级为双向')
+  assert(imported.doc.transitions[0]?.cond === '', '导入剥离 external 守卫')
 }
-{
-  const doc = emptyDoc('external-blocks-raise')
-  doc.states = [node('a', 'a', ['raise go']), node('b', 'b')]
-  doc.initial = 'a'
-  doc.transitions = [edge('a', 'b', 'go')]
-  doc.eventVisibility = { go: 'external' }
-  const runner = new SessionRunner({ engine: 'trusted', domParser })
-  const events: string[] = []
-  runner.on((e) => { if (e.type === 'active') events.push(e.ids.join(',')) })
-  await runner.start(serializeToScxml(doc))
-  await runner.settled()
-  assert(events.at(-1) === 'a', '内部 raise 不能触发 external-only 转移')
-  await runner.stop()
-}
-{
-  const doc = emptyDoc('external-delay')
-  doc.states = [node('a', 'a'), node('b', 'b')]
-  doc.initial = 'a'
-  doc.transitions = [edge('a', 'b', 'auto.go', { delayMs: 20, delayUnit: 'ms' })]
-  doc.eventVisibility = { 'auto.go': 'external' }
-  const xml = serializeToScxml(doc)
-  assert(!xml.includes('data-kit-visibility="external"'), '自动延时仍不写 external 守卫')
-}
-
 
 console.log('── F) send target="#_internal" ──')
 {
@@ -232,7 +196,6 @@ console.log('── G) 0.15 模型：internalOnlyEvents / 根级元数据 / 迁�
   setInternalOnlyEvent(doc, 'sys.tick', true)
   assert(isInternalOnlyEvent(doc, 'sys.tick'), 'setInternalOnlyEvent 写入新字段')
   assert(internalOnlyNames(doc).join(',') === 'sys.tick', 'internalOnlyNames 返回集合')
-  assert(doc.eventVisibility?.['sys.tick'] === 'internal', 'P1 过渡：legacy 映射同步')
   const xml = serializeToScxml(doc)
   assert(xml.includes('data-kit-internal-events='), '序列化写入根级 data-kit-internal-events')
   assert(xml.includes('data-kit-visibility="internal"'), '转移级元数据仍写入')
@@ -242,21 +205,25 @@ console.log('── G) 0.15 模型：internalOnlyEvents / 根级元数据 / 迁�
   assert(serializeToScxml(imported.doc) === xml, '根级元数据逐字节往返')
   setInternalOnlyEvent(doc, 'sys.tick', false)
   assert(
-    !isInternalOnlyEvent(doc, 'sys.tick') && !doc.internalOnlyEvents && !doc.eventVisibility,
-    '取消后清空新字段与 legacy 映射',
+    !isInternalOnlyEvent(doc, 'sys.tick') && !doc.internalOnlyEvents,
+    '取消后清空 internalOnlyEvents',
   )
 }
 {
-  const legacy = emptyDoc('legacy')
+  const legacy = emptyDoc('legacy') as ProjectDoc & {
+    eventVisibility?: Record<string, string>
+  }
   legacy.states = [node('a', 'a', ['raise go']), node('b', 'b')]
   legacy.initial = 'a'
   legacy.transitions = [edge('a', 'b', 'go')]
-  legacy.eventVisibility = { go: 'internal' }
+  legacy.eventVisibility = { go: 'internal', old: 'external' }
   const normalized = normalizeDoc(legacy)
   assert(
     normalized.internalOnlyEvents?.includes('go') && isInternalOnlyEvent(normalized, 'go'),
     'normalizeDoc 把旧 eventVisibility.internal 迁入 internalOnlyEvents',
   )
+  assert(!legacy.eventVisibility, 'normalizeDoc 删除旧 eventVisibility 字段')
+  assert(!isInternalOnlyEvent(normalized, 'old'), '旧 external 降级为双向')
 }
 
 console.log('── H) 生产端一致性校验 ──')

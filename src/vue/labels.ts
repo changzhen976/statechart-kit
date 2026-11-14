@@ -48,6 +48,8 @@ export interface EditorLabels {
   delay: string
   delayMs: string
   delayUnit: string
+  legacyDelay: string
+  legacyDelayHint: string
   sequence: string
   milliseconds: string
   properties: string
@@ -66,10 +68,6 @@ export interface EditorLabels {
   eventSourceAutoDelay: string
   eventSourceExternal: string
   eventSourceListenOnly: string
-  eventVisibility: string
-  visibilityBoth: string
-  visibilityInternal: string
-  visibilityExternal: string
   internalOnly: string
   internalOnlyHint: string
   internalOnlyTitle: string
@@ -204,6 +202,8 @@ export const DEFAULT_LABELS: EditorLabels = {
   delay: '延时触发',
   delayMs: '延时',
   delayUnit: '单位',
+  legacyDelay: '旧写法',
+  legacyDelayHint: 'send … delay 已不再提供作者入口；请改为无目标延迟转移 + raise 中继',
   sequence: '秒',
   milliseconds: '毫秒',
   properties: '属性',
@@ -222,10 +222,6 @@ export const DEFAULT_LABELS: EditorLabels = {
   eventSourceAutoDelay: '自动延时',
   eventSourceExternal: '外部来源',
   eventSourceListenOnly: '仅监听',
-  eventVisibility: '可见性',
-  visibilityBoth: '双向',
-  visibilityInternal: '仅内部',
-  visibilityExternal: '仅外部',
   internalOnly: '仅内部',
   internalOnlyHint: '只允许 raise / send target="#_internal" 产生',
   internalOnlyTitle: '仅内部事件',
@@ -362,6 +358,8 @@ export const DEFAULT_LABELS_EN: EditorLabels = {
   delay: 'Delayed transition',
   delayMs: 'Delay',
   delayUnit: 'Unit',
+  legacyDelay: 'Legacy',
+  legacyDelayHint: 'send … delay is no longer authored here; use a targetless delayed transition + raise relay',
   sequence: 'seconds',
   milliseconds: 'ms',
   properties: 'Properties',
@@ -381,10 +379,6 @@ export const DEFAULT_LABELS_EN: EditorLabels = {
   eventSourceAutoDelay: 'auto delay',
   eventSourceExternal: 'external source',
   eventSourceListenOnly: 'listen only',
-  eventVisibility: 'Visibility',
-  visibilityBoth: 'Both',
-  visibilityInternal: 'Internal only',
-  visibilityExternal: 'External only',
   internalOnly: 'Internal only',
   internalOnlyHint: 'Only raise / send target="#_internal" may produce it',
   internalOnlyTitle: 'Internal-only event',

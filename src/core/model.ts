@@ -20,9 +20,6 @@
  */
 export type StateKind = 'atomic' | 'compound' | 'final' | 'parallel' | 'history'
 
-/** 事件可见性：both = 内部/外部均可触发；internal = 只允许 SCXML internal 事件 */
-export type EventVisibility = 'both' | 'internal' | 'external'
-
 /** 转移语义：internal = 不退出源状态；external 为 SCXML 默认。无 target 时 type 不影响语义。 */
 export type TransitionType = 'internal' | 'external'
 
@@ -140,17 +137,11 @@ export interface ProjectDoc {
   states: StateNode[]
   transitions: TransitionEdge[]
   /**
-   * 仅内部触发的事件名（0.15 起的事实源）。
+   * 仅内部触发的事件名（0.15 的事实源）。
    * - 缺省 / 空数组 = 全部双向；
    * - 去重、trim、按名称排序；只允许 internal 生产者（见 event-visibility.ts）。
-   * - P1 过渡期仍会与 legacy `eventVisibility` 合并；P3 删除 legacy。
    */
   internalOnlyEvents?: string[]
-  /**
-   * @deprecated 0.14 的可见性映射；0.15 过渡期保留，P3 删除。
-   * internal 会同步进 `internalOnlyEvents`；external 仍按 legacy 处理。
-   */
-  eventVisibility?: Record<string, EventVisibility>
   /** 宿主自定义事件属性（如 broadcast）；key 为事件名 */
   eventAttrs?: Record<string, MetaAttrs>
   /** 布局（画布绝对坐标），键为状态 uid */
@@ -264,25 +255,16 @@ export function normalizeDoc(doc: ProjectDoc): ProjectDoc {
       if (name) internalOnly.add(name)
     }
   }
-  if (doc.eventVisibility && typeof doc.eventVisibility === 'object') {
-    const next: Record<string, EventVisibility> = {}
-    for (const [rawName, rawValue] of Object.entries(doc.eventVisibility)) {
+  // 0.14 的 eventVisibility 已从类型移除；旧 JSON 在运行时迁移：
+  // internal 迁入 internalOnlyEvents，external/both 降级为双向。
+  const legacy = (doc as { eventVisibility?: unknown }).eventVisibility
+  if (legacy && typeof legacy === 'object' && !Array.isArray(legacy)) {
+    for (const [rawName, rawValue] of Object.entries(legacy)) {
       const name = rawName.trim()
-      if (!name) continue
-      if (rawValue === 'internal') {
-        internalOnly.add(name)
-        // P1 过渡：legacy 与 internalOnlyEvents 双写，P3 删除。
-        next[name] = 'internal'
-      } else if (rawValue === 'both') {
-        next[name] = rawValue
-      }
-      // external 在 0.15 降级为双向：不写入 next，也不加入 internalOnlyEvents。
+      if (name && rawValue === 'internal') internalOnly.add(name)
     }
-    if (Object.keys(next).length) doc.eventVisibility = next
-    else delete doc.eventVisibility
-  } else {
-    delete doc.eventVisibility
   }
+  delete (doc as { eventVisibility?: unknown }).eventVisibility
   if (internalOnly.size) doc.internalOnlyEvents = [...internalOnly].sort()
   else delete doc.internalOnlyEvents
   for (const d of doc.datamodel) {

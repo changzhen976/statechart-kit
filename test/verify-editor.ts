@@ -295,7 +295,7 @@ console.log('── D3) 事件可见性设置与外部注入拦截 ──')
   ]
   doc.initial = 's1'
   doc.transitions = [{ id: 't1', source: 's1', target: 's2', event: 'go', cond: '', actions: [] }]
-  doc.eventVisibility = { go: 'internal' }
+  setInternalOnlyEvent(doc, 'go', true)
   const { editor } = makeEditor({ initialDoc: doc })
   await editor.ready
   assert(await editor.run(), 'internal-only 文档可启动仿真')
@@ -303,12 +303,11 @@ console.log('── D3) 事件可见性设置与外部注入拦截 ──')
   assert(editor.sim.log.some((l) => l.text.includes('仅允许内部触发')), '编辑器拒绝外部注入 internal-only 事件')
   assert(editor.activeLabels.length === 1, '被拒绝后仍停留在原状态')
   await editor.stopSim()
-  editor.setEventVisibility('go', 'both')
-  assert(editor.doc.eventVisibility?.go === undefined, '设回双向会移除可见性记录')
-  editor.setEventVisibility('go', 'internal')
+  editor.clearInternalOnly('go')
+  assert(!editor.doc.internalOnlyEvents?.includes('go'), '设回双向会移除仅内部记录')
+  setInternalOnlyEvent(editor.doc, 'go', true)
   assert(editor.doc.internalOnlyEvents?.includes('go'), '设置仅内部写入 internalOnlyEvents')
   editor.updateTransition('t1', { event: 'go.renamed' })
-  assert(editor.doc.eventVisibility?.go === undefined, '事件改名后清理孤儿可见性记录')
   assert(!editor.doc.internalOnlyEvents?.length, '事件改名后清理 internalOnlyEvents')
   await editor.destroy()
 }
@@ -462,10 +461,28 @@ console.log('── P2) 仅内部：扫描 / 弹窗 / 修复 / 校验错误 ─�
   ]
   doc.initial = 's1'
   doc.transitions = [{ id: 't1', source: 's1', target: 's2', event: 'go', cond: '', actions: [] }]
-  doc.eventVisibility = { go: 'external' }
+  ;(doc as ProjectDoc & { eventVisibility?: Record<string, string> }).eventVisibility = {
+    go: 'external',
+  }
   const { editor } = makeEditor({ initialDoc: doc })
   await editor.ready
-  assert(!editor.doc.eventVisibility?.['go'], '旧 external 草稿在编辑器内降级为双向')
+  assert(!editor.isInternalOnly('go'), '旧 external 草稿在编辑器内降级为双向')
+  await editor.destroy()
+}
+{
+  const doc = emptyDoc('event-attrs-rename')
+  doc.states = [
+    { uid: 's1', id: 'a', label: 'a', kind: 'atomic', parent: null, entryActions: [], exitActions: [] },
+    { uid: 's2', id: 'b', label: 'b', kind: 'atomic', parent: null, entryActions: [], exitActions: [] },
+  ]
+  doc.initial = 's1'
+  doc.transitions = [{ id: 't1', source: 's1', target: 's2', event: 'go', cond: '', actions: [] }]
+  const { editor } = makeEditor({ initialDoc: doc })
+  await editor.ready
+  editor.setEventAttr('go', 'topic', 'demo/x')
+  editor.updateTransition('t1', { event: 'go2' })
+  assert(editor.doc.eventAttrs?.go2?.topic === 'demo/x', '事件改名迁移 eventAttrs')
+  assert(!editor.doc.eventAttrs?.go, '事件改名清理旧 eventAttrs')
   await editor.destroy()
 }
 {
