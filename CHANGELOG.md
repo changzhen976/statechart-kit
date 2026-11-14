@@ -2,6 +2,20 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.13.1] - 2026-11-14
+
+### Added
+
+- 事件面板新增「内部发出 / raise」区块：显示内部事件、来源状态/槽位和监听转移数；
+  内部事件不再只作为接收事件的来源出现；
+- 事件改名/删除后自动清理不再使用的 `eventVisibility` 键，避免幽灵配置；
+- internal-only 生成守卫被截断时，画布点击仍能正确匹配转移。
+
+### Tests
+
+- `check-vue` 覆盖内部发出区块；
+- `verify-editor` 覆盖事件改名清理和生成守卫下的画布选中。
+
 ## [0.13.0] - 2026-11-13
 
 ### Added

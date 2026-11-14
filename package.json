@@ -1,6 +1,6 @@
 {
   "name": "statechart-kit",
-  "version": "0.13.0",
+  "version": "0.13.1",
   "description": "Statechart authoring model, editor and session runner. Produces and drives SCXML; it does not interpret SCXML.",
   "license": "MIT",
   "repository": {
