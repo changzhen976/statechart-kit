@@ -31,7 +31,7 @@ import { NCNAME_RE } from '../core/validate-structure'
 import { serializeToScxml } from '../core/serializer'
 import { setEventVisibility as setDocEventVisibility } from '../core/event-visibility'
 import { checkEventName, checkVarName } from '../core/naming'
-import { scanScriptActions } from '../core/action-parse'
+import { parseActionLine, scanScriptActions } from '../core/action-parse'
 import { scriptHitsToIssues, validateDocument, type ValidationIssue } from '../engine/validator'
 import { SessionRunner, type SimLogEntry, type VariableWriteResult } from '../engine/session-runner'
 import { DEFAULT_LABELS, DEFAULT_LABELS_EN, type EditorLabels } from './labels'
@@ -845,6 +845,7 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
         t.event = autoDelayEventName(state.doc, srcId, dstId, t.delayMs, t.delayUnit)
       }
     }
+    pruneEventVisibility()
     touch()
     return null
   }
@@ -866,6 +867,7 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     }
     for (const parentUid of affectedParents) ensureInitial(parentUid)
     ensureInitial(null)
+    pruneEventVisibility()
     if (state.selection.id && doomed.has(state.selection.id)) select(null, null)
     touch()
     return true
@@ -960,6 +962,31 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     return null
   }
 
+  /** 删除已不在文档事件/动作中的 eventVisibility 键，避免事件改名后残留幽灵配置。 */
+  function pruneEventVisibility(): void {
+    if (!state.doc.eventVisibility) return
+    const used = new Set<string>()
+    const scan = (actions: string[]): void => {
+      for (const line of actions) {
+        const a = parseActionLine(line)
+        if ((a.type === 'send' || a.type === 'raise') && a.event) used.add(a.event)
+      }
+    }
+    for (const t of state.doc.transitions) {
+      for (const name of t.event.split(/\s+/).filter(Boolean)) used.add(name)
+      scan(t.actions)
+    }
+    for (const s of state.doc.states) {
+      scan(s.entryActions)
+      scan(s.exitActions)
+    }
+    const next = Object.fromEntries(
+      Object.entries(state.doc.eventVisibility).filter(([name]) => used.has(name)),
+    )
+    if (Object.keys(next).length) state.doc.eventVisibility = next
+    else delete state.doc.eventVisibility
+  }
+
   function updateTransition(id: string, patch: Partial<TransitionEdge>): void {
     if (readOnly() || state.sim.running) return
     const t = state.doc.transitions.find((x) => x.id === id)
@@ -990,6 +1017,7 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     } else if (!t.event) {
       // 取消延时后保留用户之前填的事件（若有）；无事件转移合法
     }
+    pruneEventVisibility()
     touch()
   }
 

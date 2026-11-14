@@ -81,6 +81,27 @@ const receiveRows = computed(() =>
     }),
 )
 
+const raiseRows = computed(() => {
+  const rows: { event: string; sources: string[]; listeners: number }[] = []
+  for (const [event, origins] of facts.value.sendOrigins) {
+    const internal = origins.filter((o) => o.channel === 'internal')
+    if (!internal.length) continue
+    const sources = new Set<string>()
+    for (const o of internal) {
+      if (o.kind === 'state-action') {
+        sources.add(`${o.state.label} · ${o.slot === 'entry' ? editor.labels.entryActions : editor.labels.exitActions}`)
+      } else if (o.kind === 'transition-action') {
+        sources.add(`${o.source.label} → ${o.target?.label ?? editor.labels.noTarget}`)
+      }
+    }
+    const listeners = editor.doc.transitions.filter((t) =>
+      t.event.split(/\s+/).filter(Boolean).includes(event),
+    ).length
+    rows.push({ event, sources: [...sources], listeners })
+  }
+  return rows.sort((a, b) => a.event.localeCompare(b.event))
+})
+
 function setVisibility(name: string, e: Event): void {
   editor.setEventVisibility(name, (e.target as HTMLSelectElement).value as EventVisibility)
 }
@@ -102,7 +123,13 @@ const internalRows = computed(() =>
     })),
 )
 
-const hasAny = computed(() => sendRows.value.length > 0 || receiveRows.value.length > 0 || internalRows.value.length > 0)
+const hasAny = computed(
+  () =>
+    sendRows.value.length > 0 ||
+    raiseRows.value.length > 0 ||
+    receiveRows.value.length > 0 ||
+    internalRows.value.length > 0,
+)
 </script>
 
 <template>
@@ -165,6 +192,26 @@ const hasAny = computed(() => sendRows.value.length > 0 || receiveRows.value.len
                 @change="setEventField(name, field, $event)"
               />
             </td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section v-if="raiseRows.length" class="sce-event-section">
+      <h4>{{ editor.labels.raiseEvents }} <span class="sce-count">{{ raiseRows.length }}</span></h4>
+      <table class="sce-attr-table">
+        <thead>
+          <tr>
+            <th>{{ editor.labels.event }}</th>
+            <th>{{ editor.labels.eventSource }}</th>
+            <th>{{ editor.labels.listeners }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="row in raiseRows" :key="row.event">
+            <td class="name" :title="row.event">{{ row.event }}</td>
+            <td class="source">{{ row.sources.join(' · ') }}</td>
+            <td class="count">{{ row.listeners }}</td>
           </tr>
         </tbody>
       </table>

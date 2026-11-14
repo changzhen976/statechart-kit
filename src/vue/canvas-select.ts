@@ -22,6 +22,9 @@ const TRUNC_MARK = /(…|\.\.\.)$/
 /** 返回匹配的 transition id；无匹配返回 null。 */
 export function matchTransitionId(doc: ProjectDoc, label: TransitionLabelInfo): string | null {
   const condBody = label.condText.replace(/^\[/, '').replace(/\]$/, '')
+  // internal-only 事件在 SCXML 里多一个生成守卫；仿真标签可能被截断，
+  // 不能再用完整 cond 匹配，否则画布点击选中转移会失效。
+  const generatedGuard = /_event\.type\s*===/.test(condBody)
   const condTruncated = TRUNC_MARK.test(condBody)
   const condPrefix = condBody.replace(TRUNC_MARK, '').trim()
   const idOf = (uid: string): string | undefined => doc.states.find((s) => s.uid === uid)?.id
@@ -37,9 +40,9 @@ export function matchTransitionId(doc: ProjectDoc, label: TransitionLabelInfo): 
       const tid = idOf(t.target)
       if (!tid || !label.targets.includes(tid)) return false
     }
-    if (label.condText) {
+    if (!generatedGuard && label.condText) {
       if (condTruncated ? !t.cond.startsWith(condPrefix) : t.cond !== condPrefix) return false
-    } else if (t.cond) {
+    } else if (!generatedGuard && t.cond) {
       return false
     }
     return true

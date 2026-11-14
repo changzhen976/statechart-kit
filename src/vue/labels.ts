@@ -59,6 +59,8 @@ export interface EditorLabels {
   transitionListen: string
   internalEvents: string
   internalEventHint: string
+  raiseEvents: string
+  listeners: string
   eventSourceInternal: string
   eventSourceSend: string
   eventSourceAutoDelay: string
@@ -191,6 +193,8 @@ export const DEFAULT_LABELS: EditorLabels = {
   transitionListen: '转移监听',
   internalEvents: '内部延时事件',
   internalEventHint: '系统自动生成；只在本机内部收发，不参与广播、路由或 MQTT。',
+  raiseEvents: '内部发出',
+  listeners: '监听数',
   eventSourceInternal: '内部 raise',
   eventSourceSend: '本机 send',
   eventSourceAutoDelay: '自动延时',
@@ -325,6 +329,8 @@ export const DEFAULT_LABELS_EN: EditorLabels = {
   internalEvents: 'Internal delayed events',
   internalEventHint:
     'Generated automatically; local only, not broadcast, routed, or sent over MQTT.',
+  raiseEvents: 'Internal emissions',
+  listeners: 'Listeners',
   eventSourceInternal: 'internal raise',
   eventSourceSend: 'local send',
   eventSourceAutoDelay: 'auto delay',

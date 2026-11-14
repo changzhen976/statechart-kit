@@ -207,6 +207,16 @@ console.log('── B3) 画布转移标签匹配 ──')
     matchTransitionId(doc, { events: ['go'], condText: '', targets: ['b'], eventless: 'ε' }) === null,
     '缺少 cond 时不匹配带条件转移',
   )
+  doc.transitions.push({ id: 't-guard', source: a.uid, target: b.uid, event: 'guarded', cond: '', actions: [] })
+  assert(
+    matchTransitionId(doc, {
+      events: ['guarded'],
+      condText: "[_event.type === 'inte…]",
+      targets: ['b'],
+      eventless: 'ε',
+    }) === 't-guard',
+    'internal-only 生成守卫不影响画布转移选中',
+  )
 }
 
 console.log('── C) 命名/变量校验 ──')
@@ -294,6 +304,9 @@ console.log('── D3) 事件可见性设置与外部注入拦截 ──')
   await editor.stopSim()
   editor.setEventVisibility('go', 'both')
   assert(editor.doc.eventVisibility?.go === undefined, '设回双向会移除可见性记录')
+  editor.setEventVisibility('go', 'internal')
+  editor.updateTransition('t1', { event: 'go.renamed' })
+  assert(editor.doc.eventVisibility?.go === undefined, '事件改名后清理孤儿可见性记录')
   await editor.destroy()
 }
 

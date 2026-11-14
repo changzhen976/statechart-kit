@@ -145,6 +145,7 @@ if (!explorerEl || !explorerEl.shadowRoot) throw new Error('Explorer 未升级/�
 const visibilitySelect = explorerHost.querySelector('.sce-events select')
 if (!visibilitySelect || visibilitySelect.value !== 'internal') throw new Error('事件可见性下拉未显示 internal')
 if (!explorerHost.querySelector('.sce-events')?.textContent.includes('内部 raise')) throw new Error('事件来源列未显示内部 raise')
+if (!explorerHost.querySelector('.sce-events')?.textContent.includes('内部发出')) throw new Error('内部发出区块未渲染')
 explorerEl.dispatchEvent(
   new window.CustomEvent('scxml-select', {
     detail: { state: { id: 'a' } },
