@@ -39,7 +39,7 @@ function collectSends(): Set<string> {
   const scan = (actions: string[]): void => {
     for (const line of actions) {
       const a = parseActionLine(line)
-      if (a.type === 'send' && a.event.trim() && !isAutoDelayEvent(a.event.trim())) {
+      if (a.type === 'send' && a.target !== '#_internal' && a.event.trim() && !isAutoDelayEvent(a.event.trim())) {
         names.add(a.event.trim())
       }
     }
@@ -76,7 +76,7 @@ const receiveRows = computed(() =>
       return {
         name,
         sources,
-        visibility: (editor.doc.eventVisibility?.[name] === 'internal' ? 'internal' : 'both') as EventVisibility,
+        visibility: (editor.doc.eventVisibility?.[name] ?? 'both') as EventVisibility,
       }
     }),
 )
@@ -240,6 +240,7 @@ const hasAny = computed(
               >
                 <option value="both">{{ editor.labels.visibilityBoth }}</option>
                 <option value="internal">{{ editor.labels.visibilityInternal }}</option>
+                <option value="external">{{ editor.labels.visibilityExternal }}</option>
               </select>
             </td>
           </tr>

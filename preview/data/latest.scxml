@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" datamodel="ecmascript" name="event-visibility-demo" initial="idle">
+<scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" datamodel="ecmascript" name="event-visibility-demo-014" initial="idle">
   <state id="idle">
     <transition event="start" target="running" data-kit-transition-id="t1"/>
   </state>
@@ -7,9 +7,11 @@
     <state id="left" initial="leftIdle">
       <onentry>
         <raise event="internal.ping"/>
+        <send event="internal.forward" target="#_internal"/>
       </onentry>
       <state id="leftIdle">
         <transition event="internal.ping" target="leftDone" data-kit-transition-id="t2" data-kit-visibility="internal" cond="_event.type === 'internal'"/>
+        <transition event="internal.forward" target="leftDone" data-kit-transition-id="t3" data-kit-visibility="internal" cond="_event.type === 'internal'"/>
       </state>
       <state id="leftDone"/>
     </state>
@@ -22,8 +24,9 @@
         <onexit>
           <cancel sendid="delay1s_rightIdle_to_rightDone"/>
         </onexit>
-        <transition event="external.poke" target="rightDone" data-kit-transition-id="t3"/>
-        <transition event="delay1s_rightIdle_to_rightDone" target="rightDone" data-kit-transition-id="t4"/>
+        <transition event="external.poke" target="rightDone" data-kit-transition-id="t4"/>
+        <transition event="external.only" target="rightDone" data-kit-transition-id="t5" data-kit-visibility="external" cond="_event.type === 'external'"/>
+        <transition event="delay1s_rightIdle_to_rightDone" target="rightDone" data-kit-transition-id="t6"/>
       </state>
       <state id="rightDone"/>
     </state>

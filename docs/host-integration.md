@@ -266,3 +266,19 @@ mountEditor('#editor', {
 - 从 0.8.x 升级时先处理 null target，再接 0.9+ 的 doneData；
 - Vue 是 optional peer，升级前确认宿主的 Vue 版本满足 `^3.5`；
 - 公开 API/诊断 code 变化看 [`CHANGELOG.md`](../CHANGELOG.md)。
+
+
+## 事件可见性
+
+`ProjectDoc.eventVisibility` 是可选的事件名映射：
+
+```ts
+eventVisibility?: Record<string, 'internal' | 'external' | 'both'>
+```
+
+- `both`（默认）：不生成守卫；
+- `internal`：只允许 `_event.type === 'internal'`；
+- `external`：只允许 `_event.type === 'external'`。
+
+`SessionRunner.send()` 仍返回 boolean；需要区分失败原因时使用 `trySend()`：
+`session-not-running` / `session-done` / `send-failed`。

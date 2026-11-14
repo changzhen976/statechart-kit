@@ -71,7 +71,7 @@ const STRUCTURE: Record<string, string> = {
   'structure.transition.internal-eventless': '内部转移「{id}」没有事件，可能形成自激循环',
   'structure.transition.delay-invalid': '转移「{id}」的 delayMs 非法（需 ≥ 10）',
   'structure.transition.delay-without-event': '转移「{id}」有延时但没有事件名',
-  'structure.transition.mixed-event-visibility': '转移「{id}」的事件列表混合了仅内部/双向事件（{events}），internal-only 守卫不会生成',
+  'structure.transition.mixed-event-visibility': '转移「{id}」的事件列表混合了仅内部/仅外部/双向事件（{events}），可见性守卫不会生成',
 }
 
 const VALIDATION: Record<string, string> = {

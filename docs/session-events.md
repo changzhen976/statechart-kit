@@ -67,6 +67,6 @@ interface RunnerErrorEvent {
 - 广播策略不在 kit：是否将事件发送给其他机器由宿主根据 `target`/`sendid` 判断。
 - 匿名延时 `<send delay>` 没有 `sendid`；需要可靠过滤时，生成动作应带 `id`。
 - `RunnerEvent` 新增成员会让使用 `never` 穷举的 switch 编译失败，这是有意的 minor 变更。
-- `send()` 仍返回 boolean；需要区分失败原因时等后续 `trySend`（KIT-011）。
+- `send()` 仍返回 boolean；`trySend()` 返回 `{ ok, code, params }`，code 为 `session-not-running` / `session-done` / `send-failed`。
 
 测试：`npm run test:host-events`。

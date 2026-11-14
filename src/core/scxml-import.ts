@@ -24,7 +24,7 @@ import type {
   StateKind,
 } from './model'
 import { emptyDoc, newTransitionId, newUid, normalizeDoc, uniqueStateId } from './model'
-import { setEventVisibility, stripInternalGuard } from './event-visibility'
+import { setEventVisibility, stripVisibilityGuard } from './event-visibility'
 import { isAutoDelayEvent } from './naming'
 import { actionToLine, type ActionStruct } from './action-parse'
 import { neutralizeCdata } from './cdata'
@@ -114,8 +114,11 @@ function actionElToLine(el: Element, at: ImportLocation, ctx: Ctx): string | nul
       if (delay) s.delay = delay
       const id = el.getAttribute('id')
       if (id) s.id = id
-      // targetexpr/target、type 等外部寻址属性不支持——外部 SCXML 提示
-      if (el.getAttribute('target') || el.getAttribute('targetexpr')) {
+      const target = el.getAttribute('target')
+      if (target === '#_internal') {
+        s.target = target
+      } else if (target || el.getAttribute('targetexpr')) {
+        // 外部寻址暂不支持；保留 warning，避免静默改变语义
         warn(ctx, 'import.send.external-target', { at, tag, event })
       }
       const content = el.getElementsByTagName('content')[0]
@@ -349,9 +352,12 @@ function transitionFromEl(
   const kitTransitionId = el.getAttribute('data-kit-transition-id')?.trim()
   const event = el.getAttribute('event') ?? ''
   let cond = el.getAttribute('cond') ?? ''
-  if (el.getAttribute('data-kit-visibility') === 'internal') {
-    cond = stripInternalGuard(cond)
-    for (const name of event.split(/\s+/).filter(Boolean)) setEventVisibility(ctx.doc, name, 'internal')
+  const rawVisibility = el.getAttribute('data-kit-visibility')
+  if (rawVisibility === 'internal' || rawVisibility === 'external') {
+    const stripped = stripVisibilityGuard(cond)
+    cond = stripped.cond
+    const visibility = stripped.visibility ?? rawVisibility
+    for (const name of event.split(/\s+/).filter(Boolean)) setEventVisibility(ctx.doc, name, visibility)
   }
   return {
     id: kitTransitionId || newTransitionId(),

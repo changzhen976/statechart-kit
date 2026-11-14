@@ -453,8 +453,8 @@ export function validateStructure(doc: ProjectDoc): StructureReport {
     }
     if (t.delayMs === undefined) {
       const names = t.event.split(/\s+/).filter(Boolean)
-      const internalNames = names.filter((name) => doc.eventVisibility?.[name] === 'internal')
-      if (names.length > 1 && internalNames.length > 0 && internalNames.length < names.length) {
+      const visibilities = names.map((name) => doc.eventVisibility?.[name] ?? 'both')
+      if (names.length > 1 && new Set(visibilities).size > 1) {
         add({
           severity: 'warning',
           code: 'structure.transition.mixed-event-visibility',

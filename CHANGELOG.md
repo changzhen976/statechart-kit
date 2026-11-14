@@ -2,6 +2,28 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.14.0] - 2026-11-14
+
+### Added
+
+- `eventVisibility` 新增 `external`（仅外部）：转移生成
+  `_event.type === 'external'` 标准 SCXML 守卫；外部事件可触发，内部 `raise` 被拦截；
+- `trySend()`：返回 `{ ok, code, params }`，区分 `session-not-running` /
+  `session-done` / `send-failed`，`send()` 继续返回 boolean；
+- `send <event> target #_internal`：动作解析、序列化、导入和事件目录支持
+  `<send target="#_internal">`；编辑器动作行提供「内部」开关和「内部发送」快捷项；
+- 事件面板内部发出区块同时覆盖 `raise` 和 `<send target="#_internal">`。
+
+### Changed
+
+- 混合事件可见性 warning 现在覆盖 internal / external / both 任意混合；
+- 自动延时转移仍不生成可见性守卫，避免破坏延时行为。
+
+### Tests
+
+- `verify-event-visibility` 覆盖 external-only、`#_internal` 导入/序列化/目录通道；
+- `verify-host-events` 覆盖 `trySend` 的未启动/终态结果。
+
 ## [0.13.1] - 2026-11-14
 
 ### Added

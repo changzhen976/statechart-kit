@@ -15,7 +15,7 @@
  */
 import type { DoneData, ProjectDoc, StateNode, TransitionEdge } from './model'
 import { childrenOf, uidMap } from './model'
-import { isInternalOnlyTransition, withInternalGuard } from './event-visibility'
+import { transitionVisibility, withVisibilityGuard } from './event-visibility'
 
 /** XML 属性值转义 */
 const esc = (v: string) =>
@@ -30,19 +30,20 @@ export function actionLineToScxml(line: string): string | null {
   if (!t || t.startsWith('//')) return null
 
   let m: RegExpMatchArray | null
-  // send <event> [delay <T>] [id <sendid>] [data <JSON> | data-expr <JS表达式>]
+  // send <event> [target #_internal] [delay <T>] [id <sendid>] [data <JSON> | data-expr <JS表达式>]
   //   data → <send><content>JSON</content></send>（引擎按 B.2 将 JSON 解析为事件 data）
   //   data-expr → <send><content expr="..."/></send>（发送变量当前值）
-  if ((m = t.match(/^send\s+(\S+)(?:\s+delay\s+(\S+))?(?:\s+id\s+(\S+))?(?:\s+(data-expr|data)\s+([\s\S]+))?\s*$/))) {
+  if ((m = t.match(/^send\s+(\S+)(?:\s+target\s+(\S+))?(?:\s+delay\s+(\S+))?(?:\s+id\s+(\S+))?(?:\s+(data-expr|data)\s+([\s\S]+))?\s*$/))) {
     const attrs = [`event="${esc(m[1])}"`]
-    if (m[2]) attrs.push(`delay="${esc(m[2])}"`)
-    if (m[3]) attrs.push(`id="${esc(m[3])}"`)
-    if (m[4] === 'data-expr') {
-      return `<send ${attrs.join(' ')}><content expr="${esc(m[5].trim())}"/></send>`
+    if (m[2]) attrs.push(`target="${esc(m[2])}"`)
+    if (m[3]) attrs.push(`delay="${esc(m[3])}"`)
+    if (m[4]) attrs.push(`id="${esc(m[4])}"`)
+    if (m[5] === 'data-expr') {
+      return `<send ${attrs.join(' ')}><content expr="${esc(m[6].trim())}"/></send>`
     }
-    if (m[5] !== undefined) {
+    if (m[6] !== undefined) {
       // content 为文本节点：esc 转义 &<>（引号在文本内容中合法）
-      return `<send ${attrs.join(' ')}><content>${esc(m[5])}</content></send>`
+      return `<send ${attrs.join(' ')}><content>${esc(m[6])}</content></send>`
     }
     return `<send ${attrs.join(' ')}/>`
   }
@@ -77,13 +78,13 @@ function actionsBlock(actions: string[], pad: string): string {
 
 function transitionXml(doc: ProjectDoc, t: TransitionEdge, idOf: (uid: string) => string, pad: string): string {
   const attrs: string[] = []
-  const internal = isInternalOnlyTransition(doc, t)
+  const visibility = transitionVisibility(doc, t)
   if (t.event) attrs.push(`event="${esc(t.event)}"`)
   if (t.target !== null) attrs.push(`target="${esc(idOf(t.target))}"`)
   if (t.transitionType) attrs.push(`type="${esc(t.transitionType)}"`)
   attrs.push(`data-kit-transition-id="${esc(t.id)}"`)
-  if (internal) attrs.push(`data-kit-visibility="internal"`)
-  const cond = internal ? withInternalGuard(t.cond) : t.cond
+  if (visibility && visibility !== 'both') attrs.push(`data-kit-visibility="${visibility}"`)
+  const cond = visibility && visibility !== 'both' ? withVisibilityGuard(t.cond, visibility) : t.cond
   if (cond) attrs.push(`cond="${esc(cond)}"`)
   const open = `${pad}<transition ${attrs.join(' ')}`
   const body = actionsBlock(t.actions, pad + '  ')
