@@ -100,7 +100,7 @@ export interface TransitionEdge {
   source: string
   /** 目标状态 uid；null = 无 target 的内部转移（只执行动作，不退出/进入状态） */
   target: string | null
-  /** 显式 <transition type="internal|external">；无 target 时新建默认 internal */
+  /** 显式 <transition type="internal|external">；target 为 null 时无语义，不写入新文档 */
   transitionType?: TransitionType
   /**
    * 事件名。内部延迟转移（delayMs 存在）由工具自动生成：

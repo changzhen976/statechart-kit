@@ -6,7 +6,7 @@ import type { ExternalEventSource } from '../core/event-catalog'
 import { buildDirectionCatalog, docEventFacts } from '../core/event-catalog'
 import type { ProjectDoc } from '../core/model'
 import type { NamingPolicy } from '../core/naming-policy'
-import { isAutoDelayEvent } from '../core/naming'
+import type { EditorLabels } from './labels'
 
 export type EditorEventGroup = 'in' | 'out' | 'lone'
 
@@ -27,6 +27,11 @@ export function buildEditorEventOptions(
   doc: ProjectDoc,
   policy: NamingPolicy,
   ext: ExternalEventSource[] = [],
+  labels: Pick<EditorLabels, 'eventTagDelay' | 'eventTagBroadcast' | 'eventTipLone'> = {
+    eventTagDelay: '⏱ 延时 {ms}ms',
+    eventTagBroadcast: '广播',
+    eventTipLone: '仅被监听：没有任何 send/外部来源会发出它',
+  },
 ): EditorEventOption[] {
   const facts = docEventFacts(doc)
   const cat = buildDirectionCatalog(policy, facts.sends, facts.listens, ext, {
@@ -45,24 +50,19 @@ export function buildEditorEventOptions(
     })
   }
   for (const r of cat.out) {
-    const auto = isAutoDelayEvent(r.value)
-    const ms = auto ? delayOf(r.value) : undefined
+    const ms = delayOf(r.value)
     options.push({
       value: r.value,
       group: 'out',
-      ...(auto
-        ? { tag: `⏱ 延时 ${ms ?? '?'}ms` }
+      ...(ms !== undefined
+        ? { tag: labels.eventTagDelay.replace('{ms}', String(ms)) }
         : r.broadcast
-          ? { tag: '广播' }
+          ? { tag: labels.eventTagBroadcast }
           : {}),
     })
   }
   for (const r of cat.lone) {
-    options.push({
-      value: r.value,
-      group: 'lone',
-      tip: '仅被监听：没有任何 send/外部来源会发出它',
-    })
+    options.push({ value: r.value, group: 'lone', tip: labels.eventTipLone })
   }
   return options
 }

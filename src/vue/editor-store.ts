@@ -36,7 +36,7 @@ import { SessionRunner, type SimLogEntry, type VariableWriteResult } from '../en
 import { DEFAULT_LABELS, DEFAULT_LABELS_EN, type EditorLabels } from './labels'
 import { resolveFeatures, type EditorFeatures } from './features'
 import { buildEditorEventOptions, type EditorEventOption } from './events'
-import { scanInternalOnly, type InternalEventDialogState } from './internal-only'
+import { analyzeInternalOnly, type InternalOnlyAnalysis } from '../core/internal-only'
 import {
   formatImportWarning,
   formatNamingIssue,
@@ -97,7 +97,7 @@ export interface EditorState {
   deploying: boolean
   confirm: EditorConfirmRequest | null
   /** 「仅内部」定义/约束弹窗；null = 关闭 */
-  internalEventDialog: InternalEventDialogState | null
+  internalEventDialog: InternalOnlyAnalysis | null
   /** 本次会话不再提示「仅内部」定义框（仅内存；冲突时仍弹） */
   internalOnlySuppressed: boolean
   revision: number
@@ -206,7 +206,7 @@ export interface EditorStore {
   get validation(): EditorState['validation']
   get validationDialog(): ValidationDialogState | null
   get confirmRequest(): EditorConfirmRequest | null
-  get internalEventDialog(): InternalEventDialogState | null
+  get internalEventDialog(): InternalOnlyAnalysis | null
   get internalOnlySuppressed(): boolean
   get selectedState(): StateNode | null
   get selectedTransition(): TransitionEdge | null
@@ -863,7 +863,7 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
         migrateEventAttrs(previousEvent, t.event)
       }
     }
-    pruneInternalOnly()
+    pruneInternalOnlyEvents()
     touch()
     return null
   }
@@ -885,7 +885,7 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     }
     for (const parentUid of affectedParents) ensureInitial(parentUid)
     ensureInitial(null)
-    pruneInternalOnly()
+    pruneInternalOnlyEvents()
     if (state.selection.id && doomed.has(state.selection.id)) select(null, null)
     touch()
     return true
@@ -967,7 +967,6 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
       id: newTransitionId(),
       source: sourceUid,
       target: targetUid,
-      ...(targetUid === null ? { transitionType: 'internal' as const } : {}),
       event,
       cond: '',
       actions: [],
@@ -1015,21 +1014,13 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     state.doc.eventAttrs = next
   }
 
-  /** 清理不再被事件/动作引用的仅内部事件名与宿主事件属性。 */
-  function pruneInternalOnly(): void {
+  /** 清理不再被事件/动作引用的仅内部事件名；eventAttrs 是宿主元数据，不自动删除。 */
+  function pruneInternalOnlyEvents(): void {
+    if (!state.doc.internalOnlyEvents) return
     const used = collectUsedEvents()
-    if (state.doc.internalOnlyEvents) {
-      const names = state.doc.internalOnlyEvents.filter((name) => used.has(name))
-      if (names.length) state.doc.internalOnlyEvents = names
-      else delete state.doc.internalOnlyEvents
-    }
-    if (state.doc.eventAttrs) {
-      const attrs = Object.fromEntries(
-        Object.entries(state.doc.eventAttrs).filter(([name]) => used.has(name)),
-      )
-      if (Object.keys(attrs).length) state.doc.eventAttrs = attrs
-      else delete state.doc.eventAttrs
-    }
+    const names = state.doc.internalOnlyEvents.filter((name) => used.has(name))
+    if (names.length) state.doc.internalOnlyEvents = names
+    else delete state.doc.internalOnlyEvents
   }
 
   function updateTransition(id: string, patch: Partial<TransitionEdge>): void {
@@ -1055,7 +1046,7 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     captureUndo(`updateTransition:${id}`)
     const previousEvent = t.event
     Object.assign(t, patch)
-    if (t.target === null && t.transitionType === undefined) t.transitionType = 'internal'
+    if (t.target === null) delete t.transitionType
     if (t.delayMs !== undefined) {
       const srcId = state.doc.states.find((x) => x.uid === t.source)?.id ?? t.source
       const dstId = t.target === null ? null : (state.doc.states.find((x) => x.uid === t.target)?.id ?? t.target)
@@ -1064,7 +1055,7 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
       // 取消延时后保留用户之前填的事件（若有）；无事件转移合法
     }
     if (previousEvent !== t.event) migrateEventAttrs(previousEvent, t.event)
-    pruneInternalOnly()
+    pruneInternalOnlyEvents()
     touch()
   }
 
@@ -1072,7 +1063,7 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     if (readOnly() || state.sim.running) return
     captureUndo(`removeTransition:${id}`)
     state.doc.transitions = state.doc.transitions.filter((t) => t.id !== id)
-    pruneInternalOnly()
+    pruneInternalOnlyEvents()
     if (state.selection.id === id) select(null, null)
     touch()
   }
@@ -1129,12 +1120,12 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     if (readOnly() || state.sim.running) return
     const name = event.trim()
     if (!name || isInternalOnlyEvent(state.doc, name)) return
-    const scan = scanInternalOnly(state.doc, name)
-    if (state.internalOnlySuppressed && scan.canConfirm) {
+    const analysis = analyzeInternalOnly(state.doc, name)
+    if (state.internalOnlySuppressed && analysis.canConfirm) {
       applyInternalOnly(name)
       return
     }
-    state.internalEventDialog = { event: name, scan }
+    state.internalEventDialog = analysis
   }
 
   function clearInternalOnly(event: string): void {
@@ -1149,7 +1140,7 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
 
   function confirmInternalOnly(suppress = false): void {
     const dialog = state.internalEventDialog
-    if (!dialog || !dialog.scan.canConfirm || readOnly() || state.sim.running) return
+    if (!dialog || !dialog.canConfirm || readOnly() || state.sim.running) return
     state.internalOnlySuppressed = suppress
     applyInternalOnly(dialog.event)
   }
@@ -1161,7 +1152,7 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
   function fixInternalOnlyProducer(producerId: string): void {
     const dialog = state.internalEventDialog
     if (!dialog) return
-    const producer = dialog.scan.producers.find((p) => p.id === producerId)
+    const producer = dialog.producers.find((p) => p.id === producerId)
     if (!producer?.canFix || producer.actionIndex === undefined) return
     const index = producer.actionIndex - 1
     if (index < 0) return
@@ -1182,10 +1173,7 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     captureUndo(`internalOnlyFix:${producerId}`)
     actions[index] = actionToLine({ ...parsed, target: '#_internal' })
     touch()
-    state.internalEventDialog = {
-      event: dialog.event,
-      scan: scanInternalOnly(state.doc, dialog.event),
-    }
+    state.internalEventDialog = analyzeInternalOnly(state.doc, dialog.event)
   }
 
   function setEventAttr(event: string, key: string, value: MetaValue | undefined): void {
@@ -1570,7 +1558,7 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
       return state.moduleEventFields
     },
     eventOptions(): EditorEventOption[] {
-      return buildEditorEventOptions(state.doc, policy, state.externalEvents)
+      return buildEditorEventOptions(state.doc, policy, state.externalEvents, labels)
     },
     stateName,
     validateEventName,

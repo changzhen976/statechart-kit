@@ -5,15 +5,13 @@
  * 按方向分组，避免把“广播”这种发送侧属性挂到接收事件上：
  * - 发送事件：send 动作（含显式延迟发送），可编辑宿主注册的事件字段
  * - 接收事件：转移监听，只读展示来源
- * - 内部延时事件：由延时触发转移自动生成，只在本机内部收发，只读
+ * - 自动延时转移：由 delayMs 转移自动生成的本机计时器，只读
  *
  * kit 只读写 ProjectDoc.eventAttrs；字段语义由宿主模块解释。
  */
 import { computed } from 'vue'
 import { useEditor } from './use-editor'
-import { parseActionLine } from '../core/action-parse'
-import { docEventFacts } from '../core/event-catalog'
-import { isAutoDelayEvent } from '../core/naming'
+import { autoDelayEventNames, docEventFacts } from '../core/event-catalog'
 import type { MetaAttrs, MetaValue } from '../core/model'
 import type { EditorAttributeField } from './modules'
 
@@ -34,36 +32,23 @@ function setEventField(name: string, field: EditorAttributeField, e: Event): voi
   editor.setEventAttr(name, field.key, readField(field, e))
 }
 
-function collectSends(): Set<string> {
-  const names = new Set<string>()
-  const scan = (actions: string[]): void => {
-    for (const line of actions) {
-      const a = parseActionLine(line)
-      if (a.type === 'send' && a.target !== '#_internal' && a.event.trim() && !isAutoDelayEvent(a.event.trim())) {
-        names.add(a.event.trim())
-      }
-    }
-  }
-  for (const s of editor.doc.states) scan([...s.entryActions, ...s.exitActions])
-  for (const t of editor.doc.transitions) scan(t.actions)
-  return names
-}
-
-function collectListens(): Set<string> {
-  const names = new Set<string>()
-  for (const t of editor.doc.transitions) {
-    for (const name of t.event.split(/\s+/)) {
-      if (name && !isAutoDelayEvent(name)) names.add(name)
-    }
-  }
-  return names
-}
-
-const sendRows = computed(() => [...collectSends()].sort((a, b) => a.localeCompare(b)))
 const facts = computed(() => docEventFacts(editor.doc))
+const autoNames = computed(() => autoDelayEventNames(editor.doc))
 const externalNames = computed(() => new Set(editor.state.externalEvents.map((e) => e.value)))
+
+const sendRows = computed(() =>
+  [...facts.value.sendOrigins]
+    .filter(
+      ([name, origins]) =>
+        !autoNames.value.has(name) && origins.some((o) => o.channel === 'external'),
+    )
+    .map(([name]) => name)
+    .sort((a, b) => a.localeCompare(b)),
+)
+
 const receiveRows = computed(() =>
-  [...collectListens()]
+  [...facts.value.listenEdges.keys()]
+    .filter((name) => !autoNames.value.has(name))
     .sort((a, b) => a.localeCompare(b))
     .map((name) => {
       const origins = facts.value.sendOrigins.get(name) ?? []
@@ -90,9 +75,7 @@ const raiseRows = computed(() => {
         sources.add(`${o.source.label} → ${o.target?.label ?? editor.labels.noTarget}`)
       }
     }
-    const listeners = editor.doc.transitions.filter((t) =>
-      t.event.split(/\s+/).filter(Boolean).includes(event),
-    ).length
+    const listeners = facts.value.listenEdges.get(event)?.length ?? 0
     rows.push({ event, sources: [...sources], listeners })
   }
   return rows.sort((a, b) => a.event.localeCompare(b.event))
@@ -135,12 +118,8 @@ const hasAny = computed(
     <div class="sce-panel-head">
       <h3>{{ editor.labels.events }}</h3>
     </div>
-    <p class="sce-meta">
-      发送事件可配置宿主字段；接收事件只读；内部延时事件仅在本机内部收发。
-    </p>
-    <p v-if="!hasAny" class="sce-empty">
-      还没有事件：先给转移或 send 动作设置事件名。
-    </p>
+    <p class="sce-meta">{{ editor.labels.eventsPanelHint }}</p>
+    <p v-if="!hasAny" class="sce-empty">{{ editor.labels.noEvents }}</p>
 
     <section v-if="sendRows.length" class="sce-event-section">
       <h4>{{ editor.labels.sendEvents }} <span class="sce-count">{{ sendRows.length }}</span></h4>

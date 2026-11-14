@@ -21,11 +21,11 @@
 - 序列化写根级 `data-kit-internal-events`，导入优先读取；旧转移级
   `data-kit-visibility` 作为回退；
 - 结构校验新增 `structure.event.internal-only-with-external-producer`、
-  `structure.event.internal-only-without-producer`、
   `structure.action.internal-delay-unsupported`；导入新增
   `import.event-visibility-invalid` / `import.event-visibility-mismatch`；
 - 事件面板「仅内部」复选框 + 定义/约束弹窗：显示生产者/监听者扫描、冲突时禁止
-  确认、普通 `send` 一键改 `target="#_internal"`、会话内不再提示（仅内存）。
+  确认、普通 `send` 一键改 `target="#_internal"`、会话内不再提示（仅内存）；
+- `analyzeInternalOnly()` / `autoDelayEventNames()`：core 统一判定源，校验与弹窗共用。
 
 ### Changed
 
@@ -35,7 +35,11 @@
 - 旧 `external` 草稿在 `normalizeDoc` / SCXML 导入 / 编辑器加载时降级为双向（导入给
   `import.event-visibility-external-removed` warning）；事件面板不再提供「仅外部」；
 - 内置示例全部改为 `delayMs` / `raise` 中继：交通灯、内部延时与取消、采样升温、
-  机器人产线。
+  机器人产线；
+- 事件面板改用 `docEventFacts` 与 `delayMs` 来源判定，不再手写扫描/名字正则；
+- 事件面板/事件下拉/动作行文案补齐 zh/en，术语改为「自动延时转移」；
+- 无 target 转移不再写入 `transitionType`，属性面板隐藏该字段（导入文档保留原值）；
+- `eventAttrs` 只在事件改名时迁移，不再按当前文档自动删除未引用键。
 
 ### Removed
 
@@ -44,15 +48,19 @@
   `data-kit-visibility="external"` 降级为双向；
 - 动作编辑器移除「延时发送」入口与 delay 输入；旧 `send delay` 行只读显示
   「旧写法」并提示改用无目标延迟转移 + raise 中继。模型/解析/序列化/导入仍保留
-  `send delay` 以兼容旧 SCXML。
+  `send delay` 以兼容旧 SCXML；
+- `structure.event.internal-only-without-producer` 诊断删除（无生产者只由弹窗提示）；
+- 删除无调用的 `findDelayedSend` / `isInternalOnlyTransition` / `stripInternalGuard`。
 
 ### Tests
 
 - `verify-host-events` 覆盖 `trySend` 的未启动/终态结果；
 - `verify-event-visibility` 覆盖 `internalOnlyEvents`、根级元数据往返、生产者
-  冲突、混合 error、`#_internal+delay`、无生产者 warning、导入优先级；
+  冲突、混合 error、`#_internal+delay`、无生产者只弹窗、导入优先级、
+  `analyzeInternalOnly` 单一判定；
 - `verify-editor` 覆盖 `internalOnlyEvents` 改名清理、仅内部弹窗/扫描/一键修复/
-  会话内抑制，以及外部生产者、混合事件、`#_internal+delay` 的校验错误；
+  会话内抑制、外部生产者/混合事件/`#_internal+delay` 校验错误、`eventAttrs`
+  保留、事件下拉来源/i18n、无 target 不写 type；
 - `smoke-engine` / `verify-import` 覆盖 delayMs 化后的四个内置示例。
 
 ## [0.13.1] - 2026-11-14

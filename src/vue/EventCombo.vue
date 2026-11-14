@@ -9,7 +9,10 @@
  *   便于 ActionListEditor 这类“change 才重建行”的调用方使用。
  */
 import { computed, ref, watch } from 'vue'
+import { useEditor } from './use-editor'
 import type { EditorEventGroup, EditorEventOption } from './events'
+
+const editor = useEditor()
 
 const props = defineProps<{
   modelValue: string
@@ -34,11 +37,11 @@ watch(
   },
 )
 
-const GROUP_LABELS: Record<EditorEventGroup, string> = {
-  in: '↓ 送入本机',
-  out: '↑ 本机发出',
-  lone: '· 仅监听 · 暂无来源',
-}
+const groupLabels = computed<Record<EditorEventGroup, string>>(() => ({
+  in: editor.labels.eventGroupIn,
+  out: editor.labels.eventGroupOut,
+  lone: editor.labels.eventGroupLone,
+}))
 
 const groups = computed(() => {
   const map = new Map<string, EditorEventOption[]>()
@@ -89,8 +92,8 @@ function pick(value: string): void {
     <input
       :value="text"
       :disabled="disabled"
-      :placeholder="placeholder ?? '事件名'"
-      :title="title ?? '事件名（可手输，也可从下拉选择）'"
+      :placeholder="placeholder ?? editor.labels.eventNamePlaceholder"
+      :title="title ?? editor.labels.eventNameTitle"
       spellcheck="false"
       @input="onInput"
       @focus="focusValue = text"
@@ -103,12 +106,12 @@ function pick(value: string): void {
       class="dd-btn"
       type="button"
       tabindex="-1"
-      title="选择事件"
+      :title="editor.labels.eventPick"
       @mousedown.prevent="openDd = !openDd"
     >▼</button>
     <div v-if="openDd && hasOptions" class="dd-list">
       <template v-for="[group, list] in groups" :key="group">
-        <div class="dd-group">{{ GROUP_LABELS[group as EditorEventGroup] ?? group }}</div>
+        <div class="dd-group">{{ groupLabels[group as EditorEventGroup] ?? group }}</div>
         <div
           v-for="opt in list"
           :key="opt.value"

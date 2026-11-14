@@ -12,8 +12,8 @@
  */
 import type { ProjectDoc, StateNode } from './model'
 import { parseActionLine } from './action-parse'
-import { docEventFacts } from './event-catalog'
-import { internalOnlyNames, isInternalOnlyEvent } from './event-visibility'
+import { analyzeInternalOnly } from './internal-only'
+import { internalOnlyNames } from './event-visibility'
 
 /** SCXML id 的 NCName 子集（允许 Unicode 字母，兼容中文状态 id） */
 export const NCNAME_RE = /^[\p{L}_][\p{L}\p{N}_.-]*$/u
@@ -460,18 +460,6 @@ export function validateStructure(doc: ProjectDoc): StructureReport {
         })
       }
     }
-    if (t.delayMs === undefined) {
-      const names = t.event.split(/\s+/).filter(Boolean)
-      const visibilities = names.map((name) => (isInternalOnlyEvent(doc, name) ? 'internal' : 'both'))
-      if (names.length > 1 && new Set(visibilities).size > 1) {
-        add({
-          severity: 'error',
-          code: 'structure.transition.mixed-event-visibility',
-          params: { id: t.id, events: names.join(' ') },
-          transitionId: t.id,
-        })
-      }
-    }
     if (t.delayMs !== undefined) {
       if (!Number.isFinite(t.delayMs) || t.delayMs < 10) {
         add({
@@ -492,53 +480,42 @@ export function validateStructure(doc: ProjectDoc): StructureReport {
     }
   }
 
-  // ── 仅内部事件：生产端一致性（0.15） ──
-  const internalNames = internalOnlyNames(doc)
-  const engineGenerated = (name: string): boolean =>
-    name.startsWith('done.state.') ||
-    name.startsWith('done.invoke.') ||
-    name.startsWith('error.')
-  if (internalNames.length) {
-    const facts = docEventFacts(doc)
-    for (const name of internalNames) {
-      const origins = facts.sendOrigins.get(name) ?? []
-      if (!origins.length) {
-        if (!engineGenerated(name) && name !== '*') {
-          add({
-            severity: 'warning',
-            code: 'structure.event.internal-only-without-producer',
-            params: { event: name },
-            event: name,
-          })
-        }
-        continue
+  // ── 仅内部事件：生产端/消费端一致性（0.15） ──
+  for (const name of internalOnlyNames(doc)) {
+    const analysis = analyzeInternalOnly(doc, name)
+    for (const producer of analysis.producers) {
+      // internal-delay 由下面的全局扫描统一报，避免重复。
+      if (!producer.conflict || producer.reason === 'internal-delay') continue
+      const issue: StructureIssue = {
+        severity: 'error',
+        code: 'structure.event.internal-only-with-external-producer',
+        params: { event: name, channel: producer.channel },
+        event: name,
       }
-      for (const origin of origins) {
-        if (origin.channel === 'internal') continue
-        const issue: StructureIssue = {
-          severity: 'error',
-          code: 'structure.event.internal-only-with-external-producer',
-          params: { event: name, channel: origin.channel },
-          event: name,
+      if (producer.kind === 'state-action' && producer.stateUid) {
+        issue.stateUid = producer.stateUid
+        issue.stateId = producer.stateId
+        issue.slot = producer.slot
+        if (producer.actionIndex !== undefined) issue.actionIndex = producer.actionIndex
+      } else if (producer.transitionId) {
+        issue.transitionId = producer.transitionId
+        issue.stateUid = producer.transitionSourceUid
+        issue.stateId = producer.transitionSourceId
+        if (producer.actionIndex !== undefined) {
+          issue.actionIndex = producer.actionIndex
+          issue.slot = 'transition'
         }
-        if (origin.kind === 'state-action') {
-          issue.stateId = origin.state.id
-          issue.stateUid = origin.state.uid
-          issue.slot = origin.slot
-          if (origin.actionIndex !== undefined) issue.actionIndex = origin.actionIndex
-        } else {
-          issue.transitionId = origin.transitionId
-          if (origin.kind === 'transition-action') {
-            issue.stateUid = origin.source.uid
-            issue.stateId = origin.source.id
-            if (origin.actionIndex !== undefined) {
-              issue.actionIndex = origin.actionIndex
-              issue.slot = 'transition'
-            }
-          }
-        }
-        add(issue)
       }
+      add(issue)
+    }
+    for (const listener of analysis.listeners) {
+      if (!listener.mixed) continue
+      add({
+        severity: 'error',
+        code: 'structure.transition.mixed-event-visibility',
+        params: { id: listener.transitionId, events: listener.events.join(' ') },
+        transitionId: listener.transitionId,
+      })
     }
   }
 

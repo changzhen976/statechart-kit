@@ -13,7 +13,7 @@ import {
   entryExitDoc,
   faultCondDoc,
   parallelHistoryDoc,
-  sendCancelDoc,
+  delayCancelDoc,
   trafficLightDoc,
 } from '../src/core/examples'
 import { serializeToScxml } from '../src/core/serializer'
@@ -128,7 +128,7 @@ assert(s3.isActive('lit') && s3.snapshot()['visits'] === 2, '再切两轮 → �
 s3.dispose()
 
 console.log('\n── 场景四：内部延时与取消（delayMs）──')
-const xml4 = serializeToScxml(sendCancelDoc())
+const xml4 = serializeToScxml(delayCancelDoc())
 assert(xml4.includes('delay="3s"') && xml4.includes('<cancel sendid="delay3s_running_to_timedout"/>'), '序列化包含 delayMs 展开的 send/cancel')
 const clock4 = new VirtualClock()
 const s4 = await createSession(xml4, { domParser, clock: clock4 })

@@ -266,6 +266,15 @@ export function buildDirectionCatalog(
   return { in: inRows, out: outRows, lone: loneRows }
 }
 
+/** 由 `delayMs` 转移自动产生的定时器事件名（来源判定，不依赖事件名正则）。 */
+export function autoDelayEventNames(doc: ProjectDoc): Set<string> {
+  const names = new Set<string>()
+  for (const t of doc.transitions) {
+    if (t.delayMs !== undefined && t.event) names.add(t.event)
+  }
+  return names
+}
+
 /** 收集文档内出现过的全部事件名（转移 + send 动作），按名称排序 */
 export function collectDocEvents(doc: ProjectDoc): string[] {
   const names = new Set<string>()

@@ -170,15 +170,3 @@ export function scanScriptActions(doc: ProjectDoc): ScriptActionHit[] {
   }
   return hits
 }
-
-/** 某状态的 entry 动作里，是否存在对指定事件的延时发送（计时器来源提示用） */
-export function findDelayedSend(
-  entryActions: string[],
-  eventName: string,
-): { delay: string } | null {
-  for (const line of entryActions) {
-    const a = parseActionLine(line)
-    if (a.type === 'send' && a.delay && a.event === eventName) return { delay: a.delay }
-  }
-  return null
-}

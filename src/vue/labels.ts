@@ -68,6 +68,19 @@ export interface EditorLabels {
   eventSourceAutoDelay: string
   eventSourceExternal: string
   eventSourceListenOnly: string
+  eventGroupIn: string
+  eventGroupOut: string
+  eventGroupLone: string
+  eventTagDelay: string
+  eventTagBroadcast: string
+  eventTipLone: string
+  eventNamePlaceholder: string
+  eventNameTitle: string
+  eventNameInternalPlaceholder: string
+  eventNameInternalTitle: string
+  eventPick: string
+  eventsPanelHint: string
+  noEvents: string
   internalOnly: string
   internalOnlyHint: string
   internalOnlyTitle: string
@@ -213,8 +226,8 @@ export const DEFAULT_LABELS: EditorLabels = {
   receiveEvents: '接收事件',
   eventSource: '来源',
   transitionListen: '转移监听',
-  internalEvents: '内部延时事件',
-  internalEventHint: '系统自动生成；只在本机内部收发，不参与广播、路由或 MQTT。',
+  internalEvents: '自动延时转移',
+  internalEventHint: '由 delayMs 转移自动生成；本机计时器，不参与广播、路由或 MQTT。',
   raiseEvents: '内部发出',
   listeners: '监听数',
   eventSourceInternal: '内部 raise/send',
@@ -222,6 +235,19 @@ export const DEFAULT_LABELS: EditorLabels = {
   eventSourceAutoDelay: '自动延时',
   eventSourceExternal: '外部来源',
   eventSourceListenOnly: '仅监听',
+  eventGroupIn: '↓ 送入本机',
+  eventGroupOut: '↑ 本机发出',
+  eventGroupLone: '· 仅监听 · 暂无来源',
+  eventTagDelay: '⏱ 延时 {ms}ms',
+  eventTagBroadcast: '广播',
+  eventTipLone: '仅被监听：没有任何 send/外部来源会发出它',
+  eventNamePlaceholder: '事件名',
+  eventNameTitle: '事件名（可手输，也可从下拉选择）',
+  eventNameInternalPlaceholder: '内部事件名',
+  eventNameInternalTitle: '内部事件（SCXML raise）：不经过外部事件队列',
+  eventPick: '选择事件',
+  eventsPanelHint: '发送事件可配置宿主字段；接收事件只读；自动延时转移单独列出。',
+  noEvents: '还没有事件：先给转移或 send 动作设置事件名。',
   internalOnly: '仅内部',
   internalOnlyHint: '只允许 raise / send target="#_internal" 产生',
   internalOnlyTitle: '仅内部事件',
@@ -369,9 +395,9 @@ export const DEFAULT_LABELS_EN: EditorLabels = {
   receiveEvents: 'Received events',
   eventSource: 'Source',
   transitionListen: 'Transition listeners',
-  internalEvents: 'Internal delayed events',
+  internalEvents: 'Auto-delay transitions',
   internalEventHint:
-    'Generated automatically; local only, not broadcast, routed, or sent over MQTT.',
+    'Generated from delayMs transitions; a local timer, not broadcast, routed, or sent over MQTT.',
   raiseEvents: 'Internal emissions',
   listeners: 'Listeners',
   eventSourceInternal: 'internal raise/send',
@@ -379,6 +405,19 @@ export const DEFAULT_LABELS_EN: EditorLabels = {
   eventSourceAutoDelay: 'auto delay',
   eventSourceExternal: 'external source',
   eventSourceListenOnly: 'listen only',
+  eventGroupIn: '↓ received',
+  eventGroupOut: '↑ sent locally',
+  eventGroupLone: '· listen only · no source',
+  eventTagDelay: '⏱ delay {ms}ms',
+  eventTagBroadcast: 'broadcast',
+  eventTipLone: 'Listen only: nothing sends this event',
+  eventNamePlaceholder: 'Event name',
+  eventNameTitle: 'Event name (type, or pick from the list)',
+  eventNameInternalPlaceholder: 'Internal event name',
+  eventNameInternalTitle: 'Internal event (SCXML raise): bypasses the external queue',
+  eventPick: 'Pick event',
+  eventsPanelHint: 'Sent events can carry host fields; received events are read-only; auto-delay transitions are listed separately.',
+  noEvents: 'No events yet: set an event on a transition or a send action.',
   internalOnly: 'Internal only',
   internalOnlyHint: 'Only raise / send target="#_internal" may produce it',
   internalOnlyTitle: 'Internal-only event',

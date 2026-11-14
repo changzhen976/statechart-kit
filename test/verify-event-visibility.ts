@@ -1,5 +1,5 @@
 /**
- * 事件可见性（0.13–0.15）：
+ * 事件可见性（0.15）：
  *   A. raise / internal-only 守卫：内部触发、外部同名事件被拦截
  *   B. 自动延时是 external 类型，不能被 internal 守卫误杀
  *   C. serialize → import → serialize round-trip 保留可见性
@@ -13,6 +13,7 @@ import { Window } from 'happy-dom'
 import type { DOMParserLike } from '@tinyactors/scxmljs/trusted'
 import { emptyDoc, normalizeDoc, type ProjectDoc, type StateNode, type TransitionEdge } from '../src/core/model'
 import { internalOnlyNames, isInternalOnlyEvent, setInternalOnlyEvent } from '../src/core/event-visibility'
+import { analyzeInternalOnly } from '../src/core/internal-only'
 import { serializeToDisplayScxml, serializeToScxml, actionLineToScxml } from '../src/core/serializer'
 import { actionToLine, parseActionLine } from '../src/core/action-parse'
 import { scxmlToDoc } from '../src/core/scxml-import'
@@ -291,10 +292,8 @@ function makeInternalDoc(entryActions: string[], transitions: TransitionEdge[] =
   setInternalOnlyEvent(doc, 'go', true)
   const report = validateStructure(doc)
   assert(
-    report.issues.some(
-      (i) => i.code === 'structure.event.internal-only-without-producer' && i.severity === 'warning',
-    ),
-    '无生产者：warning',
+    !report.issues.some((i) => i.code.includes('internal-only-without-producer')),
+    '无生产者不再由结构校验报警（只由弹窗提示）',
   )
 }
 
@@ -340,6 +339,62 @@ console.log('── I) 导入根级集合优先级与 warning ──')
     '根级有、转移级没有：不算不一致（事件可暂无监听者）',
   )
   assert(isInternalOnlyEvent(imported.doc, 'go'), '无监听的根级仅内部事件仍保留')
+}
+
+console.log('── J) core analyzeInternalOnly：单一判定源 ──')
+{
+  const doc = emptyDoc('analysis')
+  doc.states = [node('a', 'a', ['raise go', 'send go delay 1s id gd']), node('b', 'b')]
+  doc.initial = 'a'
+  doc.transitions = [edge('a', 'b', 'go'), edge('a', 'b', 'go other', { id: 't-mixed' })]
+  setInternalOnlyEvent(doc, 'go', true)
+  const analysis = analyzeInternalOnly(doc, 'go')
+  assert(
+    analysis.producers.some((p) => p.channel === 'internal' && !p.conflict) &&
+      analysis.producers.some((p) => p.reason === 'external' && p.conflict && !p.canFix),
+    '分析区分内部/外部生产者与可修复性',
+  )
+  assert(
+    analysis.listeners.some((l) => l.transitionId === 't-mixed' && l.mixed) &&
+      !analysis.canConfirm,
+    '分析识别混合监听并阻止确认',
+  )
+}
+{
+  const doc = emptyDoc('analysis-internal-delay')
+  doc.states = [node('a', 'a', ['send go target #_internal delay 1s id gd']), node('b', 'b')]
+  doc.initial = 'a'
+  doc.transitions = [edge('a', 'b', 'go')]
+  setInternalOnlyEvent(doc, 'go', true)
+  const analysis = analyzeInternalOnly(doc, 'go')
+  assert(
+    analysis.producers.some((p) => p.reason === 'internal-delay' && !p.canFix),
+    '分析识别 #_internal + delay',
+  )
+}
+{
+  const doc = emptyDoc('analysis-auto')
+  doc.states = [node('a', 'a'), node('b', 'b')]
+  doc.initial = 'a'
+  doc.transitions = [edge('a', 'b', 'delay20ms_a_to_b', { delayMs: 20, delayUnit: 'ms' })]
+  setInternalOnlyEvent(doc, 'delay20ms_a_to_b', true)
+  const analysis = analyzeInternalOnly(doc, 'delay20ms_a_to_b')
+  assert(
+    analysis.producers.some((p) => p.reason === 'auto-delay' && !p.canFix),
+    '分析识别自动延时生产者',
+  )
+}
+{
+  const doc = emptyDoc('analysis-empty')
+  doc.states = [node('a', 'a'), node('b', 'b')]
+  doc.initial = 'a'
+  doc.transitions = [edge('a', 'b', 'go')]
+  setInternalOnlyEvent(doc, 'go', true)
+  const analysis = analyzeInternalOnly(doc, 'go')
+  assert(
+    analysis.producers.length === 0 && analysis.canConfirm,
+    '无生产者时不阻止确认（由弹窗提示）',
+  )
 }
 
 console.log(`\n结果：${pass} 通过 / ${fail} 失败`)

@@ -8,16 +8,15 @@
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useEditor } from './use-editor'
-import type { InternalOnlyProducer } from './internal-only'
+import type { InternalOnlyProducer } from '../core/internal-only'
 
 const editor = useEditor()
 const suppress = ref(false)
 const primary = ref<HTMLButtonElement | null>(null)
 
 const dialog = computed(() => editor.internalEventDialog)
-const scan = computed(() => dialog.value?.scan ?? null)
 const conflictsText = computed(() =>
-  editor.labels.internalOnlyConflicts.replace('{count}', String(scan.value?.conflicts ?? 0)),
+  editor.labels.internalOnlyConflicts.replace('{count}', String(dialog.value?.conflicts ?? 0)),
 )
 
 watch(
@@ -42,6 +41,20 @@ function reasonLabel(producer: InternalOnlyProducer): string {
   return editor.labels.internalOnlyManualFix
 }
 
+function producerLabel(producer: InternalOnlyProducer): string {
+  if (producer.kind !== 'state-action') {
+    return `${producer.transitionSourceLabel ?? ''} → ${producer.transitionTargetLabel ?? editor.labels.noTarget}`
+  }
+  const base = producer.stateLabel ?? producer.stateId ?? producer.stateUid ?? ''
+  const slot =
+    producer.slot === 'entry'
+      ? editor.labels.entryActions
+      : producer.slot === 'exit'
+        ? editor.labels.exitActions
+        : ''
+  return slot ? `${base} · ${slot}` : base
+}
+
 function close(): void {
   editor.cancelInternalOnly()
 }
@@ -62,7 +75,7 @@ function onKey(e: KeyboardEvent): void {
   } else if (e.key === 'Enter') {
     const target = e.target as HTMLElement | null
     if (target?.tagName === 'BUTTON' || target?.tagName === 'INPUT') return
-    if (!editor.internalEventDialog.scan.canConfirm) return
+    if (!editor.internalEventDialog.canConfirm) return
     e.preventDefault()
     confirm()
   }
@@ -72,7 +85,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 </script>
 
 <template>
-  <div v-if="dialog && scan" class="sce-overlay" @click.self="close">
+  <div v-if="dialog" class="sce-overlay" @click.self="close">
     <div
       class="sce-dialog sce-dialog-wide sce-internal-dialog"
       role="dialog"
@@ -96,18 +109,18 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
           <h5>{{ editor.labels.internalOnlyProducers }}</h5>
           <ul class="sce-internal-list">
             <li
-              v-for="producer in scan.producers"
+              v-for="producer in dialog.producers"
               :key="producer.id"
               :class="{ bad: producer.conflict }"
             >
-              <span class="src">{{ producer.source }}</span>
+              <span class="src">{{ producerLabel(producer) }}</span>
               <span class="chan">{{ channelLabel(producer) }}</span>
               <button v-if="producer.canFix" class="mini" type="button" @click="fix(producer)">
                 {{ editor.labels.internalOnlyFixSend }}
               </button>
               <span v-else-if="producer.conflict" class="hint">{{ reasonLabel(producer) }}</span>
             </li>
-            <li v-if="!scan.producers.length" class="muted">
+            <li v-if="!dialog.producers.length" class="muted">
               {{ editor.labels.internalOnlyNoProducer }}
             </li>
           </ul>
@@ -115,19 +128,19 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
         <section>
           <h5>{{ editor.labels.internalOnlyListeners }}</h5>
           <ul class="sce-internal-list">
-            <li v-for="listener in scan.listeners" :key="listener.transitionId" :class="{ bad: listener.mixed }">
+            <li v-for="listener in dialog.listeners" :key="listener.transitionId" :class="{ bad: listener.mixed }">
               <span class="src">
-                {{ listener.source }} → {{ listener.target || editor.labels.noTarget }}
+                {{ listener.sourceLabel }} → {{ listener.targetLabel || editor.labels.noTarget }}
               </span>
               <code>{{ listener.events.join(' ') }}</code>
               <span v-if="listener.mixed" class="hint">{{ editor.labels.internalOnlyMixed }}</span>
             </li>
-            <li v-if="!scan.listeners.length" class="muted">—</li>
+            <li v-if="!dialog.listeners.length" class="muted">—</li>
           </ul>
         </section>
       </div>
 
-      <p v-if="scan.conflicts" class="sce-error">{{ conflictsText }}</p>
+      <p v-if="dialog.conflicts" class="sce-error">{{ conflictsText }}</p>
       <p v-else class="sce-internal-ok">✓ {{ editor.labels.internalOnlyReady }}</p>
       <p class="sce-meta">{{ editor.labels.internalOnlyNotSecurity }}</p>
 
@@ -142,7 +155,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
           ref="primary"
           class="sce-primary"
           type="button"
-          :disabled="!scan.canConfirm"
+          :disabled="!dialog.canConfirm"
           @click="confirm"
         >{{ editor.labels.internalOnlySet }}</button>
       </div>

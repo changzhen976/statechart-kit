@@ -26,6 +26,7 @@ export const CORE_FILES = [
   'src/core/validate-structure.ts',
   'src/core/codes.ts',
   'src/core/event-visibility.ts',
+  'src/core/internal-only.ts',
   'src/core/cdata.ts',
   'src/core/serialize-checked.ts',
 ]
@@ -67,7 +68,6 @@ export const VUE_FILES = [
   'src/vue/VariablesPanel.vue',
   'src/vue/EventAttrsPanel.vue',
   'src/vue/InternalEventDialog.vue',
-  'src/vue/internal-only.ts',
   'src/vue/SimPanel.vue',
   'src/vue/SimBar.vue',
   'src/vue/ValidationDialog.vue',

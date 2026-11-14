@@ -113,7 +113,7 @@ console.log('── B2) targetless 转移 / donedata ──')
 
   const err = editor.addTransition(a.uid, null, { event: 'ping' })
   const t = editor.doc.transitions[0]!
-  assert(err === null && t.target === null && t.transitionType === 'internal', '新增无 target 的内部转移')
+  assert(err === null && t.target === null && t.transitionType === undefined, '新增无 target 的内部转移（不写 type）')
   assert(editor.stateName(null) === editor.labels.noTarget, 'stateName(null) 显示内部转移')
 
   const delayErr = editor.addTransition(b.uid, null, { delayMs: 2000, delayUnit: 's' })
@@ -131,10 +131,15 @@ console.log('── B2) targetless 转移 / donedata ──')
   const current = editor.doc.transitions.find((x) => x.id === t.id)!
   editor.updateTransition(current.id, { target: b.uid })
   assert(editor.doc.transitions.find((x) => x.id === t.id)?.target === b.uid, '已有转移可改 target')
+  editor.updateTransition(current.id, { transitionType: 'internal' })
+  assert(editor.doc.transitions.find((x) => x.id === t.id)?.transitionType === 'internal', '带 target 可切换 transitionType')
   editor.updateTransition(current.id, { target: null })
   assert(editor.doc.transitions.find((x) => x.id === t.id)?.target === null, '已有转移可改回无 target')
   editor.updateTransition(current.id, { transitionType: 'external' })
-  assert(editor.doc.transitions.find((x) => x.id === t.id)?.transitionType === 'external', '可切换 transitionType')
+  assert(
+    editor.doc.transitions.find((x) => x.id === t.id)?.transitionType === undefined,
+    '无 target 时忽略 transitionType',
+  )
 
   const delayedId = delayed.id
   editor.updateTransition(delayedId, { target: a.uid })
@@ -486,6 +491,44 @@ console.log('── P2) 仅内部：扫描 / 弹窗 / 修复 / 校验错误 ─�
   await editor.destroy()
 }
 {
+  const { editor } = makeEditor()
+  await editor.ready
+  editor.setEventAttr('external.only', 'topic', 'demo/x')
+  editor.addState('atomic')
+  assert(
+    editor.doc.eventAttrs?.['external.only']?.topic === 'demo/x',
+    '无关状态编辑不自动删除未引用的 eventAttrs',
+  )
+  await editor.destroy()
+}
+{
+  const doc = emptyDoc('event-options-delay')
+  doc.states = [
+    { uid: 's1', id: 'a', label: 'a', kind: 'atomic', parent: null, entryActions: [], exitActions: [] },
+    { uid: 's2', id: 'b', label: 'b', kind: 'atomic', parent: null, entryActions: [], exitActions: [] },
+  ]
+  doc.initial = 's1'
+  doc.transitions = [
+    { id: 't1', source: 's1', target: 's2', event: 'custom.timer', cond: '', actions: [], delayMs: 20, delayUnit: 'ms' },
+  ]
+  const { editor } = makeEditor({ initialDoc: doc })
+  await editor.ready
+  assert(
+    editor.eventOptions().some((o) => o.value === 'custom.timer' && o.tag === '⏱ 延时 20ms'),
+    '事件下拉按 delayMs 来源标注延时（非名字正则）',
+  )
+  assert(editor.labels.internalEvents === '自动延时转移', '自动延时术语')
+  await editor.destroy()
+  const en = makeEditor({ initialDoc: doc, locale: 'en' })
+  await en.editor.ready
+  assert(
+    en.editor.eventOptions().some((o) => o.value === 'custom.timer' && o.tag === '⏱ delay 20ms') &&
+      en.editor.labels.eventGroupIn === '↓ received',
+    '英文 locale 下事件下拉/分组使用 labels',
+  )
+  await en.editor.destroy()
+}
+{
   const st = (uid: string, id: string, entryActions: string[] = []) => ({
     uid,
     id,
@@ -514,8 +557,8 @@ console.log('── P2) 仅内部：扫描 / 弹窗 / 修复 / 校验错误 ─�
     const editor = await internalEditor(['raise go'])
     editor.requestInternalOnly('go')
     assert(
-      editor.internalEventDialog?.scan.canConfirm === true &&
-        editor.internalEventDialog.scan.conflicts === 0,
+      editor.internalEventDialog?.canConfirm === true &&
+        editor.internalEventDialog.conflicts === 0,
       'raise 生产者：扫描无冲突',
     )
     editor.confirmInternalOnly()
@@ -531,9 +574,9 @@ console.log('── P2) 仅内部：扫描 / 弹窗 / 修复 / 校验错误 ─�
   {
     const editor = await internalEditor(['send go'])
     editor.requestInternalOnly('go')
-    const producer = editor.internalEventDialog?.scan.producers[0]
+    const producer = editor.internalEventDialog?.producers[0]
     assert(
-      editor.internalEventDialog?.scan.canConfirm === false &&
+      editor.internalEventDialog?.canConfirm === false &&
         producer?.conflict === true &&
         producer.canFix === true,
       '普通 send：扫描报冲突且可一键修复',
@@ -545,7 +588,7 @@ console.log('── P2) 仅内部：扫描 / 弹窗 / 修复 / 校验错误 ─�
       editor.doc.states[0]?.entryActions[0] === 'send go target #_internal',
       '一键修复写入 target="#_internal"',
     )
-    assert(editor.internalEventDialog?.scan.canConfirm === true, '修复后扫描通过')
+    assert(editor.internalEventDialog?.canConfirm === true, '修复后扫描通过')
     editor.confirmInternalOnly()
     assert(editor.isInternalOnly('go'), '修复后确认生效')
     await editor.destroy()
@@ -555,7 +598,7 @@ console.log('── P2) 仅内部：扫描 / 弹窗 / 修复 / 校验错误 ─�
   {
     const editor = await internalEditor(['send go delay 1s id go'])
     editor.requestInternalOnly('go')
-    const producer = editor.internalEventDialog?.scan.producers[0]
+    const producer = editor.internalEventDialog?.producers[0]
     assert(
       producer?.conflict === true && producer.canFix === false,
       'send delay：报冲突且不能自动修复',
@@ -571,9 +614,9 @@ console.log('── P2) 仅内部：扫描 / 弹窗 / 修复 / 校验错误 ─�
       doc.transitions.push({ id: 't2', source: 's1', target: 's2', event: 'go other', cond: '', actions: [] })
     })
     editor.requestInternalOnly('go')
-    const listener = editor.internalEventDialog?.scan.listeners.find((x) => x.transitionId === 't2')
+    const listener = editor.internalEventDialog?.listeners.find((x) => x.transitionId === 't2')
     assert(listener?.mixed === true, '混合事件监听者被标为 mixed')
-    assert(editor.internalEventDialog?.scan.canConfirm === false, '混合监听者阻止确认')
+    assert(editor.internalEventDialog?.canConfirm === false, '混合监听者阻止确认')
     await editor.destroy()
   }
 
@@ -581,7 +624,7 @@ console.log('── P2) 仅内部：扫描 / 弹窗 / 修复 / 校验错误 ─�
   {
     const editor = await internalEditor(['send go target #_internal delay 1s id go'])
     editor.requestInternalOnly('go')
-    const producer = editor.internalEventDialog?.scan.producers[0]
+    const producer = editor.internalEventDialog?.producers[0]
     assert(
       producer?.reason === 'internal-delay' && producer.conflict && !producer.canFix,
       '#_internal + delay：扫描报 internal-delay 冲突',

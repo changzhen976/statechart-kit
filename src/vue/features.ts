@@ -19,7 +19,7 @@ export interface EditorFeatures {
   structuredActions: boolean
   /** 右栏变量面板 */
   variables: boolean
-  /** 右栏事件面板（发送/接收/内部延时；无事件字段时只读） */
+  /** 右栏事件面板（发送/接收/自动延时；无事件字段时只读） */
   events: boolean
   /** 右栏仿真面板 */
   simulation: boolean

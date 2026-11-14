@@ -282,8 +282,8 @@ function setSendData(i: number, raw: string): void {
           :model-value="row.event"
           :options="eventOptions"
           :disabled="disabled"
-          placeholder="事件名"
-          title="事件名（下拉含本机转移/发送 + 全局时钟/路由）"
+          :placeholder="editor.labels.eventNamePlaceholder"
+          :title="editor.labels.eventNameTitle"
           @change="patchSend(i, row, { event: $event })"
         />
         <label class="f-target" title="target=#_internal：发送到会话内部队列（不等同于 raise）">
@@ -331,8 +331,8 @@ function setSendData(i: number, raw: string): void {
           :model-value="row.event"
           :options="eventOptions"
           :disabled="disabled"
-          placeholder="内部事件名"
-          title="内部事件（SCXML raise）：不经过外部事件队列"
+          :placeholder="editor.labels.eventNameInternalPlaceholder"
+          :title="editor.labels.eventNameInternalTitle"
           @change="onInput(i, { type: 'raise', event: $event })"
         />
       </template>

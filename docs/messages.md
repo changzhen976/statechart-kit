@@ -77,7 +77,6 @@ import {
 | `structure.transition.delay-without-event` | error | 有 `delayMs` 但没有事件名 |
 | `structure.transition.mixed-event-visibility` | error | 同一转移混合仅内部与双向事件，不会生成可见性守卫 |
 | `structure.event.internal-only-with-external-producer` | error | 仅内部事件存在普通 send / 延时 send / 自动延时生产者（`channel`） |
-| `structure.event.internal-only-without-producer` | warning | 仅内部事件没有任何生产者（引擎保留名前缀除外） |
 | `structure.action.internal-delay-unsupported` | error | `send target="#_internal"` 带 delay：当前引擎会丢弃该事件 |
 
 ## SCXML 导入（`ImportWarning` / `ScxmlImportError`）

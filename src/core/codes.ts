@@ -59,7 +59,6 @@ export const STRUCTURE_ISSUE_CODES = [
   'structure.transition.delay-without-event',
   'structure.transition.mixed-event-visibility',
   'structure.event.internal-only-with-external-producer',
-  'structure.event.internal-only-without-producer',
   'structure.action.internal-delay-unsupported',
 ] as const
 

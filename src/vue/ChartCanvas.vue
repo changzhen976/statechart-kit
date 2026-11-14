@@ -165,7 +165,7 @@ function scheduleContractProbe(): void {
     const labels = root.querySelectorAll(`[part~="${OFFICIAL.edgeLabelPart}"]`).length
     if (labelWorthy && labels === 0) {
       console.warn(
-        '[ChartViewHost] 官方渲染契约变化：文档含转移但画布无 edge-label，画布点击选中转移已失效——请核对 OFFICIAL 契约常量（ChartViewHost 源码头部）并跑 scripts/check-canvas-select.cjs',
+        '[ChartViewHost] 官方渲染契约变化：文档含转移但画布无 edge-label，画布点击选中转移已失效——请核对 OFFICIAL 契约常量（ChartViewHost 源码头部）并跑 npm run check:vue',
       )
     }
   }, 600)
@@ -578,7 +578,7 @@ function onPointerUp(e: PointerEvent): void {
  *     [part="cond"] 文本 = [cond]（官方约 22 字符截断，尾部 …）
  *     title = "事件 [cond] → 目标id列表"（目标逗号分隔）
  *   状态容器：[data-state] 属性（嵌套容器取最内层）
- * 失效症状：点击标签无反应/取消选中。官方升级后先跑 scripts/check-canvas-select.cjs。
+ * 失效症状：点击标签无反应/取消选中。官方升级后先跑 npm run check:vue。
  */
 const OFFICIAL = {
   /** 转移标签的 part 名（part 属性空格分隔之一） */

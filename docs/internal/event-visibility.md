@@ -1,14 +1,13 @@
 # 事件可见性：仅内部事件（internal-only）
 
-> 状态：**Draft — 目标 0.15**
+> 状态：**0.15.0（未发布）— 已实现**
 > 发布线：`0.13.1` 之后**直接发布 0.15.0**；`0.14.0` 不发布（tag 仅本地，未推送）。
 > 本文是「事件可见性 / 仅内部事件」语义的**单一事实源**：模型、序列化、校验、
 > 编辑器交互与迁移规则以本文为准。用户操作步骤见
 > [`docs/editor.md`](../editor.md)，宿主类型见
 > [`docs/host-integration.md`](../host-integration.md)，诊断 code 见
 > [`docs/messages.md`](../messages.md)。
-> 图例：`[已实现]` = 代码已在 main（含未发布的 0.14.0）；`[待实现]` = 目标
-> 0.15；`[待决策]` = 尚未拍板。
+> 图例：`[已实现]` = 代码已在 main；`[待实现]` = 尚未实现；`[待决策]` = 尚未拍板。
 
 ---
 
@@ -149,7 +148,7 @@
 
 ## 3. 数据模型
 
-### 3.1 字段 `[待实现]`
+### 3.1 字段 `[已实现]`
 
 ```ts
 export interface ProjectDoc {
@@ -169,7 +168,7 @@ export interface ProjectDoc {
 - 排序规则：按名称的 UTF-16 code unit 升序（`a < b`），避免
   `localeCompare` 受宿主 locale 影响；UI 展示可另行排序。
 
-### 3.2 API `[待实现]`
+### 3.2 API `[已实现]`
 
 ```ts
 export function isInternalOnlyEvent(doc: ProjectDoc, event: string): boolean
@@ -181,10 +180,10 @@ export function setInternalOnlyEvent(doc: ProjectDoc, event: string, on: boolean
   数组为空时删除字段。
 - 删除：`setEventVisibility`、`EventVisibility`、`EXTERNAL_EVENT_GUARD`、
   `stripExternalGuard`、`isExternalOnlyEvent`、`isExternalOnlyTransition`。
-- 保留：`withInternalGuard` / `stripInternalGuard`（导入与画布匹配仍需要）；
+- 保留：`withInternalGuard` / `stripVisibilityGuard`（序列化、导入与画布匹配仍需要）；
   `stripVisibilityGuard` 可保留为内部导入工具，但不再暴露 external 语义。
 
-### 3.3 旧字段迁移 `[待实现]`
+### 3.3 旧字段迁移 `[已实现]`
 
 `normalizeDoc`（以及编辑器加载旧 JSON 时）读取旧 `eventVisibility`：
 
@@ -199,14 +198,14 @@ export function setInternalOnlyEvent(doc: ProjectDoc, event: string, on: boolean
 - 旧 JSON 的 `external` 静默降级是 0.15 的破坏性变更，写在 CHANGELOG；
   SCXML 导入路径必须给 `import.event-visibility-external-removed` warning。
 - `internalOnlyEvents` 中的名字即使暂时没有生产者/监听者也保留，由校验给
-  “无生产者”warning；不在加载时擅自删除。
+  “无生产者”提示由弹窗负责；不在加载时擅自删除。
 
-### 3.4 改名、净化与定位 `[待实现]`
+### 3.4 改名、净化与定位 `[已实现]`
 
 **事件改名**（`updateTransition` 修改 `event`）：
 
 - 单事件 → 单事件：把旧名在 `internalOnlyEvents` 中的设置迁移到新名；
-- 多事件列表变化：不做模糊迁移（避免误标），由校验提示新事件缺少一致性；
+- 多事件列表变化：不做模糊迁移（避免误标），由弹窗/作者确认新事件的一致性；
 - 旧名若仍被其他转移/动作使用，保留其设置；只有“不再被任何生产者或监听者
   使用”时才移除。
 
@@ -220,8 +219,8 @@ export function setInternalOnlyEvent(doc: ProjectDoc, event: string, on: boolean
 - `removeState` / `removeTransition` / 改名后，删除“既无生产者、也无监听者”的
   名字；
 - 不在每次无关编辑时清理，避免刚设置、尚未添加生产者时被误删；
-- `eventAttrs` 同步迁移键（与 `internalOnlyEvents` 同批实现，见 §9.3），避免宿主
-  字段变孤儿。
+- `eventAttrs` 只在事件改名时迁移键；不自动删除未被当前文档引用的键（宿主可能
+  预配置外部事件字段）。
 
 **校验定位字段**：
 
@@ -240,7 +239,7 @@ actionIndex?: number
 
 ## 4. 序列化与导入
 
-### 4.1 根级元数据 `[待实现]`
+### 4.1 根级元数据 `[已实现]`
 
 `internalOnlyEvents` 写在根 `<scxml>` 上，JSON 数组：
 
@@ -257,7 +256,7 @@ actionIndex?: number
   丢失的问题。
 - 数组顺序按 §3.1 排序，保证 `serialize → import → serialize` 逐字节稳定。
 
-### 4.2 转移级元数据 `[待实现]`
+### 4.2 转移级元数据 `[已实现]`
 
 - 仍给 internal-only 转移写 `data-kit-visibility="internal"`，便于人读和 0.14
   读取；它是**派生信息**，不是事实源。
@@ -267,7 +266,7 @@ actionIndex?: number
   `serializeToDisplayScxml` 隐藏守卫与 `data-kit-visibility`（同时隐藏根级
   `data-kit-internal-events`，避免画布/展示泄露实现细节）。
 
-### 4.3 导入优先级与降级 `[待实现]`
+### 4.3 导入优先级与降级 `[已实现]`
 
 导入顺序：
 
@@ -330,12 +329,11 @@ actionIndex?: number
   私有扩展，kit 不承诺识别。
 - 引擎产生的 `done.state.*` / `done.invoke.*` / `error.*` 不在扫描范围（§5.6）。
 
-### 5.3 校验规则与 code `[待实现]`
+### 5.3 校验规则与 code `[已实现]`
 
 | code | 级别 | params | 定位 | 说明 |
 | --- | --- | --- | --- | --- |
 | `structure.event.internal-only-with-external-producer` | error | `{ event, channel }` | `event` + 生产者位置（state/slot/transitionId/actionIndex） | 每个外部生产者报一条 |
-| `structure.event.internal-only-without-producer` | warning | `{ event }` | `event` | 无任何生产者；引擎保留名除外 |
 | `structure.action.internal-delay-unsupported` | error | `{ event }` | state/slot/actionIndex 或 transitionId/actionIndex | `#_internal + delay` |
 | `structure.transition.mixed-event-visibility` | **error（0.14 为 warning）** | `{ id, events }` | `transitionId` | 混合 internal-only 与双向 |
 | `import.event-visibility-external-removed` | warning | `{ event }` | — | 导入旧 external |
@@ -343,8 +341,6 @@ actionIndex?: number
 | `import.event-visibility-invalid` | warning | `{ detail }` | — | 根级 JSON 非法 |
 
 - `serializeChecked` 对任一 error 抛错；编辑器可继续预览半成品。
-- `structure.event.internal-only-without-producer` 只对用户事件生效，不报
-  `done.state.` / `done.invoke.` / `error.` 前缀。
 - `params` 只能放扁平值（`Record<string, string | number>`）；多个生产者就报多条，
   每条带 `stateId` / `transitionId` / `event` / `actionIndex` 定位。
 
@@ -382,7 +378,7 @@ actionIndex?: number
   `internalOnlyEvents` 里；导入文档若包含，按 auto-delay 生产者报 conflict error。
 - 引擎产生的 `done.state.*` / `done.invoke.*` / `error.*`：kit 不知道其
   `_event.type` 细节，不纳入生产者扫描；用户若把它们设为仅内部，由引擎语义决定
-  是否触发。无生产者 warning 对这些前缀豁免。
+  是否触发；不再由结构校验额外发 warning。
 
 ---
 
@@ -486,7 +482,7 @@ transition sys.tick → timeout      # 仅内部
 
 ## 7. 编辑器交互
 
-### 7.1 可见性控件 `[待实现]`
+### 7.1 可见性控件 `[已实现]`
 
 - 事件面板「接收事件」的可见性列：三选一下拉 → **复选框「仅内部」**。
 - 未勾选 = 双向；勾选后写 `internalOnlyEvents`；取消勾选立即移除（不弹窗）。
@@ -496,7 +492,7 @@ transition sys.tick → timeout      # 仅内部
   - 事件是自动延时事件（导入残留）→ 禁用并提示“自动延时事件不支持可见性”；
   - 文档只读 / 仿真运行中 → 禁用（现有 locked 规则）。
 
-### 7.2 定义/约束弹窗 `[待实现]`
+### 7.2 定义/约束弹窗 `[已实现]`
 
 **触发**：用户勾选「仅内部」时；取消勾选不弹。
 
@@ -541,9 +537,8 @@ transition sys.tick → timeout      # 仅内部
   - `delayMs` 自动事件 → 「移除可见性」；
   - 混合监听转移 → 「打开转移」（定位后由作者拆分）。
 - 有未解决冲突时，「设为仅内部」**禁用**；「取消」始终可用。
-- 没有任何生产者时（且不是引擎保留名）：显示 warning“该事件目前没有内部生产者，
-  设置后将永远不会触发”，但仍允许确认（允许先搭骨架）；校验随后给
-  `internal-only-without-producer` warning。
+- 没有任何生产者时：弹窗显示“该事件目前没有内部生产者，设置后将永远不会触发”，
+  但仍允许确认（允许先搭骨架）；结构校验不再为此发 warning。
 - 「本次会话不再提示」：提供，只写内存（编辑器不读 localStorage / 不持久化），
   默认不勾选；勾选后本次会话内再次勾选「仅内部」**不再弹定义框**，但仍执行生产者
   扫描：无冲突直接写入；有冲突仍弹出（冲突不可静默跳过）。
@@ -553,8 +548,8 @@ transition sys.tick → timeout      # 仅内部
 - 新增 `InternalEventDialog.vue`，复用 `ConfirmDialog` 的 overlay/dialog 样式；
   不复用 `confirmRequest`，避免把富内容塞进纯文本契约。
 - store 增加 `internalEventDialog` 状态与 `openInternalOnlyDialog(event)` /
-  `confirmInternalOnly()` / `cancelInternalOnly()`；弹窗打开时计算
-  `docEventFacts` 与监听者列表，结果缓存到状态里，确认前不写文档。
+  `confirmInternalOnly()` / `cancelInternalOnly()`；弹窗打开时调用 core
+  `analyzeInternalOnly()`，结果缓存到状态里，确认前不写文档。
 - `EditorHost.vue` 挂载新组件；`role="dialog"`、`aria-labelledby`、Esc 取消、
   Enter 确认（冲突时 Enter 不生效）、打开时焦点落在主按钮。
 - 样式仍集中在 `src/vue/styles.css`（不写 scoped style）。
@@ -567,7 +562,7 @@ transition sys.tick → timeout      # 仅内部
 - 其余冲突只提供定位与说明，不自动改图。
 - 修复动作是一次 `captureUndo` 的可撤销编辑。
 
-### 7.4 校验结果与定位 `[待实现]`
+### 7.4 校验结果与定位 `[已实现]`
 
 - `validate()` 走 `validateDocument`，结构 error 出现在现有校验弹窗。
 - `StructureIssue` 新增 `event` / `slot` / `actionIndex`，`locateIssue` 优先：
@@ -586,7 +581,7 @@ transition sys.tick → timeout      # 仅内部
 - 中继写法下，注入业务内部事件被拒绝；注入 transport 事件（`arm`）仍可提前
   点火，这是 SCXML 静态事件名的固有限制，文档中说明，不假装拦截。
 
-### 7.6 旧 `send … delay` 行 `[待实现]`
+### 7.6 旧 `send … delay` 行 `[已实现：只读/引导；转换器 0.15.x]`
 
 - 移除 `ACTION_KINDS` 的「延时发送」入口；发送行不再提供 delay 输入。
 - 导入/旧文档里的 `send … delay …` 行：
@@ -605,7 +600,6 @@ transition sys.tick → timeout      # 仅内部
   转换结果：删除该 `send` 与配对 `cancel`，在同状态新增一条无目标 `delayMs`
   转移（相同延时），动作 `raise X`；业务转移保持不变。整个转换一次 undo。
   不满足时禁用按钮并显示原因（例如“带 data 的延时发送无法无损转换”）。
-- `findDelayedSend` 保留：导入文档仍可能触发“计时器来源”提示。
 
 ### 7.7 i18n 与可访问性
 
@@ -692,7 +686,7 @@ transition sys.tick → timeout      # 仅内部
   `external` / `both` 丢弃；字段删除。
 - 由于 0.14.0 从未发布，这里的“旧 JSON”指跟踪 `main` 的宿主导出的草稿，不是
   npm 公开发布版本；宿主加载时应提示用户重新确认敏感事件。
-- `eventAttrs` 随单事件改名迁移；孤儿键在改名/删除时清理。
+- `eventAttrs` 随单事件改名迁移；未引用键不自动删除（宿主可能预配置）。
 
 ### 9.4 示例与测试
 
@@ -726,12 +720,11 @@ transition sys.tick → timeout      # 仅内部
 
 ---
 
-## 10. 诊断目录 `[待实现]`
+## 10. 诊断目录 `[已实现]`
 
 | code | 级别 | 触发条件 | 主要 params |
 | --- | --- | --- | --- |
 | `structure.event.internal-only-with-external-producer` | error | 仅内部事件存在普通 send / 延时 send / 自动延时生产者 | `event`, `channel` |
-| `structure.event.internal-only-without-producer` | warning | 仅内部事件没有生产者（引擎保留名前缀除外） | `event` |
 | `structure.action.internal-delay-unsupported` | error | `send target="#_internal"` 带 delay | `event` |
 | `structure.transition.mixed-event-visibility` | error（原 warning） | 转移同时含仅内部与双向事件 | `id`, `events` |
 | `import.event-visibility-external-removed` | warning | 导入旧 `data-kit-visibility="external"` | `event` |
@@ -748,7 +741,7 @@ transition sys.tick → timeout      # 仅内部
 
 | 层 | 用例 | 套件 |
 | --- | --- | --- |
-| core 校验 | raise / #_internal 通过；普通 send、send delay、delayMs 冲突；无生产者 warning；`#_internal+delay` error | `test/verify-event-visibility.ts` |
+| core 校验 | raise / #_internal 通过；普通 send、send delay、delayMs 冲突；`#_internal+delay` error | `test/verify-event-visibility.ts` |
 | core 校验 | 混合事件 error；全内部通过；通配 `*` 仅内部 | 同上 |
 | core 序列化 | 根级数组、转移元数据、display 隐藏、逐字节往返 | 同上 / `test/verify-import.ts` |
 | core 导入 | external 降级 warning；根级优先；非法 JSON；旧 ProjectDoc 迁移 | 同上 |
@@ -774,7 +767,7 @@ transition sys.tick → timeout      # 仅内部
 | D5 | 移除 delay 作者入口，保留模型/导入 | 全删模型：SCXML 往返与外来源破坏；保留入口：矛盾写法继续存在 | 已确认 |
 | D6 | 勾选仅内部弹定义/约束框 | 仅 tooltip：用户不看；每次校验才提示：太晚 | 已确认（本次新增） |
 | D7 | 校验报生产者冲突/混合 | 只靠 UI：导入/程序化文档漏网 | 已确认（本次新增） |
-| D8 | 无生产者 warning（引擎名前缀豁免） | 不报：死配置难发现；报 error：搭骨架阶段太严 | 已确认 |
+| D8 | 无生产者只由弹窗提示（不进入结构校验） | 结构校验报 warning：需引擎前缀豁免、跨层耦合 | 已确认（优化） |
 | D9 | 旧 delay 行先只读 + 提示，转换器延后到 0.15.x | 0.15.0 自动全转：data/多监听/外部 target 无法无损，且扩大首版范围 | 已确认（分阶段） |
 | D10 | JS 不发事件、不做定时器 | 宿主注入 helper：校验不可见、破坏事件目录 | 已确认 |
 | D11 | 弹窗「本次会话不再提示」（仅内存，冲突时仍弹） | 每次都弹：高频操作打断；持久化：编辑器不读 localStorage | 已确认 |

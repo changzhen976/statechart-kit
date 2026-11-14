@@ -79,6 +79,7 @@ src/core/                零运行时依赖；禁止 import 引擎/Vue/浏览器
   validate-structure.ts  纯结构校验（零依赖）
   codes.ts               公开诊断 code 目录
   event-visibility.ts    事件可见性、raise 守卫、往返剥离
+  internal-only.ts       仅内部事件的生产者/监听者/冲突分析
   examples.ts            内置示例（测试依赖）
 
 src/engine/              依赖 @tinyactors/scxmljs；入口不静态 import 实现
@@ -100,7 +101,6 @@ src/vue/                 Vue 3 编辑器（Vite 构建，vue 为 optional peer�
   events.ts / labels.ts / format.ts / styles.css（含 DEFAULT_LABELS_EN）
   DoneDataEditor.vue     doneData 的 content/expr/param 编辑器
   InternalEventDialog.vue 「仅内部」定义/约束弹窗
-  internal-only.ts       弹窗扫描：生产者/监听者/冲突（纯函数）
   canvas-select.ts       画布标签 → 转移匹配（纯函数）
   *.vue                  EditorHost/Toolbar/Structure/Canvas/Property/Variables/Sim
 
@@ -161,7 +161,7 @@ const runner = new SessionRunner({ engine: 'sandboxed', domParser })
 | `test/verify-validation.ts` | 结构/引擎校验、严格序列化、CDATA |
 | `test/verify-engine.ts` | 懒加载、两种数据模型、生命周期竞态 |
 | `test/verify-host-events.ts` | typed send/done/error、done.states、error 定位 |
-| `test/verify-editor.ts` | adapter、CRUD/undo、Explorer 匹配、doneData、locale/diagnostics、canvas-fit、运行/校验脚本提示、仅内部弹窗/扫描/修复与校验错误 |
+| `test/verify-editor.ts` | adapter、CRUD/undo、Explorer 匹配、doneData、locale/diagnostics、canvas-fit、运行/校验脚本提示、仅内部弹窗/扫描/修复与校验错误、eventAttrs 保留、事件下拉来源/i18n |
 | `test/verify-event-visibility.ts` | raise、internal-only 守卫、自动延时例外、`#_internal`、round-trip、混合 error、`internalOnlyEvents`、生产者冲突、根级元数据、旧 external 导入降级 |
 
 发布前必须 `npm run verify:all` 全绿。`check:baseline -- --donor` 需要本地

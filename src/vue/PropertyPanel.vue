@@ -367,13 +367,12 @@ function setRootInitial(e: Event): void {
         </select>
         <p v-if="targetErr" class="sce-error">{{ targetErr }}</p>
       </div>
-      <div class="sce-field">
+      <div v-if="tr.target !== null" class="sce-field">
         <label>{{ editor.labels.transitionType }}</label>
         <select v-model="transitionType" :disabled="editor.locked" @change="commitTransitionType">
           <option value="external">{{ editor.labels.external }}</option>
           <option value="internal">{{ editor.labels.internal }}</option>
         </select>
-        <p v-if="tr.target === null" class="sce-meta">无 target 时 type 不影响运行语义。</p>
       </div>
       <div class="sce-field">
         <label>{{ editor.labels.event }}</label>

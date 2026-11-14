@@ -9,6 +9,7 @@
  */
 import { activeSummary, activeTree, flattenActiveTree } from '../src/core/active-tree'
 import {
+  autoDelayEventNames,
   buildDirectionCatalog,
   collectDocEvents,
   docEventFacts,
@@ -155,6 +156,14 @@ console.log('── C) collectDocEvents ──')
 {
   const names = collectDocEvents(catalogDoc())
   assert(names.join(',') === 'delay2s_b_to_c,evt.boot,evt.done,evt.go,evt.mid', `全部事件去重排序（${names.join(',')}）`)
+}
+
+console.log('── C2) autoDelayEventNames 按 delayMs 来源 ──')
+{
+  const doc = catalogDoc()
+  const names = autoDelayEventNames(doc)
+  assert(names.has('delay2s_b_to_c'), 'delayMs 转移事件被识别为自动延时')
+  assert(!names.has('evt.boot'), '普通事件不被识别为自动延时')
 }
 
 console.log('── D) activeTree / activeSummary ──')

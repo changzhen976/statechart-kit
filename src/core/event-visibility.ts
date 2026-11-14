@@ -21,10 +21,6 @@ function stripGuard(cond: string, guard: string): string {
   return user
 }
 
-export function stripInternalGuard(cond: string): string {
-  return stripGuard(cond, INTERNAL_EVENT_GUARD)
-}
-
 /** 识别并剥离 kit 生成的守卫；external 只为导入旧 SCXML。 */
 export function stripVisibilityGuard(cond: string): {
   cond: string
@@ -37,7 +33,7 @@ export function stripVisibilityGuard(cond: string): {
   return { cond: cond.trim() }
 }
 
-export function eventNamesOf(t: TransitionEdge): string[] {
+function eventNamesOf(t: TransitionEdge): string[] {
   return t.event.split(/\s+/).filter(Boolean)
 }
 
@@ -76,8 +72,4 @@ export function transitionVisibility(doc: ProjectDoc, t: TransitionEdge): 'inter
   const names = eventNamesOf(t)
   if (!names.length) return null
   return names.every((name) => isInternalOnlyEvent(doc, name)) ? 'internal' : null
-}
-
-export function isInternalOnlyTransition(doc: ProjectDoc, t: TransitionEdge): boolean {
-  return transitionVisibility(doc, t) === 'internal'
 }

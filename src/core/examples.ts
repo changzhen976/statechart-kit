@@ -78,8 +78,8 @@ export function entryExitDoc(): ProjectDoc {
  * 仿真：运行后 3 秒内注入 pause → 定时器被撤销不超时；resume 重入 run
  * 重新布防，若不 pause，3 秒后进入超时态。
  */
-export function sendCancelDoc(): ProjectDoc {
-  const doc = emptyDoc('send-cancel-demo')
+export function delayCancelDoc(): ProjectDoc {
+  const doc = emptyDoc('delay-cancel-demo')
   const uWatch = newUid('watch')
   const uRun = newUid('run')
   const uPause = newUid('pause')
@@ -248,7 +248,7 @@ export const EXAMPLES: { name: string; make: () => ProjectDoc }[] = [
   { name: '交通灯（官方示例）', make: trafficLightDoc },
   { name: '并行加热/搅拌 + 深历史恢复', make: parallelHistoryDoc },
   { name: '进入/退出动作演示', make: entryExitDoc },
-  { name: '内部延时与取消（delayMs）', make: sendCancelDoc },
+  { name: '内部延时与取消（delayMs）', make: delayCancelDoc },
   { name: '故障全局转移 + 条件与或非', make: faultCondDoc },
   { name: '动作演示（采样升温循环）', make: actionDemoDoc },
   { name: '极限演示：并行 + 深浅历史 + 自定义 JS', make: extremeDemoDoc },
