@@ -24,7 +24,7 @@ import type {
   StateKind,
 } from './model'
 import { emptyDoc, newTransitionId, newUid, normalizeDoc, uniqueStateId } from './model'
-import { setEventVisibility, stripVisibilityGuard } from './event-visibility'
+import { setEventVisibility, setInternalOnlyEvent, stripVisibilityGuard } from './event-visibility'
 import { isAutoDelayEvent } from './naming'
 import { actionToLine, type ActionStruct } from './action-parse'
 import { neutralizeCdata } from './cdata'
@@ -73,6 +73,10 @@ interface Ctx {
   pendingTransitions: { el: Element; sourceUid: string; at: ImportLocation }[]
   /** 状态 uid → onentry/onexit 原始动作行（内部延迟转移折叠用） */
   rawByUid: Map<string, { entry: string[]; exit: string[] }>
+  /** 根级 data-kit-internal-events；null = 属性不存在 */
+  rootInternalEvents: string[] | null
+  /** 转移 data-kit-visibility="internal" 声明的事件（用于与根级比对） */
+  transitionInternal: Set<string>
 }
 
 function warn(
@@ -357,7 +361,15 @@ function transitionFromEl(
     const stripped = stripVisibilityGuard(cond)
     cond = stripped.cond
     const visibility = stripped.visibility ?? rawVisibility
-    for (const name of event.split(/\s+/).filter(Boolean)) setEventVisibility(ctx.doc, name, visibility)
+    for (const name of event.split(/\s+/).filter(Boolean)) {
+      if (visibility === 'internal') {
+        ctx.transitionInternal.add(name)
+        // 根级集合优先；没有根级时才从转移元数据重建。
+        if (ctx.rootInternalEvents === null) setInternalOnlyEvent(ctx.doc, name, true)
+      } else {
+        setEventVisibility(ctx.doc, name, 'external')
+      }
+    }
   }
   return {
     id: kitTransitionId || newTransitionId(),
@@ -394,7 +406,36 @@ export function scxmlToDoc(xml: string, domParser?: DOMParser): ScxmlImportResul
   }
 
   const doc = emptyDoc(root.getAttribute('name') || 'imported')
-  const ctx: Ctx = { doc, warnings: [], idToUid: new Map(), pendingTransitions: [], rawByUid: new Map() }
+  const ctx: Ctx = {
+    doc,
+    warnings: [],
+    idToUid: new Map(),
+    pendingTransitions: [],
+    rawByUid: new Map(),
+    rootInternalEvents: null,
+    transitionInternal: new Set(),
+  }
+
+  // 根级仅内部集合（0.15）：JSON 数组；缺失时退回转移级 data-kit-visibility。
+  const readInternalEvents = (): string[] | null => {
+    const raw = root.getAttribute('data-kit-internal-events')
+    if (raw === null) return null
+    try {
+      const parsed = JSON.parse(raw) as unknown
+      if (!Array.isArray(parsed)) throw new Error('not array')
+      const names = new Set<string>()
+      for (const value of parsed) {
+        if (typeof value !== 'string') continue
+        const name = value.trim()
+        if (name) names.add(name)
+      }
+      return [...names].sort()
+    } catch {
+      warn(ctx, 'import.event-visibility-invalid', { detail: raw.trim().slice(0, 120) })
+      return null
+    }
+  }
+  ctx.rootInternalEvents = readInternalEvents()
 
   // 宿主自定义元数据（kit 不解释语义；损坏时忽略并 warning）
   const readAttrs = (el: Element, attr: string, where: string): MetaAttrs | undefined => {
@@ -501,6 +542,28 @@ export function scxmlToDoc(xml: string, domParser?: DOMParser): ScxmlImportResul
     ctx.doc.initial = ctx.idToUid.get(initAttr) ?? null
     if (!ctx.doc.initial) {
       warn(ctx, 'import.root-initial.missing-target', { initial: initAttr })
+    }
+  }
+
+  // 根级集合是 0.15 的事实源；转移级元数据只作回退/一致性校验。
+  if (ctx.rootInternalEvents !== null) {
+    const rootNames = ctx.rootInternalEvents
+    const transitionNames = [...ctx.transitionInternal].sort()
+    // 根级是事实源；允许“根级有、转移级没有”（例如事件暂无监听者），
+    // 但转移级声明为 internal 却不在根级 → 不一致。
+    const missing = transitionNames.filter((name) => !rootNames.includes(name))
+    if (missing.length) {
+      warn(ctx, 'import.event-visibility-mismatch', {
+        root: rootNames.join(' '),
+        transition: missing.join(' '),
+      })
+    }
+    if (rootNames.length) {
+      ctx.doc.internalOnlyEvents = [...rootNames]
+      // P1 过渡：同步 legacy 映射，旧事件面板仍可读；P3 删除。
+      for (const name of rootNames) setEventVisibility(ctx.doc, name, 'internal')
+    } else {
+      delete ctx.doc.internalOnlyEvents
     }
   }
 

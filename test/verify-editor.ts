@@ -305,8 +305,10 @@ console.log('── D3) 事件可见性设置与外部注入拦截 ──')
   editor.setEventVisibility('go', 'both')
   assert(editor.doc.eventVisibility?.go === undefined, '设回双向会移除可见性记录')
   editor.setEventVisibility('go', 'internal')
+  assert(editor.doc.internalOnlyEvents?.includes('go'), '设置仅内部写入 internalOnlyEvents')
   editor.updateTransition('t1', { event: 'go.renamed' })
   assert(editor.doc.eventVisibility?.go === undefined, '事件改名后清理孤儿可见性记录')
+  assert(!editor.doc.internalOnlyEvents?.length, '事件改名后清理 internalOnlyEvents')
   await editor.destroy()
 }
 

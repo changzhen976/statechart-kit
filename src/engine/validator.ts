@@ -182,6 +182,9 @@ export function structureIssuesToValidation(issues: StructureIssue[]): Validatio
     ...(i.stateId !== undefined ? { stateId: i.stateId } : {}),
     ...(i.stateUid !== undefined ? { stateUid: i.stateUid } : {}),
     ...(i.transitionId !== undefined ? { transitionId: i.transitionId } : {}),
+    ...(i.event !== undefined ? { event: i.event } : {}),
+    ...(i.slot !== undefined ? { slot: i.slot } : {}),
+    ...(i.actionIndex !== undefined ? { actionIndex: i.actionIndex } : {}),
     ...(i.variableId !== undefined ? { variableId: i.variableId } : {}),
   }))
 }

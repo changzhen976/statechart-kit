@@ -985,6 +985,11 @@ export function createEditor(options: CreateEditorOptions = {}): EditorStore {
     )
     if (Object.keys(next).length) state.doc.eventVisibility = next
     else delete state.doc.eventVisibility
+    if (state.doc.internalOnlyEvents) {
+      const names = state.doc.internalOnlyEvents.filter((name) => used.has(name))
+      if (names.length) state.doc.internalOnlyEvents = names
+      else delete state.doc.internalOnlyEvents
+    }
   }
 
   function updateTransition(id: string, patch: Partial<TransitionEdge>): void {

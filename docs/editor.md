@@ -180,7 +180,7 @@ internal.ping    left · 进入动作              1 条转移
 - 编辑器仿真面板也会拒绝 external 注入 internal-only 事件；
 - 自动延时事件不参与该守卫：引擎里 `<send delay>` 的 `_event.type` 是 `external`；
 - 一条转移包含多个事件时，只有全部事件都是同一非双向可见性才加守卫，否则产生
-  `structure.transition.mixed-event-visibility` warning；
+  `structure.transition.mixed-event-visibility` error（0.15 起，不再只是 warning）；
 - `ProjectDoc.eventVisibility` 是可选字段，缺省全部为双向。
 
 `raise` 动作的 DSL：

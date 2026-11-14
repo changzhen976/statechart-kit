@@ -15,7 +15,7 @@
  */
 import type { DoneData, ProjectDoc, StateNode, TransitionEdge } from './model'
 import { childrenOf, uidMap } from './model'
-import { transitionVisibility, withVisibilityGuard } from './event-visibility'
+import { internalOnlyNames, transitionVisibility, withVisibilityGuard } from './event-visibility'
 
 /** XML 属性值转义 */
 const esc = (v: string) =>
@@ -159,7 +159,9 @@ function stateToScxml(doc: ProjectDoc, s: StateNode, idOf: (uid: string) => stri
 /** 仅供编辑器画布展示：去掉 internal-only 守卫，避免把实现条件显示成作者条件。 */
 export function serializeToDisplayScxml(doc: ProjectDoc): string {
   const displayDoc: ProjectDoc = { ...doc }
+  // 实现细节不进画布：守卫、转移元数据、根级可见性集合都隐藏。
   delete displayDoc.eventVisibility
+  delete displayDoc.internalOnlyEvents
   return serializeToScxml(displayDoc)
 }
 
@@ -175,9 +177,13 @@ export function serializeToScxml(doc: ProjectDoc): string {
     doc.eventAttrs && Object.keys(doc.eventAttrs).length
       ? ` data-kit-event-attrs="${esc(JSON.stringify(doc.eventAttrs))}"`
       : ''
+  const internalOnly = internalOnlyNames(doc)
+  const internalOnlyAttr = internalOnly.length
+    ? ` data-kit-internal-events="${esc(JSON.stringify(internalOnly))}"`
+    : ''
   const open =
     `<scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" ` +
-    `datamodel="ecmascript" name="${esc(doc.name)}"${initial ? ` initial="${esc(idOf(initial))}"` : ''}${eventAttrs}`
+    `datamodel="ecmascript" name="${esc(doc.name)}"${initial ? ` initial="${esc(idOf(initial))}"` : ''}${eventAttrs}${internalOnlyAttr}`
   const parts: string[] = []
 
   if (doc.datamodel.length) {

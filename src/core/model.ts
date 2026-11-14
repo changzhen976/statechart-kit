@@ -139,7 +139,17 @@ export interface ProjectDoc {
   datamodel: DataVar[]
   states: StateNode[]
   transitions: TransitionEdge[]
-  /** 事件可见性；缺省视为 both，通常只保存 internal */
+  /**
+   * 仅内部触发的事件名（0.15 起的事实源）。
+   * - 缺省 / 空数组 = 全部双向；
+   * - 去重、trim、按名称排序；只允许 internal 生产者（见 event-visibility.ts）。
+   * - P1 过渡期仍会与 legacy `eventVisibility` 合并；P3 删除 legacy。
+   */
+  internalOnlyEvents?: string[]
+  /**
+   * @deprecated 0.14 的可见性映射；0.15 过渡期保留，P3 删除。
+   * internal 会同步进 `internalOnlyEvents`；external 仍按 legacy 处理。
+   */
   eventVisibility?: Record<string, EventVisibility>
   /** 宿主自定义事件属性（如 broadcast）；key 为事件名 */
   eventAttrs?: Record<string, MetaAttrs>
@@ -246,17 +256,34 @@ export function normalizeDoc(doc: ProjectDoc): ProjectDoc {
     }
   }
   doc.eventAttrs ??= {}
+  const internalOnly = new Set<string>()
+  if (Array.isArray(doc.internalOnlyEvents)) {
+    for (const raw of doc.internalOnlyEvents) {
+      if (typeof raw !== 'string') continue
+      const name = raw.trim()
+      if (name) internalOnly.add(name)
+    }
+  }
   if (doc.eventVisibility && typeof doc.eventVisibility === 'object') {
     const next: Record<string, EventVisibility> = {}
     for (const [rawName, rawValue] of Object.entries(doc.eventVisibility)) {
       const name = rawName.trim()
-      if (name && (rawValue === 'internal' || rawValue === 'external' || rawValue === 'both')) next[name] = rawValue
+      if (!name) continue
+      if (rawValue === 'internal') {
+        internalOnly.add(name)
+        // P1 过渡：legacy 与 internalOnlyEvents 双写，P3 删除。
+        next[name] = 'internal'
+      } else if (rawValue === 'external' || rawValue === 'both') {
+        next[name] = rawValue
+      }
     }
     if (Object.keys(next).length) doc.eventVisibility = next
     else delete doc.eventVisibility
   } else {
     delete doc.eventVisibility
   }
+  if (internalOnly.size) doc.internalOnlyEvents = [...internalOnly].sort()
+  else delete doc.internalOnlyEvents
   for (const d of doc.datamodel) {
     if (d.attrs && typeof d.attrs !== 'object') delete d.attrs
   }

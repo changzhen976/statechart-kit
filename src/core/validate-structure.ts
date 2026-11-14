@@ -11,6 +11,9 @@
  * 诊断只返回 `{ code, params }`，宿主本地化；`severity==='error'` 表示不能部署/导出。
  */
 import type { ProjectDoc, StateNode } from './model'
+import { parseActionLine } from './action-parse'
+import { docEventFacts } from './event-catalog'
+import { internalOnlyNames, isInternalOnlyEvent } from './event-visibility'
 
 /** SCXML id 的 NCName 子集（允许 Unicode 字母，兼容中文状态 id） */
 export const NCNAME_RE = /^[\p{L}_][\p{L}\p{N}_.-]*$/u
@@ -27,6 +30,12 @@ export interface StructureIssue {
   stateUid?: string
   /** 转移内部 id */
   transitionId?: string
+  /** 事件名（可见性/生产者问题定位） */
+  event?: string
+  /** 动作槽位 */
+  slot?: 'entry' | 'exit' | 'transition'
+  /** 动作行号（1 起） */
+  actionIndex?: number
   /** datamodel 变量 id */
   variableId?: string
 }
@@ -453,10 +462,16 @@ export function validateStructure(doc: ProjectDoc): StructureReport {
     }
     if (t.delayMs === undefined) {
       const names = t.event.split(/\s+/).filter(Boolean)
-      const visibilities = names.map((name) => doc.eventVisibility?.[name] ?? 'both')
+      const visibilities = names.map((name) =>
+        isInternalOnlyEvent(doc, name)
+          ? 'internal'
+          : doc.eventVisibility?.[name] === 'external'
+            ? 'external'
+            : 'both',
+      )
       if (names.length > 1 && new Set(visibilities).size > 1) {
         add({
-          severity: 'warning',
+          severity: 'error',
           code: 'structure.transition.mixed-event-visibility',
           params: { id: t.id, events: names.join(' ') },
           transitionId: t.id,
@@ -481,6 +496,83 @@ export function validateStructure(doc: ProjectDoc): StructureReport {
         })
       }
     }
+  }
+
+  // ── 仅内部事件：生产端一致性（0.15） ──
+  const internalNames = internalOnlyNames(doc)
+  const engineGenerated = (name: string): boolean =>
+    name.startsWith('done.state.') ||
+    name.startsWith('done.invoke.') ||
+    name.startsWith('error.')
+  if (internalNames.length) {
+    const facts = docEventFacts(doc)
+    for (const name of internalNames) {
+      const origins = facts.sendOrigins.get(name) ?? []
+      if (!origins.length) {
+        if (!engineGenerated(name) && name !== '*') {
+          add({
+            severity: 'warning',
+            code: 'structure.event.internal-only-without-producer',
+            params: { event: name },
+            event: name,
+          })
+        }
+        continue
+      }
+      for (const origin of origins) {
+        if (origin.channel === 'internal') continue
+        const issue: StructureIssue = {
+          severity: 'error',
+          code: 'structure.event.internal-only-with-external-producer',
+          params: { event: name, channel: origin.channel },
+          event: name,
+        }
+        if (origin.kind === 'state-action') {
+          issue.stateId = origin.state.id
+          issue.stateUid = origin.state.uid
+          issue.slot = origin.slot
+          if (origin.actionIndex !== undefined) issue.actionIndex = origin.actionIndex
+        } else {
+          issue.transitionId = origin.transitionId
+          if (origin.kind === 'transition-action' && origin.actionIndex !== undefined) {
+            issue.actionIndex = origin.actionIndex
+            issue.slot = 'transition'
+          }
+        }
+        add(issue)
+      }
+    }
+  }
+
+  // `send target="#_internal" delay …`：引擎会丢弃，直接报错（与可见性无关）。
+  const checkInternalDelay = (
+    actions: string[],
+    locate: { stateId?: string; stateUid?: string; slot: 'entry' | 'exit' | 'transition'; transitionId?: string },
+  ): void => {
+    actions.forEach((line, index) => {
+      const action = parseActionLine(line)
+      if (action.type !== 'send' || action.target !== '#_internal' || !action.delay) return
+      add({
+        severity: 'error',
+        code: 'structure.action.internal-delay-unsupported',
+        params: { event: action.event },
+        ...locate,
+        actionIndex: index + 1,
+      })
+    })
+  }
+  for (const s of doc.states) {
+    const stateId = byUid.get(s.uid)?.id
+    checkInternalDelay(s.entryActions, { stateId, stateUid: s.uid, slot: 'entry' })
+    checkInternalDelay(s.exitActions, { stateId, stateUid: s.uid, slot: 'exit' })
+  }
+  for (const t of doc.transitions) {
+    checkInternalDelay(t.actions, {
+      stateId: byUid.get(t.source)?.id,
+      stateUid: t.source,
+      slot: 'transition',
+      transitionId: t.id,
+    })
   }
 
   return { ok: !issues.some((i) => i.severity === 'error'), issues }

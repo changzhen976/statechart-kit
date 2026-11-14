@@ -14,31 +14,40 @@
   `session-done` / `send-failed`，`send()` 继续返回 boolean；
 - `send <event> target #_internal`：动作解析、序列化、导入和事件目录支持
   `<send target="#_internal">`；编辑器动作行提供「内部」开关和「内部发送」快捷项；
-- 事件面板内部发出区块同时覆盖 `raise` 和 `<send target="#_internal">`。
+- 事件面板内部发出区块同时覆盖 `raise` 和 `<send target="#_internal">`；
+- `ProjectDoc.internalOnlyEvents` / `setInternalOnlyEvent()` /
+  `internalOnlyNames()`：仅内部事件的事实源；旧 `eventVisibility.internal`
+  在 `normalizeDoc` 中迁入；
+- 序列化写根级 `data-kit-internal-events`，导入优先读取；旧转移级
+  `data-kit-visibility` 作为回退；
+- 结构校验新增 `structure.event.internal-only-with-external-producer`、
+  `structure.event.internal-only-without-producer`、
+  `structure.action.internal-delay-unsupported`；导入新增
+  `import.event-visibility-invalid` / `import.event-visibility-mismatch`。
+
+### Changed
+
+- 混合可见性转移从 warning 升为 **error**（不会生成守卫，`serializeChecked` 拒绝）；
+- 自动延时转移仍不生成可见性守卫，避免破坏延时行为；
+- 事件改名时同时清理 `internalOnlyEvents` 与 legacy `eventVisibility`。
 
 ### Planned (0.15.0)
 
-> 以下为设计目标，随实现逐条并入 Added / Changed / Removed；发布前删除本节。
+> 以下为剩余设计目标，随实现逐条并入 Added / Changed / Removed；发布前删除本节。
 
-- 可见性收敛为「双向 / 仅内部」：新增 `ProjectDoc.internalOnlyEvents`，
-  删除 `EventVisibility` / `eventVisibility` / `external`；
-- internal-only 生产端一致性校验：普通 `send`、`send delay`、`delayMs` 自动事件
-  冲突报错；混合事件从 warning 升为 error；
-- 根级 `data-kit-internal-events` 往返保存可见性；事件改名迁移
-  `internalOnlyEvents` 与 `eventAttrs`；
 - 事件面板「仅内部」复选框 + 定义/约束弹窗（含会话内不再提示、冲突禁用、
   普通 send 一键改内部发送）；
+- 删除 `external` 可见性与 `EventVisibility` / `eventVisibility` / 旧 API；
 - 动作编辑器移除「延时发送」与 delay 输入；旧 `send delay` 行只读，自动转换器
   延后到 0.15.x；
 - 内置示例改写为 `delayMs` / `raise` 中继；用户文档与 CHANGELOG 同步。
 
-### Changed
-
-- 自动延时转移仍不生成可见性守卫，避免破坏延时行为。
-
 ### Tests
 
-- `verify-host-events` 覆盖 `trySend` 的未启动/终态结果。
+- `verify-host-events` 覆盖 `trySend` 的未启动/终态结果；
+- `verify-event-visibility` 覆盖 `internalOnlyEvents`、根级元数据往返、生产者
+  冲突、混合 error、`#_internal+delay`、无生产者 warning、导入优先级；
+- `verify-editor` 覆盖 `internalOnlyEvents` 改名清理。
 
 ## [0.13.1] - 2026-11-14
 

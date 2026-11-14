@@ -75,7 +75,10 @@ import {
 | `structure.transition.internal-eventless` | warning | 无 target 且无事件，可能形成自激循环 |
 | `structure.transition.delay-invalid` | error | `delayMs` 非有限值或 < 10 |
 | `structure.transition.delay-without-event` | error | 有 `delayMs` 但没有事件名 |
-| `structure.transition.mixed-event-visibility` | warning | 同一转移混合仅内部/仅外部/双向事件，不会生成可见性守卫 |
+| `structure.transition.mixed-event-visibility` | error | 同一转移混合仅内部/仅外部/双向事件，不会生成可见性守卫 |
+| `structure.event.internal-only-with-external-producer` | error | 仅内部事件存在普通 send / 延时 send / 自动延时生产者（`channel`） |
+| `structure.event.internal-only-without-producer` | warning | 仅内部事件没有任何生产者（引擎保留名前缀除外） |
+| `structure.action.internal-delay-unsupported` | error | `send target="#_internal"` 带 delay：当前引擎会丢弃该事件 |
 
 ## SCXML 导入（`ImportWarning` / `ScxmlImportError`）
 
@@ -98,6 +101,8 @@ import {
 | `import.transition.multi-target` | `at`, `target`, `taken` | fork 多 target，取第一个 |
 | `import.transition.missing-target` | `at`, `target` | target 不存在，已跳过 |
 | `import.transition.type-invalid` | `at`, `type` | type 不是 internal/external，已忽略 |
+| `import.event-visibility-invalid` | `detail` | 根级 `data-kit-internal-events` 不是合法 JSON 数组，已退回转移级 |
+| `import.event-visibility-mismatch` | `root`, `transition` | 根级集合与转移可见性元数据不一致，以根级为准 |
 | `import.root-initial.missing-target` | `initial` | 根 initial 指向不存在状态 |
 | `import.no-dom-parser` | — | Node 环境未注入 DOMParser（异常） |
 | `import.parse-error` | `detail` | XML 解析失败（异常） |

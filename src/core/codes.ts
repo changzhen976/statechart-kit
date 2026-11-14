@@ -58,6 +58,9 @@ export const STRUCTURE_ISSUE_CODES = [
   'structure.transition.delay-invalid',
   'structure.transition.delay-without-event',
   'structure.transition.mixed-event-visibility',
+  'structure.event.internal-only-with-external-producer',
+  'structure.event.internal-only-without-producer',
+  'structure.action.internal-delay-unsupported',
 ] as const
 
 export const IMPORT_WARNING_CODES = [
@@ -81,6 +84,8 @@ export const IMPORT_WARNING_CODES = [
   'import.transition.multi-target',
   'import.transition.missing-target',
   'import.transition.type-invalid',
+  'import.event-visibility-invalid',
+  'import.event-visibility-mismatch',
   'import.root-initial.missing-target',
   'import.no-dom-parser',
   'import.parse-error',

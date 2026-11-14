@@ -33,6 +33,10 @@ export type EventOrigin =
       channel: EventChannel
       state: StateRef
       slot: 'entry' | 'exit'
+      /** 1 起的动作行号（用于校验定位） */
+      actionIndex?: number
+      /** 原始动作行 */
+      line?: string
     }
   | {
       kind: 'transition-action'
@@ -42,6 +46,10 @@ export type EventOrigin =
       source: StateRef
       /** null = 无 target 的内部转移 */
       target: StateRef | null
+      /** 1 起的动作行号（用于校验定位） */
+      actionIndex?: number
+      /** 原始动作行 */
+      line?: string
     }
   | {
       /** 内部延迟转移：entry 的延时 send 由序列化器自动注入 */
@@ -118,18 +126,18 @@ export function docEventFacts(doc: ProjectDoc): DocEventFacts {
   }
   const scan = (
     actions: string[],
-    originOf: (event: string, channel: EventChannel) => EventOrigin,
+    originOf: (event: string, channel: EventChannel, actionIndex: number, line: string) => EventOrigin,
   ): void => {
-    for (const line of actions) {
+    actions.forEach((line, index) => {
       const a = parseActionLine(line)
       if ((a.type === 'send' || a.type === 'raise') && a.event) {
         const channel =
           a.type === 'raise' || (a.type === 'send' && a.target === '#_internal')
             ? 'internal'
             : 'external'
-        addSend(a.event, originOf(a.event, channel))
+        addSend(a.event, originOf(a.event, channel, index + 1, line))
       }
-    }
+    })
   }
 
   for (const t of doc.transitions) {
@@ -143,18 +151,34 @@ export function docEventFacts(doc: ProjectDoc): DocEventFacts {
   }
   for (const s of doc.states) {
     const state = ref(s.uid)
-    scan(s.entryActions, (_event, channel) => ({ kind: 'state-action', channel, state, slot: 'entry' }))
-    scan(s.exitActions, (_event, channel) => ({ kind: 'state-action', channel, state, slot: 'exit' }))
+    scan(s.entryActions, (_event, channel, actionIndex, line) => ({
+      kind: 'state-action',
+      channel,
+      state,
+      slot: 'entry',
+      actionIndex,
+      line,
+    }))
+    scan(s.exitActions, (_event, channel, actionIndex, line) => ({
+      kind: 'state-action',
+      channel,
+      state,
+      slot: 'exit',
+      actionIndex,
+      line,
+    }))
   }
   for (const t of doc.transitions) {
     if (t.actions.length) {
-      scan(t.actions, (event, channel) => ({
+      scan(t.actions, (event, channel, actionIndex, line) => ({
         kind: 'transition-action',
         channel,
         transitionId: t.id,
         event,
         source: ref(t.source),
         target: refOrNull(t.target),
+        actionIndex,
+        line,
       }))
     }
     // 内部延迟转移（after 语义）：entry 的延时 send 由序列化器自动注入——来源标注
