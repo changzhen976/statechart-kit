@@ -1127,7 +1127,7 @@ CASCADE_BASE=http://homeassistant:1880 npm run test:cascade
 - KIT-005 属于上游布线能力增强；建议先做最小边组偏移，再评估 bundle/折叠交互。
 - KIT-006 / KIT-007 已在 0.11.0 实现：done.states、抑制空 active、error 定位字段。
 - KIT-008 / KIT-009 / KIT-010 已在 0.11.0 实现：diagnostics 注入、locale=en / DEFAULT_LABELS_EN、诊断 code 目录。
-- KIT-011 为可选增强；宿主可先检查 `send()` 返回值自行报错。
+- KIT-011 已在 0.15.0 实现：`trySend()` 返回 `{ ok, code, params }`；引擎未暴露 queue-full。
 - KIT-012 / KIT-013 / KIT-014 已在 0.12.0 实现；宿主升级 kit 并重新打包即可，不需要改业务代码。
 - KIT-017 已在 0.16.0 抽取为 `ScxmlLabelTooltip`；编辑器与详情页共用，宿主临时实现已删除。
 
@@ -1143,7 +1143,7 @@ CASCADE_BASE=http://homeassistant:1880 npm run test:cascade
 - KIT-010：核心导出 `NAMING_ISSUE_CODES` / `STRUCTURE_ISSUE_CODES` /
   `IMPORT_WARNING_CODES` / `VALIDATION_ISSUE_CODES` / `VARIABLE_WRITE_CODES` /
   `DOCUMENT_STRUCTURE_ERROR_CODES`；`verify-validation` 校验目录与 `docs/messages.md` 一致；
-- KIT-011：仍未实现；继续保留 `send(): boolean`，等宿主需要时再加 `trySend`。
+- KIT-011：`trySend()` 已在 0.15.0 实现；`send()` 继续保留 boolean 兼容。
 
 ## 0.12.0 实现记录
 

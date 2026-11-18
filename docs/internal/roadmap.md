@@ -21,10 +21,9 @@
 | P4.7 | 事件可见性：raise、internal-only 守卫、来源 UI | 4–6 人日 | ✅ 完成（v0.13.0） |
 | P4.8 | 内部发出事件 UI：raise 发出区块 | 0.5–1 人日 | ✅ 完成（v0.13.1） |
 | P4.9 | 转移标签完整条件 tooltip（KIT-017） | 6–7 人日（彻底版） | ✅ 实现（0.16.0，测试环境验证；设计见 [`work-items/0.16-label-tooltip.md`](work-items/0.16-label-tooltip.md)） |
-| P4.6 | 编辑器作者体验：结构树折叠、侧栏把手、横向画布导航（KIT-012–014） | 3–5.5 人日 | 待开发（0.12 候选） |
-| P5 | `node-red-contrib-scxmljs` 切换（**宿主仓库任务**：删除 vendor 与 17 条构建期替换） | 3–4 人日 | ✅ 已完成（宿主 0.2.0 起；当前宿主 0.7 使用 kit 0.11.0） |
-| P6 | 发布与治理：版本策略、CHANGELOG、发布流水线 | 1.5–2 人日 | 待开始 |
-| P7 | 宿主集成加固：done 终态、错误定位、编辑器本地化（KIT-006–010） | TBD | 待排期（0.11 候选） |
+| P5 | `node-red-contrib-scxmljs` 切换（**宿主仓库任务**：删除 vendor 与 17 条构建期替换） | 3–4 人日 | ✅ 已完成（宿主 0.2.0 起；当前 scxml-creator 0.13.7 使用 kit 0.16.0） |
+| P6 | 发布与治理：版本策略、CHANGELOG、发布流水线 | 1.5–2 人日 | 进行中：0.16.0 已实现并测试，待 npm 发布 + 宿主去 vendor |
+| P7 | 宿主集成加固：done 终态、错误定位、编辑器本地化（KIT-006–010） | TBD | ✅ 已完成（0.11.0） |
 
 关键路径：P0 → P1 → P2 → P3 → P5（最短约 14 人日）。P4 与 P5 在 P3 之后可并行。
 
@@ -120,8 +119,8 @@
   注入核心编辑器（见 [`docs/editor-modules.md`](../editor-modules.md)）。
 - ✅ 编辑器 UI 已切到 `statechart-kit/vue`；新增画布点击/缩放、结构化动作、校验定位；
   creator `src/editor-modules/service.ts` 接 service store，本地 `components/panels/viewhost/stores/project.ts` 已删除。
-- ⏳ `scxml-creator` 的 `statechart-kit` 依赖当前是 `file:../statechart-kit`；发布后改固定版本。
-- ⏳ Explorer 调试视图、侧栏拖拽/折叠等增强未在 kit 编辑器中复刻，可按需作为模块/后续补回。
+- ⏳ `scxml-creator` 当前用 `file:vendor/statechart-kit-0.16.0.tgz` 临时依赖；0.16.0 发布 npm 后改回 `^0.16.0` 并删除 vendor。
+- ⏳ Explorer 调试视图未在 kit 编辑器中复刻；侧栏拖拽/折叠已由 `features.resizablePanes` 提供，宿主尚未启用（可选）。
 
 ## 0.11 候选（宿主反哺，2026-11-12）
 
