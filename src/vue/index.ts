@@ -24,6 +24,9 @@ import { createEditor, type CreateEditorOptions, type EditorDiagnostics, type Ed
 import { EDITOR_KEY } from './use-editor'
 
 export { EditorHost }
+export { default as ScxmlLabelTooltip } from './ScxmlLabelTooltip.vue'
+export type { LabelFacts } from './canvas-contract'
+export type { LabelTooltipFormatter, LabelTooltipProps } from './label-tooltip'
 export { createEditor, type CreateEditorOptions, type EditorDiagnostics, type EditorStore }
 export { EDITOR_KEY, useEditor } from './use-editor'
 export { DEFAULT_FEATURES, resolveFeatures, type EditorFeatures } from './features'

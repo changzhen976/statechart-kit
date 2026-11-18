@@ -514,3 +514,47 @@ scxml-view::part(canvas)::-webkit-scrollbar { width: 0; height: 0; display: none
 .sce-internal-ok { margin: 8px 0 0; color: var(--scxml-running); font-size: 11.5px; }
 .sce-internal-suppress { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 11px; color: var(--scxml-fg-muted); }
 .ale-legacy-delay { font-size: 11px; color: var(--scxml-waiting); white-space: nowrap; }
+
+/* ── 转移标签完整条件 tooltip（KIT-017） ───────────────────────────── */
+.sce-label-tooltip {
+  position: fixed;
+  z-index: 10000;
+  max-width: min(560px, calc(100vw - 16px));
+  padding: 6px 9px;
+  border: 1px solid var(--scxml-border-2);
+  border-radius: 6px;
+  background: var(--scxml-surface);
+  color: var(--scxml-fg);
+  box-shadow: 0 6px 20px rgb(0 0 0 / 18%);
+  font: 11.5px/1.5 var(--scxml-font-mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sce-label-tooltip { transition: none; }
+}
+
+/* 只读画布：只有标签接收 hover，其余区域保持指针穿透。 */
+.sce-label-tip.sce-label-tip-passive::part(edge-label) {
+  pointer-events: auto;
+  cursor: help;
+}
+
+.sce-label-tip::part(edge-label):focus-visible {
+  outline: 2px solid var(--scxml-accent);
+  outline-offset: 2px;
+}
+
+.sce-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}

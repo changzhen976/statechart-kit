@@ -1,6 +1,6 @@
 {
   "name": "statechart-kit",
-  "version": "0.15.1",
+  "version": "0.16.0",
   "description": "Statechart authoring model, editor and session runner. Produces and drives SCXML; it does not interpret SCXML.",
   "license": "MIT",
   "repository": {
@@ -57,7 +57,7 @@
   "scripts": {
     "build": "npm run build:core && npm run build:vue",
     "typecheck": "tsc --noEmit && vue-tsc --noEmit -p tsconfig.vue.json",
-    "test": "npm run test:import && npm run test:smoke && npm run test:timers && npm run test:naming && npm run test:events && npm run test:validation && npm run test:engine && npm run test:editor && npm run test:host-events && npm run test:visibility",
+    "test": "npm run test:import && npm run test:smoke && npm run test:timers && npm run test:naming && npm run test:events && npm run test:validation && npm run test:engine && npm run test:editor && npm run test:tooltip && npm run test:host-events && npm run test:visibility",
     "test:import": "tsx test/verify-import.ts",
     "test:smoke": "tsx test/smoke-engine.ts",
     "test:timers": "tsx test/verify-timers.ts",
@@ -74,6 +74,7 @@
     "build:vue": "vite build && vue-tsc -p tsconfig.vue-dts.json",
     "check:vue": "node scripts/check-vue.mjs",
     "test:editor": "tsx test/verify-editor.ts",
+    "test:tooltip": "tsx test/verify-tooltip.ts",
     "prepublishOnly": "npm run verify:all",
     "test:host-events": "tsx test/verify-host-events.ts",
     "preview:build": "vite build --config preview/vite.config.ts",

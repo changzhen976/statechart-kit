@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.16.0] - 2026-11-18
+
+### Added
+
+- `ScxmlLabelTooltip` / `LabelTooltipProps` / `LabelFacts`：转移标签完整条件 tooltip，
+  适用于任意包装 `<scxml-view>` 的宿主组件；支持 hover / focus / 触摸 tap / Escape、
+  passive 画布、同 shadow tree 的 `aria-describedby` 描述节点、可聚焦性和原生 `title`
+  抑制（仿真重绘时重新接管）。
+- `EditorFeatures.canvasTransitionTooltip?`：`ChartCanvas` 内 opt-in 开关，默认关闭。
+- 标签解析支持渲染器结构化属性 `data-transition-id` / `data-cond` / `data-event` /
+  `data-target`；旧渲染器继续回退到 `part` + `title`。
+
+### Changed
+
+- `ChartCanvas` 的转移点击选中改用共享的 `canvas-contract` resolver，与 tooltip
+  使用同一套标签事实匹配；`matchTransitionId` 支持完整 `cond` 精确匹配。
+- 注入的 `tabindex`、`title` / `aria-describedby` 在卸载和重绘后恢复。
+
+### Tests
+
+- 新增 `verify-tooltip`（38 条断言）；`check-vue` 覆盖构建产物中的
+  `ScxmlLabelTooltip`、同 shadow root 描述节点和卸载清理。
+
 ## [0.15.1] - 2026-11-14
 
 ### Added

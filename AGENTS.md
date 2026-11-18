@@ -23,7 +23,7 @@ Node-RED 节点与总线、部署与草稿锁都不在本包范围内。
 
 | 项 | 值 |
 | --- | --- |
-| 版本 | `0.15.0` |
+| 版本 | `0.16.0` |
 | 分支 | `main` |
 | 入口 | `.` / `./engine` / `./vue` / `./diagnostics/zh` |
 | Node | `>=20` |
@@ -34,7 +34,7 @@ Node-RED 节点与总线、部署与草稿锁都不在本包范围内。
 兼容性注意：
 
 - `TransitionEdge.target` 可为 `null`；`ListenEdge.target` / `EventOrigin.target` 同步可空；
-- `features.explorer` 默认 `false`；
+- `features.explorer` / `features.canvasTransitionTooltip` 默认 `false`；
 - 0.x minor 可含破坏性变更，必须写进 `CHANGELOG.md`。
 
 ## 3. 快速命令
@@ -42,7 +42,7 @@ Node-RED 节点与总线、部署与草稿锁都不在本包范围内。
 ```bash
 npm install
 npm run typecheck     # tsc --noEmit && vue-tsc --noEmit
-npm test              # 10 个套件
+npm test              # 11 个套件
 npm run build         # tsup(core/engine/diagnostics) + Vite(Vue) + vue-tsc d.ts
 npm run verify:all    # typecheck + test + build + baseline + vue + pack
 npm run check:pack    # 真实打包/解包，按 exports map 导入
@@ -52,8 +52,8 @@ npm run preview:serve # 本地运行 preview 容器服务
 ```
 
 单独套件：`test:import` / `test:smoke` / `test:timers` / `test:naming` /
-`test:events` / `test:validation` / `test:engine` / `test:editor` / `test:host-events` /
-`test:visibility`。
+`test:events` / `test:validation` / `test:engine` / `test:editor` / `test:tooltip` /
+`test:host-events` / `test:visibility`。
 
 本机 npm 默认 cache 可能只读：
 
@@ -102,6 +102,9 @@ src/vue/                 Vue 3 编辑器（Vite 构建，vue 为 optional peer�
   DoneDataEditor.vue     doneData 的 content/expr/param 编辑器
   InternalEventDialog.vue 「仅内部」定义/约束弹窗
   canvas-select.ts       画布标签 → 转移匹配（纯函数）
+  canvas-contract.ts     官方渲染契约 + LabelFacts → TransitionEdge resolver
+  label-tooltip.ts       转移条件 tooltip 的 DOM controller（无 Vue）
+  ScxmlLabelTooltip.vue  tooltip 的 Vue 包装
   *.vue                  EditorHost/Toolbar/Structure/Canvas/Property/Variables/Sim
 
 preview/                 只读预览容器（Docker，不属于 npm 包）
@@ -162,6 +165,7 @@ const runner = new SessionRunner({ engine: 'sandboxed', domParser })
 | `test/verify-engine.ts` | 懒加载、两种数据模型、生命周期竞态 |
 | `test/verify-host-events.ts` | typed send/done/error、done.states、error 定位 |
 | `test/verify-editor.ts` | adapter、CRUD/undo、Explorer 匹配、doneData、locale/diagnostics、canvas-fit、运行/校验脚本提示、仅内部弹窗/扫描/修复与校验错误、eventAttrs 保留、事件下拉来源/i18n |
+| `test/verify-tooltip.ts` | 标签结构化属性/旧 title 回退、精确 transition 匹配、tooltip 定位、hover/focus/touch、title 归属、同树 aria、可聚焦性、重绘/卸载清理 |
 | `test/verify-event-visibility.ts` | raise、internal-only 守卫、自动延时例外、`#_internal`、round-trip、混合 error、`internalOnlyEvents`、生产者冲突、根级元数据、旧 external 导入降级 |
 
 发布前必须 `npm run verify:all` 全绿。`check:baseline -- --donor` 需要本地
@@ -188,7 +192,8 @@ const runner = new SessionRunner({ engine: 'sandboxed', domParser })
 - [`docs/internal/event-visibility.md`](docs/internal/event-visibility.md)：仅内部事件（internal-only）设计、生产端校验与迁移（0.15）；
 - [`docs/internal/roadmap.md`](docs/internal/roadmap.md)：阶段历史与迁移清单；
 - [`docs/internal/architecture-review.md`](docs/internal/architecture-review.md)：历史架构分层与风险；
-- [`docs/internal/kit-requirements.md`](docs/internal/kit-requirements.md)：KIT-001–016 需求记录（KIT-011 已在 0.15.0、KIT-012–014 已在 0.12.0、KIT-015 已在 0.13.0 实现；KIT-016 已在 0.12.1/0.13.0 修复）；
+- [`docs/internal/kit-requirements.md`](docs/internal/kit-requirements.md)：KIT-001–017 需求记录（KIT-011 已在 0.15.0、KIT-012–014 已在 0.12.0、KIT-015 已在 0.13.0 实现；KIT-016 已在 0.12.1/0.13.0 修复；KIT-017 已在 0.16.0 实现）；
+- [`docs/internal/work-items/0.16-label-tooltip.md`](docs/internal/work-items/0.16-label-tooltip.md)：KIT-017 设计、a11y 决策与实现记录；
 - [`docs/internal/releasing.md`](docs/internal/releasing.md)：npm 发布与 creator 切换；
 - [`docs/internal/work-items/`](docs/internal/work-items/)：历史工作项。
 

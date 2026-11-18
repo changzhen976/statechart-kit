@@ -19,7 +19,11 @@ const globals = {
   Event: window.Event,
   EventTarget: window.EventTarget,
   CustomEvent: window.CustomEvent,
+  PointerEvent: window.PointerEvent,
+  FocusEvent: window.FocusEvent,
+  KeyboardEvent: window.KeyboardEvent,
   CSSStyleSheet: window.CSSStyleSheet,
+  ShadowRoot: window.ShadowRoot,
   customElements: window.customElements,
   getComputedStyle: window.getComputedStyle.bind(window),
   requestAnimationFrame: (fn) => setTimeout(() => fn(Date.now()), 0),
@@ -36,7 +40,7 @@ for (const [key, value] of Object.entries(globals)) {
   }
 }
 
-const { mountEditor } = await import('../dist/vue.js')
+const { mountEditor, ScxmlLabelTooltip } = await import('../dist/vue.js')
 const host = document.createElement('div')
 document.body.append(host)
 
@@ -243,4 +247,68 @@ if (!foldHost.querySelector('.sce-tree-row[data-suid="c2"]')) throw new Error('�
 if (JSON.stringify(foldMounted.editor.doc) !== docBefore) throw new Error('折叠操作改变了 ProjectDoc')
 foldMounted.unmount()
 
-console.log('vue ok: EditorHost mounts; Explorer edit preview and selection bridge work')
+// KIT-017：构建产物中的 ScxmlLabelTooltip + 假 shadow label。
+const { createApp, h } = await import('vue')
+const tipHost = document.createElement('div')
+document.body.append(tipHost)
+const tipView = document.createElement('div')
+document.body.append(tipView)
+const tipRoot = tipView.attachShadow({ mode: 'open' })
+const tipLabel = document.createElement('span')
+tipLabel.setAttribute('part', 'transition edge-label')
+tipLabel.setAttribute('data-transition-id', 't1')
+tipLabel.setAttribute('data-cond', 'temp > 80 && door === true && mode === "auto"')
+tipLabel.setAttribute('data-event', 'go')
+tipLabel.setAttribute('data-target', 'run')
+tipLabel.setAttribute('title', 'go [temp > 80 && door === true && mode === "auto"] → run')
+const tipEvent = document.createElement('span')
+tipEvent.setAttribute('part', 'event')
+tipEvent.textContent = 'go'
+const tipCond = document.createElement('span')
+tipCond.setAttribute('part', 'cond')
+tipCond.textContent = '[temp > 80 && door …]'
+tipLabel.append(tipEvent, tipCond)
+tipRoot.append(tipLabel)
+const tipDoc = {
+  formatVersion: 1,
+  name: 'tooltip-probe',
+  initial: 's1',
+  datamodel: [],
+  layout: {},
+  states: [
+    { uid: 's1', id: 'idle', label: 'Idle', kind: 'atomic', parent: null, initial: null, entryActions: [], exitActions: [] },
+    { uid: 's2', id: 'run', label: 'Run', kind: 'atomic', parent: null, initial: null, entryActions: [], exitActions: [] },
+  ],
+  transitions: [
+    {
+      id: 't1',
+      source: 's1',
+      target: 's2',
+      event: 'go',
+      cond: 'temp > 80 && door === true && mode === "auto"',
+      actions: [],
+    },
+  ],
+}
+const tipApp = createApp({
+  render: () => h(ScxmlLabelTooltip, { view: tipView, doc: tipDoc, enabled: true }),
+})
+tipApp.mount(tipHost)
+tipLabel.dispatchEvent(new window.PointerEvent('pointerover', { bubbles: true, composed: true }))
+await new Promise((r) => setTimeout(r, 220))
+const tipEl = document.querySelector('.sce-label-tooltip')
+if (!tipEl || !tipEl.textContent.includes('door === true')) {
+  throw new Error(`ScxmlLabelTooltip 未显示完整条件：${tipEl?.textContent ?? 'null'}`)
+}
+if (tipLabel.getAttribute('title') !== null) throw new Error('tooltip 显示期间未移除原生 title')
+const tipDescId = tipLabel.getAttribute('aria-describedby')
+if (!tipDescId || !tipRoot.querySelector(`#${tipDescId}`)) {
+  throw new Error('tooltip 未建立同 shadow root 描述节点')
+}
+tipApp.unmount()
+await new Promise((r) => setTimeout(r, 20))
+if (document.querySelector('.sce-label-tooltip')) throw new Error('ScxmlLabelTooltip 卸载后 tooltip 未移除')
+tipView.remove()
+tipHost.remove()
+
+console.log('vue ok: EditorHost mounts; Explorer edit preview and selection bridge work; label tooltip works')

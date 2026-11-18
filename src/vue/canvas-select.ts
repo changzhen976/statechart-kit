@@ -11,6 +11,8 @@ export interface TransitionLabelInfo {
   events: string[]
   /** `[part="cond"]` 文本（含方括号；可能被官方截断） */
   condText: string
+  /** 结构化完整条件（data-cond）；旧渲染器为 null，回退到截断前缀匹配 */
+  condFull?: string | null
   /** title 中 `→` 后的目标 id 列表；无 target 的 chip 为空 */
   targets: string[]
   /** 官方 eventless 占位词（如 ε） */
@@ -40,7 +42,10 @@ export function matchTransitionId(doc: ProjectDoc, label: TransitionLabelInfo): 
       const tid = idOf(t.target)
       if (!tid || !label.targets.includes(tid)) return false
     }
-    if (!generatedGuard && label.condText) {
+    // 结构化完整条件优先：不再猜测截断前缀，直接精确比较。
+    if (label.condFull !== undefined && label.condFull !== null) {
+      if (t.cond !== label.condFull) return false
+    } else if (!generatedGuard && label.condText) {
       if (condTruncated ? !t.cond.startsWith(condPrefix) : t.cond !== condPrefix) return false
     } else if (!generatedGuard && t.cond) {
       return false

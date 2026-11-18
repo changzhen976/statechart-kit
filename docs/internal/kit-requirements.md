@@ -22,7 +22,7 @@
 | KIT-004 | `statechart-kit` SCXML 导入 | P2 | `scxmlToDoc` 不支持无 target 的内部转移，导入告警且 ProjectDoc 无法表达 | 已支持（0.9.0） |
 | KIT-005 | `@tinyactors/scxmljs` 渲染器 | P2 | 复杂图中同源/同目标的多条条件转移共享走廊，线条近重合、视觉上像重复 | 已记录最小证据与修复方案；待上游修复 |
 | KIT-016 | `statechart-kit` 编辑器 | P2 | 结构编辑 addState/removeState/setParent 未维护 ProjectDoc initial 不变量，画布 fallback 与文档/属性面板不一致 | 已修复（0.12.1）；详见 `docs/internal/work-items/0.12-initial-invariant.md` |
-| KIT-017 | `statechart-kit` 编辑器/渲染交互 | P2 | 转移标签中的条件被截断到约 22 字符；passive 详情画布无法 hover 查看完整条件，宿主只能临时补 shadow DOM tooltip | 待抽取；宿主 scxml-creator 已临时实现（5b08148），建议 0.15.2/0.16.0 |
+| KIT-017 | `statechart-kit` 编辑器/渲染交互 | P2 | 转移标签中的条件被截断到约 22 字符；passive 详情画布无法 hover 查看完整条件，宿主只能临时补 shadow DOM tooltip | 已实现（0.16.0）；`ScxmlLabelTooltip` + `canvasTransitionTooltip`；宿主已切换，测试环境验证 |
 | KIT-006 | `statechart-kit` engine | P1 | `done` 不携带终态配置，且 done 后仍发一次空 `active`，宿主必须自行保存最后 `fired` 目标 | 已实现（0.11.0） |
 | KIT-007 | `statechart-kit` engine | P1 | `error` 事件只有 `kind` / `message`，丢弃引擎已有的出错 element，宿主无法定位到状态/转移/动作 | 已实现（0.11.0） |
 | KIT-008 | `statechart-kit` 编辑器 | P2 | `formatValidationIssue` / `formatStructureIssue` / `formatImportWarning` 等硬编码中文，英文宿主的全页编辑器仍显示中文诊断 | 已实现（0.11.0） |
@@ -1129,7 +1129,7 @@ CASCADE_BASE=http://homeassistant:1880 npm run test:cascade
 - KIT-008 / KIT-009 / KIT-010 已在 0.11.0 实现：diagnostics 注入、locale=en / DEFAULT_LABELS_EN、诊断 code 目录。
 - KIT-011 为可选增强；宿主可先检查 `send()` 返回值自行报错。
 - KIT-012 / KIT-013 / KIT-014 已在 0.12.0 实现；宿主升级 kit 并重新打包即可，不需要改业务代码。
-- KIT-017 为通用画布交互能力；先保持宿主临时实现，下一次 kit 版本抽取为可复用 tooltip，编辑器与详情页共用。
+- KIT-017 已在 0.16.0 抽取为 `ScxmlLabelTooltip`；编辑器与详情页共用，宿主临时实现已删除。
 
 ## 0.11.0 实现记录
 
@@ -1272,3 +1272,8 @@ serializer fallback。回归要覆盖顶层、compound、parallel、history、�
 - 宿主接入：0.5–1 人日；
 - 合计：2–3 人日；优先级 **P2**。
 - 版本：0.15.2（纯增量、不改现有默认）或 0.16.0（若 tooltip 默认开启/调整契约）。
+
+> 上述为“最小移植”估算。彻底版（结构化契约、统一 resolver、同树 a11y、仿真态、
+> 浏览器回归、宿主迁移）的设计与修订估时为 **6–7 人日**，见
+> [`work-items/0.16-label-tooltip.md`](work-items/0.16-label-tooltip.md)。
+> 实际已在 **0.16.0** 实现并通过 kit 单元/构建/真实 Chromium 回归；测试环境已部署验证。

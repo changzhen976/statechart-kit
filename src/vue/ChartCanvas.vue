@@ -30,19 +30,25 @@
  *
  * 点击选中（shadow DOM 下 e.target 被 retarget 成宿主，必须用 composedPath 穿透）：
  * - 状态盒子：元素给每个盒子写了 `data-state="<id>"`（含 history 的 H/H*）。
- * - 转移标签（编辑态）：元素不给标签转移标识，用"事件 span(精确) + title 目标
- *   列表(精确) + cond(截断则前缀)"组合匹配到文档转移；仿真态保持官方语义
- *   （点击标签=发送事件）。
+ * - 转移标签（编辑态）：优先用渲染器的 data-transition-id 精确匹配；旧渲染器
+ *   回退到"事件 span(精确) + title 目标列表(精确) + cond(截断则前缀)"组合匹配。
+ *   仿真态保持官方语义（点击标签=发送事件）。
  *
  * 防抖：属性面板连续输入时避免每次按键都重新编译绘制（250ms）。
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import '@tinyactors/scxmljs/view'
-import { defaultViewStrings } from '@tinyactors/scxmljs/view'
 import { serializeToDisplayScxml, serializeToScxml } from '../core/serializer'
 import { createEngineSession } from '../engine/engine-loader'
 import { useEditor } from './use-editor'
-import { matchTransitionId } from './canvas-select'
+import {
+  RENDERER_CONTRACT,
+  isInteractiveTarget,
+  labelFromEvent,
+  stateIdFromEvent,
+  transitionForFacts,
+} from './canvas-contract'
+import ScxmlLabelTooltip from './ScxmlLabelTooltip.vue'
 import {
   CANVAS_INITIAL_H,
   CANVAS_INITIAL_W,
@@ -162,10 +168,10 @@ function scheduleContractProbe(): void {
     const root = (viewEl.value as unknown as { shadowRoot?: ShadowRoot })?.shadowRoot
     if (!root) return
     const labelWorthy = editor.doc.transitions.some((t) => t.event || t.cond)
-    const labels = root.querySelectorAll(`[part~="${OFFICIAL.edgeLabelPart}"]`).length
+    const labels = root.querySelectorAll(`[part~="${RENDERER_CONTRACT.edgeLabelPart}"]`).length
     if (labelWorthy && labels === 0) {
       console.warn(
-        '[ChartViewHost] 官方渲染契约变化：文档含转移但画布无 edge-label，画布点击选中转移已失效——请核对 OFFICIAL 契约常量（ChartViewHost 源码头部）并跑 npm run check:vue',
+        '[ChartViewHost] 官方渲染契约变化：文档含转移但画布无 edge-label，画布点击选中转移已失效——请核对 canvas-contract.ts 的 RENDERER_CONTRACT 并跑 npm run check:vue',
       )
     }
   }, 600)
@@ -513,7 +519,8 @@ function onPointerDown(e: PointerEvent): void {
   // ——两种模式下都同步选中该转移，定位到左栏分组与属性面板。
   // 注意：官方 edge-label 是 SPAN（part="transition edge-label"），非 button——
   // 不能用 interactive 作匹配前置条件，否则所有转移的画布点击选中全部失效。
-  const tid = transitionIdFromLabel(e)
+  const found = labelFromEvent(e, RENDERER_CONTRACT.eventless)
+  const tid = found ? (transitionForFacts(editor.doc, found.facts)?.id ?? null) : null
   press = {
     x: e.clientX,
     y: e.clientY,
@@ -567,88 +574,7 @@ function onPointerUp(e: PointerEvent): void {
   }
 }
 
-// ───────────────── 点击选中的匹配函数 ─────────────────
-
-/**
- * 官方渲染契约（集中管理：升级 @tinyactors/scxmljs 时先核对这里）。
- * 依据 0.2.0-dev.0 的 shadow DOM 实测（2026-11 探针）：
- *   转移标签：SPAN[part="transition edge-label"]（非 button！——标签匹配不可被
- *     isInteractiveTarget 短路，否则所有转移的画布点击选中静默失效）
- *     [part="event"] 文本 = 事件名；eventless 显示 defaultViewStrings.eventless（ε）
- *     [part="cond"] 文本 = [cond]（官方约 22 字符截断，尾部 …）
- *     title = "事件 [cond] → 目标id列表"（目标逗号分隔）
- *   状态容器：[data-state] 属性（嵌套容器取最内层）
- * 失效症状：点击标签无反应/取消选中。官方升级后先跑 npm run check:vue。
- */
-const OFFICIAL = {
-  /** 转移标签的 part 名（part 属性空格分隔之一） */
-  edgeLabelPart: 'edge-label',
-  /** 状态容器的 data 属性名 */
-  stateAttr: 'data-state',
-  /** 官方事件名部件 */
-  eventPart: 'event',
-  /** 官方条件部件（文本含方括号） */
-  condPart: 'cond',
-  /** eventless 占位词（与官方渲染同源） */
-  eventless: defaultViewStrings.eventless,
-  /** title 中指向目标列表的箭头分隔符 */
-  titleArrow: '→',
-  /** 真交互控件（官方发送/播放/折叠按钮等）；edge-label 是 SPAN 不在其中 */
-  interactive: 'button, a, input, select, textarea, label, summary, [role="button"]',
-} as const
-
-/** 真 <button> 等交互元素（穿透 shadow DOM），保持官方语义不参与选中 */
-function isInteractiveTarget(e: PointerEvent): boolean {
-  return e.composedPath().some((n) => n instanceof HTMLElement && n.matches(OFFICIAL.interactive))
-}
-
-/** composedPath 上最内层的 [data-state] 元素（嵌套容器取最内层） */
-function stateIdFromEvent(e: PointerEvent): string | null {
-  for (const n of e.composedPath()) {
-    if (n instanceof HTMLElement && n.hasAttribute(OFFICIAL.stateAttr)) {
-      return n.getAttribute(OFFICIAL.stateAttr)
-    }
-  }
-  return null
-}
-
-/**
- * 编辑态：点击转移标签 → 匹配文档中的转移并返回其 id。
- *
- * 元素不给标签转移标识（内部 Map 不外露、cond 文本截断），组合三处
- * **未截断/可精确**的信息通常可唯一确定（结构契约见 OFFICIAL 注释）：
- *   1. `[part="event"]` span 集合 = 事件名（精确；eventless 为占位词 ε）
- *   2. title 属性 " → 目标id列表"（精确，逗号分隔）
- *   3. `[part="cond"]` 文本（截断时作前缀匹配）
- * 匹配到多条时取文档顺序第一条；零匹配返回 null（无操作）。
- */
-function transitionIdFromLabel(e: PointerEvent): string | null {
-  const label = e
-    .composedPath()
-    .find(
-      (n): n is HTMLElement =>
-        n instanceof HTMLElement && (n.getAttribute('part') ?? '').split(/\s+/).includes(OFFICIAL.edgeLabelPart),
-    )
-  if (!label) return null
-
-  const labelEvents = [...label.querySelectorAll(`[part="${OFFICIAL.eventPart}"]`)]
-    .map((s) => s.textContent?.trim() ?? '')
-    .filter(Boolean)
-  const condText = (label.querySelector(`[part="${OFFICIAL.condPart}"]`)?.textContent ?? '').trim()
-  const title = label.getAttribute('title') ?? ''
-  const arrow = title.lastIndexOf(OFFICIAL.titleArrow)
-  const targets = (arrow >= 0 ? title.slice(arrow + 1) : '')
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
-
-  return matchTransitionId(editor.doc, {
-    events: labelEvents,
-    condText,
-    targets,
-    eventless: OFFICIAL.eventless,
-  })
-}
+// 渲染契约与标签匹配集中在 canvas-contract.ts；这里只做选中与交互。
 </script>
 
 <template>
@@ -727,6 +653,11 @@ function transitionIdFromLabel(e: PointerEvent): string | null {
       </div>
       <div class="sel-meta" aria-live="polite">{{ selectionText }}</div>
     </div>
+    <ScxmlLabelTooltip
+      :view="viewEl"
+      :doc="editor.doc"
+      :enabled="editor.features.canvasTransitionTooltip === true"
+    />
   </div>
 </template>
 

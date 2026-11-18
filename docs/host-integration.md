@@ -184,7 +184,39 @@ mounted.unmount()            // 卸载并清理
 
 `features` 可以按场景裁剪：toolbar / structure / canvas / properties / variables /
 events / simulation / simBar / validation / importExport / examples / undoRedo /
-deploy / exit / explorer。默认全开，deploy/exit/explorer 默认关闭或按需打开。
+deploy / exit / explorer / canvasTransitionTooltip。默认全开，
+deploy/exit/explorer/canvasTransitionTooltip 默认关闭或按需打开。
+
+### 转移条件 tooltip（宿主画布）
+
+宿主不经过 `ChartCanvas`、自己包装 `<scxml-view>` 时，可直接用
+`ScxmlLabelTooltip`。它适用于详情页、gallery 等 passive 画布：
+
+```vue
+<script setup lang="ts">
+import { ref } from 'vue'
+import type { ProjectDoc } from 'statechart-kit'
+import { ScxmlLabelTooltip } from 'statechart-kit/vue'
+
+const viewEl = ref<HTMLElement | null>(null)
+const doc = ref<ProjectDoc | null>(null)
+</script>
+
+<template>
+  <scxml-view ref="viewEl" src="/api/machines/demo/scxml" autostart="false" interactive="false" />
+  <ScxmlLabelTooltip
+    :view="viewEl"
+    :doc="doc"
+    passive
+    :formatter="(t, facts) => `${facts.events.join(' ') || 'ε'} [${t.cond}]`"
+  />
+</template>
+```
+
+- `doc` 传部署版 `docSnapshot`，不是草稿；
+- `passive` 只恢复标签 `pointer-events`，画布其余区域和页面滚动保持穿透；
+- 不传 `formatter` 时显示 `[cond]`；`enabled` 省略默认开启；
+- 组件不读写 localStorage、不发 HTTP，样式来自 `statechart-kit/vue/style.css`。
 
 ### EditorModule
 

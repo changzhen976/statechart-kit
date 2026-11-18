@@ -150,6 +150,7 @@ const mounted = mountEditor('#editor', {
     deploy: true,
     exit: true,
     explorer: true,
+    canvasTransitionTooltip: true,
   },
 })
 
@@ -193,6 +194,23 @@ await mounted.ready
 - 切换横向/纵向布局后自动 fit；侧栏 resize 不重置用户缩放；
 - 大画布按内容动态扩容，fit 下限 0.1。
 
+### 转移条件 tooltip
+
+画布上的条件默认按官方规则截断到约 22 字符。`features.canvasTransitionTooltip: true`
+打开后，hover / focus / 触摸 tap 可查看完整 `transition.cond`；passive 只读画布同样适用。
+
+宿主自己包装 `<scxml-view>` 时可直接使用组件（`ScxmlLabelTooltip` 从
+`statechart-kit/vue` 导出，先 import `@tinyactors/scxmljs/view` 注册元素）：
+
+```vue
+<scxml-view ref="viewEl" src="/machines/demo.scxml" autostart="false" />
+<ScxmlLabelTooltip :view="viewEl" :doc="doc" passive />
+```
+
+- `doc` 应与实际绘制的 SCXML 同版本（部署版 `docSnapshot`，不是草稿）；
+- `passive` 只恢复标签的 `pointer-events`，页面滚动不受影响；
+- 默认显示 `[cond]`；需要 `事件 [cond] → 目标` 时传 `formatter`。
+
 ## 只读预览容器
 
 [`preview/`](preview/README.md) 提供一个小型 Docker 容器，读取挂载目录里最新的
@@ -227,13 +245,13 @@ import {
 
 ## 兼容性
 
-- 版本 `0.15.0`，Node.js >= 20，ESM only；
+- 版本 `0.16.0`，Node.js >= 20，ESM only；
 - `vue` 是 optional peer；
 - `ProjectDoc` / SCXML 输出在 0.15 线保持稳定；
 - `TransitionEdge.target` 可为 `null`，`ListenEdge.target` / `EventOrigin.target` 同步可空；
 - `done` 事件新增 `states`；`error` 事件新增可选定位字段（见[会话事件](docs/session-events.md)）；
 - 序列化器会给转移写 `data-kit-transition-id`，导入器会保留；
-- `features.explorer` / `resizablePanes` 默认 `false`，不改变现有宿主行为；
+- `features.explorer` / `resizablePanes` / `canvasTransitionTooltip` 默认 `false`，不改变现有宿主行为；
 - 结构树折叠是编辑器会话内 UI；横向/纵向切换后会自动 fit 一次，侧栏 resize 不强制重置缩放；
 - 事件可设置「仅内部」：转移生成 `_event.type === 'internal'` 守卫；`raise` 和 `send target="#_internal"` 是内部事件动作。
 
