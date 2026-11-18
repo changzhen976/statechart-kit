@@ -1,7 +1,8 @@
 # statechart-kit / scxmljs 需求记录
 
 > 记录时间：2026-11-11；2026-11-12 追加 Node-RED 宿主 0.7 反哺（KIT-006–011）；
-> 2026-11-13 追加全页编辑器作者体验反哺（KIT-012–014）
+> 2026-11-13 追加全页编辑器作者体验反哺（KIT-012–014）；
+> 2026-11-18 追加 scxml-creator 详情页反哺（KIT-017）
 >
 > 本仓库依赖：`statechart-kit@0.11.0`、`@tinyactors/scxmljs@0.2.0-dev.0`
 >
@@ -21,6 +22,7 @@
 | KIT-004 | `statechart-kit` SCXML 导入 | P2 | `scxmlToDoc` 不支持无 target 的内部转移，导入告警且 ProjectDoc 无法表达 | 已支持（0.9.0） |
 | KIT-005 | `@tinyactors/scxmljs` 渲染器 | P2 | 复杂图中同源/同目标的多条条件转移共享走廊，线条近重合、视觉上像重复 | 已记录最小证据与修复方案；待上游修复 |
 | KIT-016 | `statechart-kit` 编辑器 | P2 | 结构编辑 addState/removeState/setParent 未维护 ProjectDoc initial 不变量，画布 fallback 与文档/属性面板不一致 | 已修复（0.12.1）；详见 `docs/internal/work-items/0.12-initial-invariant.md` |
+| KIT-017 | `statechart-kit` 编辑器/渲染交互 | P2 | 转移标签中的条件被截断到约 22 字符；passive 详情画布无法 hover 查看完整条件，宿主只能临时补 shadow DOM tooltip | 待抽取；宿主 scxml-creator 已临时实现（5b08148），建议 0.15.2/0.16.0 |
 | KIT-006 | `statechart-kit` engine | P1 | `done` 不携带终态配置，且 done 后仍发一次空 `active`，宿主必须自行保存最后 `fired` 目标 | 已实现（0.11.0） |
 | KIT-007 | `statechart-kit` engine | P1 | `error` 事件只有 `kind` / `message`，丢弃引擎已有的出错 element，宿主无法定位到状态/转移/动作 | 已实现（0.11.0） |
 | KIT-008 | `statechart-kit` 编辑器 | P2 | `formatValidationIssue` / `formatStructureIssue` / `formatImportWarning` 等硬编码中文，英文宿主的全页编辑器仍显示中文诊断 | 已实现（0.11.0） |
@@ -1127,6 +1129,7 @@ CASCADE_BASE=http://homeassistant:1880 npm run test:cascade
 - KIT-008 / KIT-009 / KIT-010 已在 0.11.0 实现：diagnostics 注入、locale=en / DEFAULT_LABELS_EN、诊断 code 目录。
 - KIT-011 为可选增强；宿主可先检查 `send()` 返回值自行报错。
 - KIT-012 / KIT-013 / KIT-014 已在 0.12.0 实现；宿主升级 kit 并重新打包即可，不需要改业务代码。
+- KIT-017 为通用画布交互能力；先保持宿主临时实现，下一次 kit 版本抽取为可复用 tooltip，编辑器与详情页共用。
 
 ## 0.11.0 实现记录
 
@@ -1189,3 +1192,83 @@ serializer fallback。回归要覆盖顶层、compound、parallel、history、�
 - `send()` 继续返回 boolean，内部复用 `trySend()`；
 - 引擎未暴露 queue-full，因此暂不伪造该 code。
 
+
+
+## KIT-017：转移标签完整条件悬浮提示
+
+### 现象
+
+官方 `<scxml-view>` 把转移标签里的条件渲染为 `[part="cond"]`，但文本只保留
+`truncate(cond, 22)`（约 22 字符，尾部 `…`）。完整条件写在标签的 `title` 里
+（`事件 [完整 cond] → 目标`），因此：
+
+- 编辑器画布可以用浏览器原生 `title` 悬浮查看，但样式不可控、延迟较长；
+- 详情/画廊使用 `passive` 画布（`pointer-events: none`）时，标签收不到 hover，
+  原生 tooltip 根本不出现；
+- 移动端没有 hover；
+- 宿主直接读取/改写官方 shadow DOM 的 `title`，会复制渲染器契约。
+
+来源：`scxml-creator` 详情页需求；宿主已在 commit `5b08148` 中临时实现
+（`MachineCanvas` 的 `tooltip` prop），生产 trial 验证通过。
+
+### 当前宿主临时实现
+
+- passive 画布只给 `::part(edge-label)` 恢复 `pointer-events`；
+- `composedPath()` 找 `edge-label`，读取 `title` 全文；
+- `Teleport` 到 body 显示自定义 tooltip，显示期间移除原生 `title`，离开恢复；
+- 支持 hover / focus / touch，`aria-describedby`，80ms 隐藏防抖；
+- 回归：宿主 `scripts/check-machine-tooltip.cjs`。
+
+局限：
+
+- 契约（`part="edge-label"`、`part="cond"`、`title` 格式）在宿主和 kit
+  `ChartCanvas` / `canvas-select.ts` 各维护一份；
+- 通过 `title` 反向解析，没有直接使用文档里的 `transition.cond`；
+- 只覆盖详情页，没有覆盖编辑器与 gallery；
+- 上游渲染器调整 `title` 格式时，宿主测试能发现，但属于重复适配。
+
+### 为什么应由 kit 提供
+
+1. 这是**通用画布交互**，不是 creator 业务；宿主不应 monkey-patch 官方 shadow DOM。
+2. 渲染器契约已由 kit 的 `ChartCanvas` / `canvas-select.ts` 维护；tooltip 应复用同一份
+   选中/标签匹配逻辑。
+3. 编辑器与详情页应共享 hover/focus/touch/aria 行为，避免两套实现漂移。
+4. kit 有 `EditorStore.doc`，宿主包装器也有部署版 `docSnapshot`；可以直接显示
+   `transition.cond`，不必解析 `title`。
+5. 后续上游若给标签增加结构化属性，kit 可以一处升级，宿主无感。
+
+### 期望能力
+
+- 导出可复用的 tooltip 基础能力，例如：
+  - `useScxmlLabelTooltip(viewRef, { doc, enabled, formatter? })`，或
+  - `<ScxmlLabelTooltip :view="viewEl" :doc="doc" :enabled="enabled" />`。
+- 适用于任意包装 `<scxml-view>` 的宿主组件，不只 kit 的 `ChartCanvas`。
+- `ChartCanvas` 增加 opt-in feature（如 `canvasTransitionTooltip`），默认关闭或按
+  `EditorFeatures` 统一配置。
+- 内部从 `doc` 查转移并显示原始 `cond`；不依赖 `title` 文本格式。
+- passive 画布只恢复标签 `pointer-events`，其余区域保持滚轮穿透。
+- 支持 hover / focus / touch、`aria-describedby`；抑制原生 tooltip 重复弹出。
+- 不改变 SCXML 语义、引擎或文档模型；不引入新运行时依赖。
+
+### 可选上游增强
+
+`@tinyactors/scxmljs` 可在 `edge-label` 上暴露结构化属性，例如
+`data-event` / `data-cond` / `data-target`。这样 tooltip 与画布点击选中都不再依赖
+`title` 字符串解析，`canvas-select.ts` 的 `OFFICIAL` 契约也会更稳定。该改动应由
+上游单独评估，不作为 kit 抽取的前置条件。
+
+### 验收
+
+- 编辑器 `ChartCanvas` 与宿主详情画布都能通过同一个开关/组件显示完整条件；
+- 长条件（> 22 字符）hover/focus/tap 均显示完整 `transition.cond`；
+- passive 画布滚动不被破坏，标签 hover 不影响画布点击/平移；
+- 不出现原生/自定义 tooltip 双重弹出；
+- kit 侧新增回归（`verify:all` / `check:vue`），宿主侧保留 `check-machine-tooltip`；
+- 升级 kit 后宿主删除 `MachineCanvas` 中的 150 行 shadow DOM tooltip 逻辑。
+
+### 估时与优先级
+
+- kit：1.5–2 人日（组件/composable + 测试 + 文档 + 发版准备）；
+- 宿主接入：0.5–1 人日；
+- 合计：2–3 人日；优先级 **P2**。
+- 版本：0.15.2（纯增量、不改现有默认）或 0.16.0（若 tooltip 默认开启/调整契约）。
