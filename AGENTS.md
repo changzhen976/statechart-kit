@@ -96,7 +96,7 @@ src/vue/                 Vue 3 编辑器（Vite 构建，vue 为 optional peer�
   canvas-fit.ts          大画布扩容与 fit 比例纯函数
   types.ts               EditorAdapter（宿主能力注入）
   modules.ts             EditorModule 契约
-  features.ts            EditorFeatures 能力开关（含 explorer）
+  features.ts            EditorFeatures 能力开关（含 explorer / canvasTransitionTooltip）
   browser-adapter.ts     浏览器默认 adapter
   events.ts / labels.ts / format.ts / styles.css（含 DEFAULT_LABELS_EN）
   DoneDataEditor.vue     doneData 的 content/expr/param 编辑器

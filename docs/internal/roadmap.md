@@ -132,7 +132,7 @@
 - **P2 KIT-008**：诊断格式化可本地化，或允许宿主注入 formatter；
 - **P2 KIT-009**：英文 `EditorLabels` 预设 / `locale`；
 - **P2 KIT-010**：导出诊断 code 目录；
-- **P3 KIT-011**：`send()` 失败原因（可选，宿主可先检查 boolean）。
+- **P3 KIT-011**：`send()` 失败原因（已在 0.15.0 实现 `trySend()`；`send()` 保持 boolean 兼容）。
 
 KIT-002 / KIT-005 仍属于上游 `@tinyactors/scxmljs`，不在本候选范围内。
 
