@@ -1,7 +1,7 @@
 # 发布与 NPM 认证（维护者）
 
-> 目标：发布 `statechart-kit` 0.15.0。当前已发布 `0.13.1`；`0.14.0` **从未发布**
-> （无远端 tag、npm 无该版本），不要补推 `v0.14.0`。下文以 `0.15.0` 为例，
+> 目标：发布 `statechart-kit` 0.16.0。当前 npm 已发布 `0.15.1`；`0.14.0` **从未发布**
+> （无远端 tag、npm 无该版本），不要补推 `v0.14.0`。下文以 `0.16.0` 为例，
 > 实际发布时替换成 `package.json` 里的版本号。本文只写命令与检查，不保存任何 token。
 
 ## 0. 远程约定
@@ -76,13 +76,13 @@ Environment:       （留空）
 方式 A：推送 tag
 
 ```bash
-git tag v0.13.1
-git push github v0.13.1
+git tag v0.16.0
+git push github v0.16.0
 ```
 
 方式 B：补发已有 tag
 
-GitHub → Actions → `publish` → Run workflow → 输入 `v0.13.0`。
+GitHub → Actions → `publish` → Run workflow → 输入 `v0.16.0`。
 
 workflow 会校验 tag 与 `package.json` 版本一致，再执行全量验证和发布。
 
